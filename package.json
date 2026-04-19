@@ -1,0 +1,12 @@
+{
+  "name": "shuddhi-qa",
+  "version": "1.4.0",
+  "description": "AI-powered QA test case generator for D365, Salesforce, Web Apps and Mobile",
+  "scripts": {
+    "build": "echo 'No build needed — static HTML app'",
+    "start": "npx serve ."
+  },
+  "keywords": ["qa", "testing", "d365", "salesforce", "azure-devops"],
+  "author": "Ramya — Shuddhi QA",
+  "license": "MIT"
+}
