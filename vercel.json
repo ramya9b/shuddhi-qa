@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "buildCommand": null,
-  "outputDirectory": ".",
   "routes": [
     { "handle": "filesystem" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/app(.*)", "dest": "/app/index.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
