@@ -5446,7 +5446,7 @@ async function runAdoQuickTest() {
   if (resultEl) { resultEl.style.display='flex'; resultEl.className='settings-test-result'; resultEl.textContent=`⏳ Testing connection to "${orgVal}"…`; }
 
   try {
-    const url = `https://dev.azure.com/${encodeURIComponent(orgVal)}/_apis/projects?api-version=7.1&$top=5`;
+    const url = `https://dev.azure.com/${encodeURIComponent(orgVal)}/_apis/projects?api-version=7.1&$top=200`;
     const res  = await fetch('/api/ado', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ method:'GET', url, body:null })
@@ -5463,17 +5463,52 @@ async function runAdoQuickTest() {
       resultEl.className = 'settings-test-result err';
       resultEl.textContent = `❌ HTTP ${res.status} — ${data.message || data.error || 'Connection failed'}`;
     } else {
-      const count = data.count ?? data.value?.length ?? 0;
-      resultEl.className = 'settings-test-result ok';
+      const projects = (data.value || []).sort((a,b) => a.name.localeCompare(b.name));
+      const count    = projects.length;
+
+      resultEl.className   = 'settings-test-result ok';
       resultEl.textContent = `✅ Connected to "${orgVal}" — PAT is valid. ${count} project(s) found.`;
       showToast('ADO PAT verified ✅', '🔷');
-      // Sync org + hide inline input
-      const row = document.getElementById('adoQuickOrgRow');
-      if (row) row.style.display = 'none';
+
+      // Sync org to hidden input
       if (document.getElementById('settingsAdoOrg')) document.getElementById('settingsAdoOrg').value = orgVal;
-      // Show Load Projects button area
-      const orgEl = document.getElementById('settingsAdoOrg');
-      if (orgEl) orgEl.value = orgVal;
+      const hint = document.getElementById('settingsOrgHint');
+      if (hint) hint.textContent = orgVal;
+
+      // ── Populate project dropdown with the data we already have ──
+      const projSel = document.getElementById('settingsAdoProjectSelect');
+      if (projSel) {
+        projSel.innerHTML = '<option value="">— Select Project —</option>';
+        projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value       = p.name;
+          opt.textContent = p.name;
+          projSel.appendChild(opt);
+        });
+      }
+
+      // Show project dropdown row
+      const projRow = document.getElementById('settingsAdoProjectRow');
+      if (projRow) projRow.style.display = 'block';
+
+      // Show org row (so user sees it's connected)
+      const orgRow = document.getElementById('settingsAdoOrgRow');
+      if (orgRow) orgRow.style.display = 'block';
+      const orgSel = document.getElementById('settingsAdoOrgSelect');
+      if (orgSel && orgSel.options.length <= 1) {
+        orgSel.innerHTML = `<option value="${orgVal}">${orgVal}</option>`;
+        orgSel.value = orgVal;
+      }
+
+      // Hide inline org input row if exists
+      const inlineRow = document.getElementById('adoQuickOrgRow');
+      if (inlineRow) inlineRow.style.display = 'none';
+
+      // Auto-select if only 1 project
+      if (projects.length === 1 && projSel) {
+        projSel.value = projects[0].name;
+        settingsOnProjectChange();
+      }
     }
   } catch(e) {
     resultEl.className = 'settings-test-result err';
@@ -5528,10 +5563,11 @@ async function testADOConnection() {
       resultEl.className   = 'settings-test-result err';
       resultEl.textContent = `❌ HTTP ${res.status} — ${await res.text().then(t=>t.substring(0,120))}`;
     } else {
-      const data = await res.json().catch(() => ({}));
+      const data  = await res.json().catch(() => ({}));
       const count = data?.count ?? data?.value?.length ?? '?';
       resultEl.className   = 'settings-test-result ok';
       resultEl.textContent = `✅ ADO connected — "${org}/${project}" reachable. ${count} test plan(s) found.`;
+      showToast('ADO connection verified ✅', '🔷');
     }
   } catch (e) {
     resultEl.className   = 'settings-test-result err';
