@@ -1953,22 +1953,31 @@
       <!-- Quick Connection Test -->
       <div class="settings-section" style="margin-top:24px">
         <div class="settings-section-title" style="font-size:13px">Quick Connection Test</div>
-        <div class="settings-section-desc" style="margin-top:4px">Enter your organisation name to load projects, then test the connection.</div>
+        <div class="settings-section-desc" style="margin-top:4px">Validate PAT → select organisation → select project → test.</div>
       </div>
 
-      <!-- Step A: Organisation text input + Load Projects button -->
-      <div id="settingsAdoOrgRow">
-        <div class="settings-field-label">Organisation Name</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="settingsAdoOrg" placeholder="e.g. AlphaVarianceSolutions" autocomplete="off"
-            style="flex:1;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
-                   padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s"
-            onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
-            onkeydown="if(event.key==='Enter')settingsLoadProjects()"/>
-          <button class="settings-test-btn" onclick="settingsLoadProjects()" id="settingsLoadProjBtn" style="white-space:nowrap;flex-shrink:0">
-            <span id="settingsLoadProjLabel">Load Projects →</span>
-          </button>
+      <!-- Step A: Validate PAT & Load Organisations -->
+      <div id="settingsAdoLoadOrgsRow">
+        <button class="settings-test-btn" style="width:100%;padding:10px" onclick="settingsValidateAndLoadOrgs()">
+          <span id="settingsLoadOrgsLabel">🔑 Validate PAT &amp; Load Organisations</span>
+        </button>
+      </div>
+
+      <!-- Step B: Organisation dropdown -->
+      <div id="settingsAdoOrgRow" style="display:none;margin-top:14px">
+        <div class="settings-field-label">
+          Organisation
+          <span id="settingsOrgLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-left:6px">Loading…</span>
         </div>
+        <select id="settingsAdoOrgSelect" onchange="settingsOnOrgChange()"
+          style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                 padding:9px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer;
+                 -webkit-appearance:none;appearance:none;
+                 background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E');
+                 background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+          <option value="">— Select Organisation —</option>
+        </select>
+        <input type="hidden" id="settingsAdoOrg"/>
         <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
           https://dev.azure.com/<strong id="settingsOrgHint">your-org</strong>
         </span>
@@ -3973,17 +3982,15 @@ renderHistory();
   try {
     const res = await fetch('/api/status');
     if (!res.ok) return; // running locally without Vercel dev — show inputs as-is
-    const { claudeKey, adoKey } = await res.json();
+    const { claudeKey, adoKey, adoOrg = '', adoProject = '' } = await res.json();
 
     // Apply to both the API bar and the settings modal
     applySettingsStatus(claudeKey, adoKey);
 
     if (claudeKey) {
       window.__claudeKeyConfigured = true;
-      // apiKeySection is hidden by default now — just update flags
       document.getElementById('statusDot').style.display = 'none';
     } else {
-      // Restore saved API key from localStorage
       const savedKey = localStorage.getItem('shuddhiqa-apikey');
       if (savedKey) {
         document.getElementById('apiKey').value = savedKey;
@@ -3991,6 +3998,26 @@ renderHistory();
         const settingsInput = document.getElementById('settingsApiKey');
         if (settingsInput) settingsInput.value = savedKey;
       }
+    }
+
+    // ── Auto-configure ADO org/project from Vercel env vars ──────
+    window.__adoKey = adoKey;
+    if (adoOrg) {
+      window.__adoOrg     = adoOrg;
+      window.__adoProject = adoProject || '';
+
+      // Pre-fill all org inputs
+      ['settingsAdoOrg','adoOrg','adoQuickOrgInput'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = adoOrg;
+      });
+
+      // Pre-fill hidden org hint
+      ['settingsOrgHint','adoOrgHintText'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.textContent = adoOrg;
+      });
+
+      // Auto-load projects in background (for Settings dropdown)
+      if (adoKey) autoLoadProjectsFromEnv(adoOrg, adoProject);
     }
   } catch (e) {
     // Network error or running outside Vercel — silently continue with manual key entry
@@ -4450,25 +4477,118 @@ async function initADOModal() {
   try {
     const res = await fetch('/api/status');
     if (res.ok) {
-      const { adoKey } = await res.json();
+      const { adoKey, adoOrg, adoProject } = await res.json();
       if (adoKey) {
-        // Env var set — hide manual PAT input, show env badge
         document.getElementById('adoPatManualRow').style.display = 'none';
         document.getElementById('adoPatEnvRow').style.display    = 'flex';
-        document.getElementById('adoValidateLabel').textContent  = '🔑 Load Organisations';
+      }
+      if (adoOrg) {
+        // Org pre-configured — fill input + show project section
+        document.getElementById('adoOrgProjectRow').style.display = 'block';
+        const orgInput = document.getElementById('adoOrgSelect');
+        if (orgInput) orgInput.value = adoOrg;
+        document.getElementById('adoOrg').value = adoOrg;
+        const hint = document.getElementById('adoOrgHintText');
+        if (hint) hint.textContent = adoOrg;
+        document.getElementById('adoValidateLabel').textContent = `✅ Org: ${adoOrg}`;
+
+        // Projects may already be loaded — check if adoProjectSelect has options
+        const sel = document.getElementById('adoProjectSelect');
+        const hasProjects = sel && sel.options.length > 1;
+        if (hasProjects) {
+          document.getElementById('adoProjectFieldRow').style.display = 'block';
+          if (adoProject) {
+            sel.value = adoProject;
+            onProjectSelectChange();
+          }
+        } else {
+          // Load projects for this org
+          await autoLoadProjectsFromEnv(adoOrg, adoProject);
+        }
+        if (adoOrg && adoProject) {
+          document.getElementById('adoLoadPlansRow').style.display = 'block';
+        }
       }
     }
-  } catch(e) { /* offline — show manual input */ }
+  } catch(e) { /* offline */ }
 }
 
-// Step 1a: Show org text input (PAT is already in Vercel env)
-// We skip the profile API (requires extra PAT scope) — just ask for org name
+// Step 1a: Validate PAT using connectionData (works with any valid PAT, no extra scope)
+// Then load organisations the user belongs to
 async function validateAndLoadOrgs() {
-  // Show the org/project section directly
-  document.getElementById('adoOrgProjectRow').style.display = 'block';
-  const lbl = document.getElementById('adoValidateLabel');
-  if (lbl) lbl.textContent = '✅ Enter your organisation name below';
-  showToast('Enter your ADO organisation name', '🔷');
+  const errEl = document.getElementById('adoConnectError');
+  const btn   = document.getElementById('adoValidatePatBtn');
+  const lbl   = document.getElementById('adoValidateLabel');
+  const spin  = document.getElementById('adoValidateSpinner');
+  if (errEl) errEl.style.display = 'none';
+
+  if (btn) btn.disabled = true;
+  if (spin) spin.style.display = 'block';
+  if (lbl) lbl.textContent = 'Validating PAT…';
+
+  try {
+    // Step 1: connectionData — validates PAT + gets user ID (no extra scope needed)
+    const connData = await adoRequest('GET',
+      'https://app.vssps.visualstudio.com/_apis/connectionData?api-version=7.1-preview.1', null);
+
+    const memberId = connData?.authenticatedUser?.id
+                  || connData?.authorizedUser?.id;
+    if (!memberId) throw new Error('PAT verified but could not read user ID. Check PAT scopes.');
+
+    const userName = connData?.authenticatedUser?.providerDisplayName || 'User';
+    if (lbl) lbl.textContent = `Loading organisations for ${userName}…`;
+
+    // Step 2: Get all organisations this user belongs to
+    const orgsData = await adoRequest('GET',
+      `https://app.vssps.visualstudio.com/_apis/accounts?memberId=${memberId}&api-version=7.1-preview.1`, null);
+
+    const orgs = (orgsData.value || []).sort((a,b) =>
+      a.accountName.localeCompare(b.accountName));
+
+    if (!orgs.length) throw new Error('No organisations found. Ensure the PAT has access to at least one organisation.');
+
+    // Populate org dropdown
+    const orgSel = document.getElementById('adoOrgSelect');
+    if (orgSel) {
+      orgSel.innerHTML = '<option value="">— Select Organisation —</option>';
+      orgs.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.accountName;
+        opt.textContent = o.accountName;
+        orgSel.appendChild(opt);
+      });
+    }
+
+    // Show the org/project section
+    document.getElementById('adoOrgProjectRow').style.display = 'block';
+    if (lbl) lbl.textContent = `✅ PAT valid — ${orgs.length} organisation(s)`;
+    showToast(`PAT verified — ${orgs.length} org(s) found`, '✅');
+
+    // If ADO_ORG env var is set (pre-configured), auto-select it
+    const presetOrg = window.__adoOrg || '';
+    if (presetOrg && orgSel) {
+      const match = orgs.find(o => o.accountName.toLowerCase() === presetOrg.toLowerCase());
+      if (match) {
+        orgSel.value = match.accountName;
+        orgSel.dispatchEvent(new Event('change'));
+      }
+    } else if (orgs.length === 1) {
+      orgSel.value = orgs[0].accountName;
+      orgSel.dispatchEvent(new Event('change'));
+    }
+
+  } catch(e) {
+    let msg = e.message;
+    if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('203'))
+      msg = '❌ PAT is invalid or expired — go to Azure DevOps → User Settings → Personal Access Tokens and create a new one';
+    else if (msg.includes('ADO_PAT'))
+      msg = '⚠️ ADO_PAT not set in Vercel — add it in Project Settings → Environment Variables';
+    if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
+    if (lbl) lbl.textContent = '🔑 Validate PAT & Load Organisations';
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spin) spin.style.display = 'none';
+  }
 }
 
 // Step 1b: Org entered → load projects
@@ -4990,6 +5110,10 @@ function openSettings() {
   ['settingsAdoOrgRow','settingsAdoProjectRow','settingsAdoTestRow'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
   });
+  // If ADO_ORG is pre-configured, auto-trigger org validation
+  if (window.__adoOrg && window.__adoKey) {
+    setTimeout(() => settingsValidateAndLoadOrgs(), 300);
+  }
   const r = document.getElementById('adoTestResult');
   if (r) r.style.display = 'none';
 }
@@ -5136,6 +5260,79 @@ async function testClaudeConnection() {
   }
 }
 
+
+// ── Auto-load projects when org is pre-configured via env var ────
+async function autoLoadProjectsFromEnv(org, presetProject) {
+  if (!org) return;
+  try {
+    const url  = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
+    const res  = await fetch('/api/ado', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ method:'GET', url, body:null })
+    });
+    if (!res.ok) return; // silent fail — user can still type manually
+
+    const data     = await res.json().catch(() => ({}));
+    const projects = (data.value || []).sort((a,b) => a.name.localeCompare(b.name));
+
+    // Populate Settings modal project dropdown
+    const settingsSel = document.getElementById('settingsAdoProjectSelect');
+    if (settingsSel) {
+      settingsSel.innerHTML = '<option value="">— Select Project —</option>';
+      projects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name; opt.textContent = p.name;
+        settingsSel.appendChild(opt);
+      });
+      document.getElementById('settingsAdoProjectRow').style.display = 'block';
+      // Auto-select preset project if provided
+      if (presetProject) {
+        settingsSel.value = presetProject;
+        settingsOnProjectChange();
+      } else if (projects.length === 1) {
+        settingsSel.value = projects[0].name;
+        settingsOnProjectChange();
+      }
+    }
+
+    // Populate ADO modal project dropdown
+    const adoSel = document.getElementById('adoProjectSelect');
+    if (adoSel) {
+      adoSel.innerHTML = '<option value="">— Select Project —</option>';
+      projects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name; opt.textContent = p.name;
+        adoSel.appendChild(opt);
+      });
+      document.getElementById('adoProjectFieldRow').style.display = 'block';
+      if (presetProject) {
+        adoSel.value = presetProject;
+        onProjectSelectChange();
+      } else if (projects.length === 1) {
+        adoSel.value = projects[0].name;
+        onProjectSelectChange();
+      }
+    }
+
+    // Set hidden inputs
+    if (presetProject || projects.length === 1) {
+      const proj = presetProject || projects[0].name;
+      ['settingsAdoProject','adoProject'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = proj;
+      });
+    }
+
+    // Update Load Projects button label
+    const lbl = document.getElementById('settingsLoadProjLabel');
+    if (lbl) lbl.textContent = `✅ ${projects.length} project(s)`;
+
+    // Show the project section in settings
+    const testRow = document.getElementById('settingsAdoTestRow');
+    if (testRow && (presetProject || projects.length === 1)) testRow.style.display = 'block';
+
+  } catch(e) { /* silent — org will still be shown, user can load manually */ }
+}
+
 // ── Test Connection button click from status card ────────────────
 function adoQuickTestClick() {
   const org     = document.getElementById('settingsAdoOrg')?.value.trim() || '';
@@ -5277,64 +5474,115 @@ document.addEventListener('keydown', e => {
 
 
 // ── Settings modal: ADO org/project dropdown logic ────────────
-// Settings ADO: Load projects from typed org name
-async function settingsLoadProjects() {
-  const org    = document.getElementById('settingsAdoOrg')?.value.trim();
-  const btn    = document.getElementById('settingsLoadProjBtn');
-  const lbl    = document.getElementById('settingsLoadProjLabel');
-  const badge  = document.getElementById('settingsProjectLoadingBadge');
+// Settings: Validate PAT + load organisations dropdown
+async function settingsValidateAndLoadOrgs() {
   const result = document.getElementById('adoTestResult');
+  const lbl    = document.getElementById('settingsLoadOrgsLabel');
   if (result) result.style.display = 'none';
-
-  if (!org) {
-    if (result) { result.style.display='flex'; result.className='settings-test-result warn'; result.textContent='⚠️ Enter your organisation name first.'; }
-    return;
-  }
-
-  // Update hint
-  const hint = document.getElementById('settingsOrgHint');
-  if (hint) hint.textContent = org;
-  if (lbl) lbl.textContent = '⏳ Loading…';
-  if (btn) btn.disabled = true;
+  if (lbl) lbl.textContent = '⏳ Validating PAT…';
 
   try {
-    const url = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
-    const data = await adoRequest('GET', url, null);
-    const projects = data.value || [];
+    // Use connectionData — works with any valid PAT, no extra scope
+    const connData = await adoRequest('GET',
+      'https://app.vssps.visualstudio.com/_apis/connectionData?api-version=7.1-preview.1', null);
 
-    const sel = document.getElementById('settingsAdoProjectSelect');
-    sel.innerHTML = '<option value="">— Select Project —</option>';
-    projects.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.name; opt.textContent = p.name; sel.appendChild(opt);
-    });
+    const memberId = connData?.authenticatedUser?.id || connData?.authorizedUser?.id;
+    if (!memberId) throw new Error('PAT verified but user ID not found');
 
-    document.getElementById('settingsAdoProjectRow').style.display = 'block';
-    document.getElementById('settingsAdoTestRow').style.display    = 'none';
-    if (lbl) lbl.textContent = `✅ ${projects.length} project(s)`;
-    showToast(`${projects.length} project(s) found in ${org}`, '🔷');
+    const userName = connData?.authenticatedUser?.providerDisplayName || '';
+    if (lbl) lbl.textContent = `Loading organisations${userName ? ' for '+userName : ''}…`;
 
-    if (projects.length === 1) {
-      sel.value = projects[0].name;
-      settingsOnProjectChange();
+    // Get all orgs
+    const orgsData = await adoRequest('GET',
+      `https://app.vssps.visualstudio.com/_apis/accounts?memberId=${memberId}&api-version=7.1-preview.1`, null);
+
+    const orgs = (orgsData.value || []).sort((a,b) => a.accountName.localeCompare(b.accountName));
+    if (!orgs.length) throw new Error('No organisations found for this PAT');
+
+    // Populate org dropdown
+    const sel = document.getElementById('settingsAdoOrgSelect');
+    if (sel) {
+      sel.innerHTML = '<option value="">— Select Organisation —</option>';
+      orgs.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.accountName; opt.textContent = o.accountName;
+        sel.appendChild(opt);
+      });
+    }
+
+    // Show org dropdown
+    document.getElementById('settingsAdoOrgRow').style.display = 'block';
+    document.getElementById('settingsAdoProjectRow').style.display = 'none';
+    document.getElementById('settingsAdoTestRow').style.display   = 'none';
+    if (lbl) lbl.textContent = `✅ PAT valid — ${orgs.length} org(s)`;
+    showToast(`PAT verified — ${orgs.length} organisation(s)`, '✅');
+
+    // Auto-select preset or single org
+    const presetOrg = window.__adoOrg || document.getElementById('settingsAdoOrg')?.value || '';
+    if (presetOrg && sel) {
+      const match = orgs.find(o => o.accountName.toLowerCase() === presetOrg.toLowerCase());
+      if (match) { sel.value = match.accountName; settingsOnOrgChange(); }
+    } else if (orgs.length === 1 && sel) {
+      sel.value = orgs[0].accountName; settingsOnOrgChange();
     }
 
   } catch(e) {
     let msg = e.message;
-    if (msg.includes('401') || msg.includes('Unauthorized'))
-      msg = '❌ PAT invalid or expired — create a new PAT with Test Management: Read & Write scope';
-    else if (msg.includes('404') || msg.includes('not found'))
-      msg = `❌ Organisation "${org}" not found — check spelling (case-sensitive)`;
+    if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('203'))
+      msg = '❌ PAT is invalid or expired — create a new PAT in Azure DevOps → User Settings → Personal Access Tokens';
     else if (msg.includes('ADO_PAT'))
-      msg = '⚠️ ADO_PAT not set in Vercel — add it as an environment variable';
+      msg = '⚠️ ADO_PAT not set in Vercel — add it in Project Settings → Environment Variables';
     if (result) { result.style.display='flex'; result.className='settings-test-result err'; result.textContent=msg; }
-    if (lbl) lbl.textContent = 'Load Projects →';
-  } finally {
-    if (btn) btn.disabled = false;
+    if (lbl) lbl.textContent = '🔑 Validate PAT & Load Organisations';
   }
 }
 
-function settingsOnOrgChange() { settingsLoadProjects(); }
+// When org selected in settings — load projects for that org
+async function settingsOnOrgChange() {
+  const sel    = document.getElementById('settingsAdoOrgSelect');
+  const org    = sel?.value || '';
+  const hint   = document.getElementById('settingsOrgHint');
+  const badge  = document.getElementById('settingsProjectLoadingBadge');
+  const result = document.getElementById('adoTestResult');
+
+  if (document.getElementById('settingsAdoOrg')) document.getElementById('settingsAdoOrg').value = org;
+  if (hint) hint.textContent = org || 'your-org';
+  document.getElementById('settingsAdoProjectRow').style.display = 'none';
+  document.getElementById('settingsAdoTestRow').style.display    = 'none';
+  if (result) result.style.display = 'none';
+  if (!org) return;
+
+  if (badge) badge.style.display = 'inline';
+  document.getElementById('settingsAdoProjectRow').style.display = 'block';
+
+  try {
+    const url  = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
+    const data = await adoRequest('GET', url, null);
+    const projects = (data.value || []).sort((a,b) => a.name.localeCompare(b.name));
+
+    const projSel = document.getElementById('settingsAdoProjectSelect');
+    projSel.innerHTML = '<option value="">— Select Project —</option>';
+    projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name; opt.textContent = p.name; projSel.appendChild(opt);
+    });
+
+    if (badge) badge.style.display = 'none';
+    showToast(`${projects.length} project(s) in ${org}`, '🔷');
+
+    const presetProject = window.__adoProject || '';
+    if (presetProject) {
+      const match = projects.find(p => p.name.toLowerCase() === presetProject.toLowerCase());
+      if (match) { projSel.value = match.name; settingsOnProjectChange(); }
+    } else if (projects.length === 1) {
+      projSel.value = projects[0].name; settingsOnProjectChange();
+    }
+
+  } catch(e) {
+    if (badge) badge.style.display = 'none';
+    if (result) { result.style.display='flex'; result.className='settings-test-result err'; result.textContent='Failed to load projects: '+e.message; }
+  }
+}
 
 function settingsOnProjectChange() {
   const project = document.getElementById('settingsAdoProjectSelect').value;
