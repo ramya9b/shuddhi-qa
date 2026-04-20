@@ -2356,88 +2356,84 @@
           <strong>🏗 What this does:</strong> Validates your PAT, loads your organisations, then lets you pick a project to push test cases into.
         </div>
 
-        <!-- PAT section — env var or manual entry -->
-        <div class="ado-fields">
-          <div class="ado-field" id="adoPatEnvRow" style="display:none">
-            <label style="display:flex;align-items:center;gap:8px">
-              Personal Access Token
-              <span style="padding:2px 8px;border-radius:6px;background:rgba(0,135,90,.1);border:1px solid rgba(0,135,90,.3);color:#00875a;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600">ADO_PAT ✓ Vercel env</span>
-            </label>
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,135,90,.05);border:1px solid rgba(0,135,90,.2);border-radius:8px">
-              <span style="font-size:15px">🔐</span>
-              <span style="font-size:12.5px;color:#005a28">PAT is secured via Vercel Environment Variable — not exposed to browser</span>
+        <!-- PAT status (env var or manual) -->
+        <div id="adoPatEnvRow" style="display:none;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                      background:rgba(0,135,90,.05);border:1px solid rgba(0,135,90,.2);border-radius:8px">
+            <span style="font-size:16px">🔐</span>
+            <div style="flex:1;font-size:12.5px;color:#005a28">
+              <strong>PAT is secured via Vercel Environment Variable</strong> — not exposed to browser
             </div>
+            <span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(0,135,90,.1);
+                         border:1px solid rgba(0,135,90,.3);color:#00875a;font-family:'JetBrains Mono',monospace;
+                         white-space:nowrap">ADO_PAT ✓ VERCEL ENV</span>
           </div>
-          <div class="ado-field" id="adoPatManualRow">
+        </div>
+
+        <div id="adoPatManualRow" style="margin-bottom:14px">
+          <div class="ado-field" style="margin:0">
             <label>Personal Access Token</label>
             <input type="password" id="adoPatInput" placeholder="Paste your ADO PAT here..." autocomplete="off"
-              style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:1px"/>
-            <span class="ado-hint">Required scopes: <strong>Test Management: Read &amp; Write</strong> · <strong>Work Items: Read &amp; Write</strong></span>
+              style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
+            <span class="ado-hint">Scopes needed: <strong>Test Management: Read &amp; Write</strong> · <strong>Work Items: Read &amp; Write</strong> · <strong>Project and Team: Read</strong></span>
           </div>
         </div>
 
-        <!-- Validate PAT button -->
-        <button class="ado-push-btn" id="adoValidatePatBtn" onclick="validateAndLoadOrgs()" style="margin-bottom:0">
-          <div class="spinner" id="adoValidateSpinner"></div>
-          <span id="adoValidateLabel">🔑 Validate PAT &amp; Load Organisations</span>
-        </button>
-
-        <!-- ── Org + Project selectors (shown after PAT validated) ── -->
-        <div id="adoOrgProjectRow" style="display:none">
-          <div style="height:1px;background:var(--border);margin:18px 0"></div>
-
-          <div class="ado-fields">
-            <!-- Organisation: text input + Load Projects button -->
-            <div class="ado-field">
-              <label>Organisation Name</label>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input type="text" id="adoOrgSelect" placeholder="e.g. AlphaVarianceSolutions"
-                  style="flex:1;background:var(--surface);border:1.5px solid var(--border2);
-                         border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none"
-                  onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
-                  oninput="document.getElementById('adoOrgHintText').textContent=this.value||'{org}'"
-                  onkeydown="if(event.key==='Enter')onOrgSelectChange()"/>
-                <button class="ado-btn-sm" onclick="onOrgSelectChange()" id="adoLoadProjBtn" style="white-space:nowrap;flex-shrink:0;
-                  padding:9px 14px;border-radius:8px;border:1.5px solid var(--d365);background:var(--d365-dim);
-                  color:var(--d365);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s">
-                  <span id="adoLoadProjLabel">Load Projects →</span>
-                </button>
-              </div>
-              <span class="ado-hint">https://dev.azure.com/<strong id="adoOrgHintText">{org}</strong></span>
+        <!-- Organisation input -->
+        <div class="ado-fields">
+          <div class="ado-field">
+            <label>Organisation Name</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="adoOrgSelect" placeholder="e.g. AlphaVarianceSolutions" autocomplete="off"
+                style="flex:1;background:var(--surface);border:1.5px solid var(--border2);
+                       border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;
+                       transition:border-color .15s"
+                onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+                oninput="document.getElementById('adoOrgHintText').textContent=this.value||'{org}'"
+                onkeydown="if(event.key==='Enter')onOrgSelectChange()"/>
+              <button onclick="onOrgSelectChange()" id="adoLoadProjBtn"
+                style="white-space:nowrap;flex-shrink:0;padding:9px 16px;border-radius:8px;
+                       border:1.5px solid var(--d365);background:var(--d365-dim);color:var(--d365);
+                       font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s">
+                <span id="adoLoadProjLabel">Load Projects →</span>
+              </button>
             </div>
-
-            <!-- Project dropdown (loaded after org entered) -->
-            <div class="ado-field" id="adoProjectFieldRow" style="display:none">
-              <label style="display:flex;align-items:center;gap:8px">
-                Project
-                <span id="adoProjectLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">Loading…</span>
-              </label>
-              <select id="adoProjectSelect" onchange="onProjectSelectChange()"
-                style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
-                       padding:9px 12px;color:var(--text);font-size:13.5px;width:100%;
-                       cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;
-                       background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22/%3E%3C/svg%3E');
-                       background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-                <option value="">— Select Project —</option>
-              </select>
-            </div>
+            <span class="ado-hint">https://dev.azure.com/<strong id="adoOrgHintText">{org}</strong></span>
           </div>
 
-          <!-- Load Test Plans button (shown after project selected) -->
-          <div id="adoLoadPlansRow" style="display:none;margin-top:12px">
-            <button class="ado-push-btn" id="adoLoadPlansBtn" onclick="loadADOTestPlans()">
-              <div class="spinner" id="adoLoadSpinner"></div>
-              <span id="adoLoadLabel">🔗 Load Test Plans</span>
-            </button>
+          <!-- Project dropdown -->
+          <div class="ado-field" id="adoProjectFieldRow" style="display:none">
+            <label style="display:flex;align-items:center;gap:8px">
+              Project
+              <span id="adoProjectLoadingBadge" style="display:none;font-size:10px;
+                    color:var(--text3);font-family:'JetBrains Mono',monospace">Loading…</span>
+            </label>
+            <select id="adoProjectSelect" onchange="onProjectSelectChange()"
+              style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                     padding:9px 12px;color:var(--text);font-size:13px;width:100%;cursor:pointer;
+                     outline:none;-webkit-appearance:none;appearance:none;
+                     background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22/%3E%3C/svg%3E');
+                     background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+              <option value="">— Select Project —</option>
+            </select>
           </div>
         </div>
 
-        <!-- Hidden inputs kept for JS compatibility -->
+        <!-- Load Test Plans button -->
+        <div id="adoLoadPlansRow" style="display:none;margin-top:14px">
+          <button class="ado-push-btn" id="adoLoadPlansBtn" onclick="loadADOTestPlans()">
+            <div class="spinner" id="adoLoadSpinner"></div>
+            <span id="adoLoadLabel">🔗 Load Test Plans</span>
+          </button>
+        </div>
+
+        <!-- Hidden inputs + error -->
         <input type="hidden" id="adoOrg"/>
         <input type="hidden" id="adoProject"/>
         <div id="adoPatStatus" style="display:none"></div>
-
-        <div id="adoConnectError" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(220,60,60,.08);border:1px solid rgba(220,60,60,.25);border-radius:7px;font-size:12.5px;color:var(--error)"></div>
+        <div id="adoConnectError" style="display:none;margin-top:12px;padding:10px 14px;
+             background:rgba(220,60,60,.08);border:1px solid rgba(220,60,60,.25);
+             border-radius:8px;font-size:12.5px;color:var(--error)"></div>
       </div>
 
       <!-- ── STEP 2: Configure ── -->
