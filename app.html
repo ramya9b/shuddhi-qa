@@ -19,6 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js">
 
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1938,25 +1939,59 @@
         </ol>
       </details>
 
-      <!-- Quick test with org/project -->
+      <!-- Quick Connection Test — dynamic org/project dropdowns -->
       <div class="settings-section" style="margin-top:24px">
         <div class="settings-section-title" style="font-size:13px">Quick Connection Test</div>
+        <div class="settings-section-desc" style="margin-top:4px">Validate your PAT then select your organisation and project.</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div>
-          <div class="settings-field-label">Organisation</div>
-          <input type="text" id="settingsAdoOrg" placeholder="e.g. AlphaVarianceSolutions" autocomplete="off"
-            style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s"
-            onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"/>
-        </div>
-        <div>
-          <div class="settings-field-label">Project</div>
-          <input type="text" id="settingsAdoProject" placeholder="e.g. ERP-QA-Project" autocomplete="off"
-            style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s"
-            onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"/>
-        </div>
+
+      <!-- Step A: Load orgs button -->
+      <div id="settingsAdoLoadOrgsRow">
+        <button class="settings-test-btn" style="width:100%;padding:10px" onclick="settingsLoadOrgs()">
+          <span id="settingsLoadOrgsLabel">🔑 Validate PAT &amp; Load Organisations</span>
+        </button>
       </div>
-      <button class="settings-test-btn" style="width:100%;padding:11px" onclick="testADOConnection()">🔷 Test ADO Connection</button>
+
+      <!-- Step B: Organisation dropdown (shown after PAT validated) -->
+      <div id="settingsAdoOrgRow" style="display:none">
+        <div class="settings-field-label" style="margin-top:14px">
+          Organisation
+          <span id="settingsOrgLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-left:6px">Loading…</span>
+        </div>
+        <select id="settingsAdoOrgSelect" onchange="settingsOnOrgChange()"
+          style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                 padding:9px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer;
+                 -webkit-appearance:none;appearance:none;
+                 background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234E5A6B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+                 background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+          <option value="">— Select Organisation —</option>
+        </select>
+        <!-- hidden input for compatibility -->
+        <input type="hidden" id="settingsAdoOrg"/>
+      </div>
+
+      <!-- Step C: Project dropdown (shown after org selected) -->
+      <div id="settingsAdoProjectRow" style="display:none">
+        <div class="settings-field-label" style="margin-top:14px">
+          Project
+          <span id="settingsProjectLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-left:6px">Loading…</span>
+        </div>
+        <select id="settingsAdoProjectSelect" onchange="settingsOnProjectChange()"
+          style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                 padding:9px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer;
+                 -webkit-appearance:none;appearance:none;
+                 background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234E5A6B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+                 background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+          <option value="">— Select Project —</option>
+        </select>
+        <!-- hidden input for compatibility -->
+        <input type="hidden" id="settingsAdoProject"/>
+      </div>
+
+      <!-- Step D: Test Connection button (shown after project selected) -->
+      <div id="settingsAdoTestRow" style="display:none;margin-top:14px">
+        <button class="settings-test-btn" style="width:100%;padding:11px" onclick="testADOConnection()">🔷 Test ADO Connection</button>
+      </div>
     </div>
 
     <!-- ── Panel: About ── -->
@@ -4994,6 +5029,14 @@ function openSettings() {
   setTimeout(() => modal.classList.add('open'), 10);
   // Load runtime status in About tab
   populateAboutStatus();
+  // Reset ADO connection test dropdowns
+  const lbl = document.getElementById('settingsLoadOrgsLabel');
+  if (lbl) lbl.textContent = '🔑 Validate PAT & Load Organisations';
+  ['settingsAdoOrgRow','settingsAdoProjectRow','settingsAdoTestRow'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const r = document.getElementById('adoTestResult');
+  if (r) r.style.display = 'none';
 }
 
 function closeSettings() {
@@ -5209,6 +5252,112 @@ function populateAboutStatus() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('settingsModal')?.classList.contains('open')) closeSettings();
 });
+
+
+
+// ── Settings modal: ADO org/project dropdown logic ────────────
+async function settingsLoadOrgs() {
+  const resultEl = document.getElementById('adoTestResult');
+  const btn      = document.getElementById('settingsLoadOrgsLabel');
+  if (resultEl) { resultEl.style.display = 'none'; }
+  if (btn) btn.textContent = '⏳ Validating PAT…';
+
+  try {
+    // Validate PAT via profile API
+    const profileUrl = 'https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1-preview.3';
+    const profile = await adoRequest('GET', profileUrl, null);
+    const memberId = profile.id;
+    if (!memberId) throw new Error('Invalid PAT or insufficient scope — ensure Test Management + Work Items scopes');
+
+    if (btn) btn.textContent = '⏳ Loading organisations…';
+
+    // Load organisations
+    const orgsUrl = `https://app.vssps.visualstudio.com/_apis/accounts?memberId=${memberId}&api-version=7.1-preview.1`;
+    const orgsData = await adoRequest('GET', orgsUrl, null);
+    const orgs = orgsData.value || [];
+
+    if (!orgs.length) throw new Error('No organisations found for this PAT');
+
+    // Populate org dropdown
+    const sel = document.getElementById('settingsAdoOrgSelect');
+    sel.innerHTML = '<option value="">— Select Organisation —</option>';
+    orgs.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.accountName; opt.textContent = o.accountName;
+      sel.appendChild(opt);
+    });
+
+    // Show org row
+    document.getElementById('settingsAdoOrgRow').style.display = 'block';
+    document.getElementById('settingsAdoProjectRow').style.display = 'none';
+    document.getElementById('settingsAdoTestRow').style.display   = 'none';
+    if (btn) btn.textContent = `✅ PAT valid — ${orgs.length} org(s) found`;
+
+    // Auto-select if only 1
+    if (orgs.length === 1) {
+      sel.value = orgs[0].accountName;
+      sel.dispatchEvent(new Event('change'));
+    }
+
+  } catch(e) {
+    if (btn) btn.textContent = '🔑 Validate PAT & Load Organisations';
+    const r = document.getElementById('adoTestResult');
+    if (r) {
+      r.style.display = 'flex'; r.className = 'settings-test-result err';
+      let msg = e.message;
+      if (msg.includes('401') || msg.includes('Unauthorized'))
+        msg = '❌ PAT invalid or expired — create a new token in Azure DevOps → User Settings → Personal Access Tokens';
+      else if (msg.includes('ADO_PAT'))
+        msg = '⚠️ ADO_PAT not set in Vercel — add it in Settings → Environment Variables then redeploy';
+      r.textContent = msg;
+    }
+  }
+}
+
+async function settingsOnOrgChange() {
+  const org = document.getElementById('settingsAdoOrgSelect').value;
+  document.getElementById('settingsAdoOrg').value = org;
+  document.getElementById('settingsAdoProjectRow').style.display = 'none';
+  document.getElementById('settingsAdoTestRow').style.display    = 'none';
+  if (!org) return;
+
+  const badge = document.getElementById('settingsProjectLoadingBadge');
+  if (badge) badge.style.display = 'inline';
+  document.getElementById('settingsAdoProjectRow').style.display = 'block';
+
+  try {
+    const url = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
+    const data = await adoRequest('GET', url, null);
+    const projects = data.value || [];
+
+    const sel = document.getElementById('settingsAdoProjectSelect');
+    sel.innerHTML = '<option value="">— Select Project —</option>';
+    projects.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name; opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+    if (badge) badge.style.display = 'none';
+
+    // Auto-select if only 1
+    if (projects.length === 1) {
+      sel.value = projects[0].name;
+      sel.dispatchEvent(new Event('change'));
+    }
+  } catch(e) {
+    if (badge) badge.style.display = 'none';
+    const r = document.getElementById('adoTestResult');
+    if (r) { r.style.display='flex'; r.className='settings-test-result err'; r.textContent='Failed to load projects: '+e.message; }
+  }
+}
+
+function settingsOnProjectChange() {
+  const project = document.getElementById('settingsAdoProjectSelect').value;
+  document.getElementById('settingsAdoProject').value = project;
+  const testRow = document.getElementById('settingsAdoTestRow');
+  if (testRow) testRow.style.display = project ? 'block' : 'none';
+}
+
 
 </script>
 </body>
