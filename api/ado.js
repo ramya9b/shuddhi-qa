@@ -13,11 +13,7 @@
  * PAT scopes required:
  *   - Test Management: Read & Write
  *   - Work Items: Read & Write
- *
- * Allowed domains:
- *   - dev.azure.com          — Test Plans, Projects, Work Items
- *   - app.vssps.visualstudio.com — User Profile, Organisations list
- *   - vsrm.visualstudio.com  — Release Management (optional)
+ *   - Project and Team: Read
  */
 
 export default async function handler(req, res) {
@@ -42,20 +38,16 @@ export default async function handler(req, res) {
   }
 
   const { url, method: rawMethod = 'GET', body } = req.body || {};
-  const method = rawMethod || 'GET'; // normalise empty string → GET
+  const method = rawMethod || 'GET';
 
-  // ── Security: only allow known Azure DevOps / VSTS domains ───
-  const ALLOWED_DOMAINS = [
-    'https://dev.azure.com/',                         // Projects, Test Plans, Work Items
-    'https://app.vssps.visualstudio.com/',            // User Profile, Organisations
-    'https://vsrm.visualstudio.com/',                 // Release Management
-    'https://vssps.visualstudio.com/',                // Legacy VSTS profile
+  // ── Security: only allow Azure DevOps URLs ────────────────────
+  const ALLOWED = [
+    'https://dev.azure.com/',
+    'https://vsrm.visualstudio.com/',
   ];
-
-  const isAllowed = ALLOWED_DOMAINS.some(domain => url && url.startsWith(domain));
-  if (!isAllowed) {
+  if (!url || !ALLOWED.some(d => url.startsWith(d))) {
     return res.status(403).json({
-      error: 'URL not permitted. Only Azure DevOps and Visual Studio services are allowed.'
+      error: 'URL not permitted. Only dev.azure.com URLs are allowed through this proxy.'
     });
   }
 
@@ -66,7 +58,7 @@ export default async function handler(req, res) {
     : 'application/json';
 
   try {
-    const adoResponse = await fetch(url, {
+    const adoRes = await fetch(url, {
       method,
       headers: {
         'Content-Type':  contentType,
@@ -75,8 +67,8 @@ export default async function handler(req, res) {
       body: body !== null && body !== undefined ? JSON.stringify(body) : undefined
     });
 
-    const responseData = await adoResponse.json().catch(() => ({}));
-    return res.status(adoResponse.ok ? 200 : adoResponse.status).json(responseData);
+    const data = await adoRes.json().catch(() => ({}));
+    return res.status(adoRes.ok ? 200 : adoRes.status).json(data);
 
   } catch (err) {
     return res.status(500).json({ error: `Proxy fetch failed: ${err.message}` });
