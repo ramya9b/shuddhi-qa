@@ -1723,32 +1723,45 @@
     </div>
   </nav>
 
-  <!-- Config Status Bar (compact, always visible) -->
+  <!-- Config Status Bar — shows only ⚙️ icon + key status dots -->
   <div class="api-bar" id="apiBar">
-    <!-- Claude key section -->
-    <div id="apiKeySection" style="display:flex;align-items:center;gap:10px;flex:1">
-      <label>API_KEY</label>
-      <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" style="min-height:40px"/>
-      <div class="status-dot" id="statusDot"></div>
+
+    <!-- Hidden inputs kept for JS compatibility — not shown to user -->
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off"
+           style="display:none" aria-hidden="true"/>
+    <div class="status-dot" id="statusDot" style="display:none"></div>
+
+    <!-- Key status indicator (compact) — shown after /api/status check -->
+    <div id="keyStatusRow" style="display:flex;align-items:center;gap:8px;flex:1">
+      <!-- Claude status dot -->
+      <div id="claudeKeyDot" title="Claude AI: not configured — click ⚙️ Settings"
+           style="width:8px;height:8px;border-radius:50%;background:#4E5A6B;flex-shrink:0;transition:background .3s"></div>
+      <span id="claudeKeyDotLabel" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Claude</span>
+
+      <div style="width:1px;height:14px;background:var(--border2);margin:0 4px"></div>
+
+      <!-- ADO status dot -->
+      <div id="adoKeyDot" title="Azure DevOps: not configured — click ⚙️ Settings"
+           style="width:8px;height:8px;border-radius:50%;background:#4E5A6B;flex-shrink:0;transition:background .3s"></div>
+      <span id="adoKeyDotLabel" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">ADO</span>
     </div>
-    <!-- Claude key secured badge -->
-    <div id="claudeKeySecuredBadge" style="display:none;align-items:center;gap:8px;flex:1">
-      <span style="font-size:15px">🔐</span>
-      <span style="font-size:12px;color:var(--text2)">Claude API key secured via <strong style="color:var(--text)">Vercel Environment Variable</strong></span>
+
+    <!-- Hidden elements kept for JS compatibility -->
+    <div id="claudeKeySecuredBadge" style="display:none" aria-hidden="true">
       <div class="conn-badge ok" id="claudeConnBadge">CLAUDE_API_KEY ✓</div>
     </div>
-    <!-- ADO key status (always visible once checked) -->
-    <div id="adoPATBadge" style="display:none;align-items:center;gap:6px;margin-left:12px;padding-left:12px;border-left:1px solid var(--border2)">
-      <span style="font-size:13px">🔷</span>
-      <div class="conn-badge ok" id="adoConnBadge">ADO_PAT ✓</div>
-    </div>
-    <!-- ADO PAT missing warning -->
-    <div id="adoPATMissingBadge" style="display:none;align-items:center;gap:6px;margin-left:12px;padding-left:12px;border-left:1px solid var(--border2)">
-      <span style="font-size:13px">⚠️</span>
-      <div class="conn-badge warn">ADO_PAT not set</div>
-    </div>
-    <!-- Settings shortcut -->
-    <button onclick="openSettings()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:4px 6px;border-radius:6px;transition:color .15s" title="Open Settings">⚙️</button>
+    <div id="adoPATBadge"         style="display:none" aria-hidden="true"></div>
+    <div id="adoPATMissingBadge"  style="display:none" aria-hidden="true"></div>
+
+    <!-- ⚙️ Settings button — always visible -->
+    <button id="settingsIconBtn" onclick="openSettings()"
+            title="Settings — API Keys & Connection"
+            style="margin-left:auto;background:none;border:1px solid var(--border2);cursor:pointer;
+                   color:var(--text2);font-size:15px;padding:6px 10px;border-radius:8px;
+                   transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap">
+      ⚙️ <span style="font-size:12px;font-weight:600">Settings</span>
+    </button>
+
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
@@ -3854,8 +3867,7 @@ renderHistory();
 
     if (claudeKey) {
       window.__claudeKeyConfigured = true;
-      document.getElementById('apiKeySection').style.display = 'none';
-      document.getElementById('claudeKeySecuredBadge').style.display = 'flex';
+      // apiKeySection is hidden by default now — just update flags
       document.getElementById('statusDot').style.display = 'none';
     } else {
       // Restore saved API key from localStorage
@@ -4802,6 +4814,11 @@ function applySettingsStatus(claudeKey, adoKey) {
     if (claudeManual)   { claudeManual.style.display  = 'none'; }
     if (claudeVercel)   { claudeVercel.style.display  = 'flex'; }
     if (claudeConn)     { claudeConn.style.display    = 'inline-flex'; }
+    // Update dot in api-bar
+    const cd = document.getElementById('claudeKeyDot');
+    const cl = document.getElementById('claudeKeyDotLabel');
+    if (cd) { cd.style.background = '#00875a'; cd.title = 'Claude AI: configured ✓'; }
+    if (cl) { cl.style.color = '#00875a'; }
   } else {
     claudeIcon.textContent  = '⚠️';
     claudeLabel.textContent = 'CLAUDE_API_KEY not set as environment variable';
