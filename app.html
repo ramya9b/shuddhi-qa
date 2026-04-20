@@ -1885,7 +1885,18 @@
             <div class="settings-status-label" id="adoStatusLabel">Checking configuration…</div>
             <div class="settings-status-sub"  id="adoStatusSub"></div>
           </div>
-          <button class="settings-test-btn" id="adoTestBtn" onclick="testADOConnection()" style="display:none">Test Connection</button>
+          <button class="settings-test-btn" id="adoTestBtn" onclick="adoQuickTestClick()" style="display:none">Test Connection</button>
+        </div>
+        <!-- Quick org input shown when Test Connection clicked without org filled -->
+        <div id="adoQuickOrgRow" style="display:none;margin-top:12px;display:none">
+          <div class="settings-field-label">Enter Organisation Name to test</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="adoQuickOrgInput" placeholder="e.g. AlphaVarianceSolutions"
+              style="flex:1;background:var(--bg2);border:1.5px solid var(--d365);border-radius:8px;
+                     padding:8px 12px;color:var(--text);font-size:13px;outline:none"
+              onkeydown="if(event.key==='Enter')runAdoQuickTest()"/>
+            <button class="settings-test-btn" onclick="runAdoQuickTest()" style="flex-shrink:0">Verify →</button>
+          </div>
         </div>
       </div>
 
@@ -5125,6 +5136,65 @@ async function testClaudeConnection() {
   }
 }
 
+// ── Test Connection button click from status card ────────────────
+function adoQuickTestClick() {
+  const org     = document.getElementById('settingsAdoOrg')?.value.trim() || '';
+  const project = document.getElementById('settingsAdoProject')?.value.trim() || '';
+  if (org && project) { testADOConnection(); return; }
+  if (org) { runAdoQuickTest(); return; }
+  // No org yet — show inline org input
+  const row = document.getElementById('adoQuickOrgRow');
+  if (row) { row.style.display = 'block'; document.getElementById('adoQuickOrgInput')?.focus(); }
+}
+
+// ── Quick test: just org name, validates PAT + lists projects ─────
+async function runAdoQuickTest() {
+  const resultEl = document.getElementById('adoTestResult');
+  const orgVal   = document.getElementById('adoQuickOrgInput')?.value.trim()
+                || document.getElementById('settingsAdoOrg')?.value.trim() || '';
+
+  if (!orgVal) {
+    if (resultEl) { resultEl.style.display='flex'; resultEl.className='settings-test-result warn'; resultEl.textContent='⚠️ Enter organisation name first.'; }
+    return;
+  }
+  if (resultEl) { resultEl.style.display='flex'; resultEl.className='settings-test-result'; resultEl.textContent=`⏳ Testing connection to "${orgVal}"…`; }
+
+  try {
+    const url = `https://dev.azure.com/${encodeURIComponent(orgVal)}/_apis/projects?api-version=7.1&$top=5`;
+    const res  = await fetch('/api/ado', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ method:'GET', url, body:null })
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 401) {
+      resultEl.className = 'settings-test-result err';
+      resultEl.textContent = '❌ PAT invalid or expired — go to Azure DevOps → User Settings → Personal Access Tokens and create a new one';
+    } else if (res.status === 404 || res.status === 400) {
+      resultEl.className = 'settings-test-result warn';
+      resultEl.textContent = `⚠️ Organisation "${orgVal}" not found — check spelling (case-sensitive)`;
+    } else if (!res.ok) {
+      resultEl.className = 'settings-test-result err';
+      resultEl.textContent = `❌ HTTP ${res.status} — ${data.message || data.error || 'Connection failed'}`;
+    } else {
+      const count = data.count ?? data.value?.length ?? 0;
+      resultEl.className = 'settings-test-result ok';
+      resultEl.textContent = `✅ Connected to "${orgVal}" — PAT is valid. ${count} project(s) found.`;
+      showToast('ADO PAT verified ✅', '🔷');
+      // Sync org + hide inline input
+      const row = document.getElementById('adoQuickOrgRow');
+      if (row) row.style.display = 'none';
+      if (document.getElementById('settingsAdoOrg')) document.getElementById('settingsAdoOrg').value = orgVal;
+      // Show Load Projects button area
+      const orgEl = document.getElementById('settingsAdoOrg');
+      if (orgEl) orgEl.value = orgVal;
+    }
+  } catch(e) {
+    resultEl.className = 'settings-test-result err';
+    resultEl.textContent = '❌ Network error: ' + e.message;
+  }
+}
+
 // ── Test ADO connection ───────────────────────────────────────────
 async function testADOConnection() {
   const resultEl = document.getElementById('adoTestResult');
@@ -5138,8 +5208,15 @@ async function testADOConnection() {
                 || document.getElementById('adoProject')?.value.trim() || '').trim();
 
   if (!org || !project) {
+    if (org && !project) {
+      // Have org but no project — run quick org test
+      runAdoQuickTest(); return;
+    }
+    // No org — scroll to org field and prompt
     resultEl.className   = 'settings-test-result warn';
-    resultEl.textContent = '⚠️ Enter Organisation and Project name to test ADO connection.';
+    resultEl.textContent = '⚠️ Enter your Organisation name in the Quick Connection Test section below.';
+    const orgEl = document.getElementById('settingsAdoOrg');
+    if (orgEl) { orgEl.scrollIntoView({behavior:'smooth',block:'center'}); orgEl.focus(); orgEl.style.borderColor='var(--d365)'; setTimeout(()=>{orgEl.style.borderColor='var(--border2)';},2500); }
     return;
   }
 
