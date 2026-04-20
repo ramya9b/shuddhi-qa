@@ -1668,6 +1668,27 @@
     .meta-item { font-size: 11px; }
   }
 
+
+  /* ADO step-1 select dropdowns */
+  #adoOrgSelect, #adoProjectSelect {
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234E5A6B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px !important;
+    transition: border-color .15s;
+  }
+  #adoOrgSelect:focus, #adoProjectSelect:focus {
+    outline: none;
+    border-color: var(--d365) !important;
+    box-shadow: 0 0 0 3px var(--d365-dim);
+  }
+  #adoOrgSelect option, #adoProjectSelect option {
+    background: var(--surface);
+    color: var(--text);
+  }
+
 </style>
 </head>
 <body>
@@ -2274,37 +2295,84 @@
       <!-- ── STEP 1: Connect ── -->
       <div class="ado-step-panel visible" id="adoPanel1">
         <div class="ado-tip">
-          <strong>🏗 What this does:</strong> Connects to your ADO organisation, loads your existing Test Plans, then creates a structured <strong>Test Suite → Test Cases</strong> hierarchy — not just loose work items.
+          <strong>🏗 What this does:</strong> Validates your PAT, loads your organisations, then lets you pick a project to push test cases into.
         </div>
+
+        <!-- PAT section — env var or manual entry -->
         <div class="ado-fields">
-          <div class="ado-field">
-            <label>Organisation Name</label>
-            <input type="text" id="adoOrg" placeholder="e.g. mycompany" />
-            <span class="ado-hint">https://dev.azure.com/<strong>{org}</strong></span>
+          <div class="ado-field" id="adoPatEnvRow" style="display:none">
+            <label style="display:flex;align-items:center;gap:8px">
+              Personal Access Token
+              <span style="padding:2px 8px;border-radius:6px;background:rgba(0,135,90,.1);border:1px solid rgba(0,135,90,.3);color:#00875a;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600">ADO_PAT ✓ Vercel env</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,135,90,.05);border:1px solid rgba(0,135,90,.2);border-radius:8px">
+              <span style="font-size:15px">🔐</span>
+              <span style="font-size:12.5px;color:#005a28">PAT is secured via Vercel Environment Variable — not exposed to browser</span>
+            </div>
           </div>
-          <div class="ado-field">
-            <label>Project Name</label>
-            <input type="text" id="adoProject" placeholder="e.g. ERP-QA-Project" />
-          </div>
-        </div>
-        <!-- PAT status indicator — configured via Vercel env, not entered here -->
-        <div id="adoPatStatus" style="
-          display:flex;align-items:center;gap:10px;padding:10px 14px;
-          background:rgba(0,135,90,.07);border:1px solid rgba(0,135,90,.2);
-          border-radius:8px;font-size:12.5px;color:#005a28;margin-bottom:16px">
-          <span style="font-size:16px">🔐</span>
-          <div>
-            <strong>PAT secured via Vercel Environment Variable</strong><br>
-            <span style="font-size:11px;color:#3a7a50">
-              Set <code style="background:rgba(0,100,50,.1);padding:1px 5px;border-radius:3px">ADO_PAT</code>
-              in Vercel → Project Settings → Environment Variables
-            </span>
+          <div class="ado-field" id="adoPatManualRow">
+            <label>Personal Access Token</label>
+            <input type="password" id="adoPatInput" placeholder="Paste your ADO PAT here..." autocomplete="off"
+              style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:1px"/>
+            <span class="ado-hint">Required scopes: <strong>Test Management: Read &amp; Write</strong> · <strong>Work Items: Read &amp; Write</strong></span>
           </div>
         </div>
-        <button class="ado-push-btn" id="adoLoadPlansBtn" onclick="loadADOTestPlans()">
-          <div class="spinner" id="adoLoadSpinner"></div>
-          <span id="adoLoadLabel">🔗 Verify Connection &amp; Load Test Plans</span>
+
+        <!-- Validate PAT button -->
+        <button class="ado-push-btn" id="adoValidatePatBtn" onclick="validateAndLoadOrgs()" style="margin-bottom:0">
+          <div class="spinner" id="adoValidateSpinner"></div>
+          <span id="adoValidateLabel">🔑 Validate PAT &amp; Load Organisations</span>
         </button>
+
+        <!-- ── Org + Project selectors (shown after PAT validated) ── -->
+        <div id="adoOrgProjectRow" style="display:none">
+          <div style="height:1px;background:var(--border);margin:18px 0"></div>
+
+          <div class="ado-fields">
+            <!-- Organisation dropdown -->
+            <div class="ado-field">
+              <label style="display:flex;align-items:center;gap:8px">
+                Organisation
+                <span id="adoOrgLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">Loading…</span>
+              </label>
+              <select id="adoOrgSelect" onchange="onOrgSelectChange()"
+                style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                       padding:9px 12px;color:var(--text);font-size:13.5px;width:100%;
+                       cursor:pointer;outline:none">
+                <option value="">— Select Organisation —</option>
+              </select>
+              <span class="ado-hint">https://dev.azure.com/<strong id="adoOrgHintText">{org}</strong></span>
+            </div>
+
+            <!-- Project dropdown (loaded after org selected) -->
+            <div class="ado-field" id="adoProjectFieldRow" style="display:none">
+              <label style="display:flex;align-items:center;gap:8px">
+                Project
+                <span id="adoProjectLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">Loading…</span>
+              </label>
+              <select id="adoProjectSelect" onchange="onProjectSelectChange()"
+                style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                       padding:9px 12px;color:var(--text);font-size:13.5px;width:100%;
+                       cursor:pointer;outline:none">
+                <option value="">— Select Project —</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Load Test Plans button (shown after project selected) -->
+          <div id="adoLoadPlansRow" style="display:none;margin-top:12px">
+            <button class="ado-push-btn" id="adoLoadPlansBtn" onclick="loadADOTestPlans()">
+              <div class="spinner" id="adoLoadSpinner"></div>
+              <span id="adoLoadLabel">🔗 Load Test Plans</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden inputs kept for JS compatibility -->
+        <input type="hidden" id="adoOrg"/>
+        <input type="hidden" id="adoProject"/>
+        <div id="adoPatStatus" style="display:none"></div>
+
         <div id="adoConnectError" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(220,60,60,.08);border:1px solid rgba(220,60,60,.25);border-radius:7px;font-size:12.5px;color:var(--error)"></div>
       </div>
 
@@ -4244,6 +4312,7 @@ function adoGoToStep(n) {
 function openADOModal() {
   adoPushCancelled = false;
   adoGoToStep(1);
+  initADOModal(); // detect env PAT, reset dropdowns
   document.getElementById('adoResults').innerHTML = '';
   document.getElementById('adoProgressBar').style.width = '0%';
   document.getElementById('adoProgressText').textContent = 'Preparing...';
@@ -4325,7 +4394,167 @@ async function adoRequest(method, url, _pat, body = null) {
   return res.json();
 }
 
-// ── Step 1: Load existing test plans ─────────────────────────
+// ══════════════════════════════════════════════════════════════
+// ADO STEP 1: PAT Validate → Load Orgs → Load Projects → Plans
+// ══════════════════════════════════════════════════════════════
+
+// On modal open — check if ADO_PAT is configured via Vercel env
+async function initADOModal() {
+  const errEl = document.getElementById('adoConnectError');
+  errEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      const { adoKey } = await res.json();
+      if (adoKey) {
+        // Env var set — hide manual PAT input, show env badge
+        document.getElementById('adoPatManualRow').style.display = 'none';
+        document.getElementById('adoPatEnvRow').style.display    = 'flex';
+        document.getElementById('adoValidateLabel').textContent  = '🔑 Load Organisations';
+      }
+    }
+  } catch(e) { /* offline — show manual input */ }
+}
+
+// Step 1a: Validate PAT + load organisations
+async function validateAndLoadOrgs() {
+  const errEl = document.getElementById('adoConnectError');
+  const btn   = document.getElementById('adoValidatePatBtn');
+  const lbl   = document.getElementById('adoValidateLabel');
+  const spin  = document.getElementById('adoValidateSpinner');
+  errEl.style.display = 'none';
+
+  // Get PAT — env var (proxy handles it) or manual input
+  const manualPAT = document.getElementById('adoPatInput')?.value.trim();
+  window.__manualAdoPAT = manualPAT || null;
+
+  btn.disabled = true; spin.style.display = 'block';
+  lbl.textContent = 'Validating PAT…';
+
+  try {
+    // Validate: fetch user profile via VSS
+    const profileUrl = 'https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1-preview.3';
+    const profile = await adoRequest('GET', profileUrl, null);
+    const memberId = profile.id;
+    if (!memberId) throw new Error('Could not read user profile — check PAT scopes');
+
+    lbl.textContent = 'Loading organisations…';
+
+    // Fetch organisations this user belongs to
+    const orgsUrl = `https://app.vssps.visualstudio.com/_apis/accounts?memberId=${memberId}&api-version=7.1-preview.1`;
+    const orgsData = await adoRequest('GET', orgsUrl, null);
+    const orgs = orgsData.value || [];
+
+    if (!orgs.length) throw new Error('No organisations found for this PAT');
+
+    // Populate org dropdown
+    const orgSel = document.getElementById('adoOrgSelect');
+    orgSel.innerHTML = '<option value="">— Select Organisation —</option>';
+    orgs.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.accountName;
+      opt.textContent = o.accountName;
+      orgSel.appendChild(opt);
+    });
+
+    // Show org/project row
+    document.getElementById('adoOrgProjectRow').style.display = 'block';
+    showToast(`PAT valid — ${orgs.length} organisation(s) found`, '✅');
+
+    // If only 1 org, auto-select it
+    if (orgs.length === 1) {
+      orgSel.value = orgs[0].accountName;
+      orgSel.dispatchEvent(new Event('change'));
+    }
+
+  } catch(e) {
+    let msg = e.message;
+    if (msg.includes('401') || msg.includes('Unauthorized'))
+      msg = '❌ Invalid or expired PAT — create a new one in Azure DevOps → User Settings → Personal Access Tokens';
+    else if (msg.includes('ADO_PAT'))
+      msg = '⚠️ ADO_PAT not set in Vercel — enter your PAT manually above or add it as an environment variable';
+    errEl.textContent = msg;
+    errEl.style.display = '';
+  } finally {
+    btn.disabled = false; spin.style.display = 'none';
+    lbl.textContent = '🔑 Load Organisations';
+  }
+}
+
+// Step 1b: Org selected → load projects
+async function onOrgSelectChange() {
+  const orgSel  = document.getElementById('adoOrgSelect');
+  const org     = orgSel.value;
+  const hintEl  = document.getElementById('adoOrgHintText');
+  const projRow = document.getElementById('adoProjectFieldRow');
+  const loadRow = document.getElementById('adoLoadPlansRow');
+  const errEl   = document.getElementById('adoConnectError');
+  const badge   = document.getElementById('adoProjectLoadingBadge');
+
+  // Update hidden input + hint
+  document.getElementById('adoOrg').value = org;
+  if (hintEl) hintEl.textContent = org || '{org}';
+  projRow.style.display = 'none';
+  loadRow.style.display = 'none';
+  errEl.style.display   = 'none';
+
+  if (!org) return;
+
+  badge.style.display = 'inline';
+  projRow.style.display = 'block';
+
+  try {
+    const url = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
+    const data = await adoRequest('GET', url, null);
+    const projects = data.value || [];
+
+    const projSel = document.getElementById('adoProjectSelect');
+    projSel.innerHTML = '<option value="">— Select Project —</option>';
+    projects.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p => {
+      const opt = document.createElement('option');
+      opt.value       = p.name;
+      opt.textContent = p.name;
+      projSel.appendChild(opt);
+    });
+
+    badge.style.display = 'none';
+    showToast(`${projects.length} project(s) found in ${org}`, '🔷');
+
+    // Auto-select if only 1 project
+    if (projects.length === 1) {
+      projSel.value = projects[0].name;
+      projSel.dispatchEvent(new Event('change'));
+    }
+
+  } catch(e) {
+    badge.style.display = 'none';
+    errEl.textContent   = `Failed to load projects: ${e.message}`;
+    errEl.style.display = '';
+  }
+}
+
+// Step 1c: Project selected → show Load Test Plans button
+function onProjectSelectChange() {
+  const projSel = document.getElementById('adoProjectSelect');
+  const project = projSel.value;
+  const loadRow = document.getElementById('adoLoadPlansRow');
+
+  // Update hidden input
+  document.getElementById('adoProject').value = project;
+
+  // Auto-fill suite name with project
+  const suiteEl = document.getElementById('adoSuiteName');
+  if (suiteEl && project) {
+    const platform = document.getElementById('platform').value || 'QA';
+    const module   = document.getElementById('module').value   || '';
+    const date     = new Date().toISOString().slice(0,10);
+    suiteEl.value  = `${platform}${module?' — '+module:''} — ${date}`;
+  }
+
+  loadRow.style.display = project ? 'block' : 'none';
+}
+
+// ── Step 2: Load existing test plans for selected org/project ─
 async function loadADOTestPlans() {
   const org     = document.getElementById('adoOrg').value.trim();
   const project = document.getElementById('adoProject').value.trim();
@@ -4335,10 +4564,10 @@ async function loadADOTestPlans() {
   const spin    = document.getElementById('adoLoadSpinner');
 
   errEl.style.display = 'none';
-  if (!org)     { errEl.textContent = 'Enter your organisation name.'; errEl.style.display=''; return; }
-  if (!project) { errEl.textContent = 'Enter your project name.'; errEl.style.display=''; return; }
+  if (!org)     { errEl.textContent = 'Select an organisation.'; errEl.style.display=''; return; }
+  if (!project) { errEl.textContent = 'Select a project.';       errEl.style.display=''; return; }
 
-  btn.disabled = true; spin.style.display = 'block'; lbl.textContent = 'Connecting...';
+  btn.disabled = true; spin.style.display = 'block'; lbl.textContent = 'Loading plans…';
 
   try {
     const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/testplan/plans?api-version=7.1-preview.1`;
@@ -4358,17 +4587,14 @@ async function loadADOTestPlans() {
     sel.appendChild(newOpt);
 
     updateADOTreePreview();
-    showToast(`Found ${adoLoadedPlans.length} test plan(s)`, '✅');
+    showToast(`${adoLoadedPlans.length} test plan(s) in ${project}`, '✅');
     adoGoToStep(2);
 
   } catch(e) {
-    const isPatErr = e.message.includes('ADO_PAT');
-    errEl.textContent = isPatErr
-      ? '⚠️ ADO_PAT not set in Vercel. Add it under Project Settings → Environment Variables, then redeploy.'
-      : `Connection failed: ${e.message} — Check organisation and project name.`;
+    errEl.textContent = `Failed to load test plans: ${e.message}`;
     errEl.style.display = '';
   } finally {
-    btn.disabled = false; spin.style.display = 'none'; lbl.textContent = '🔗 Verify Connection & Load Test Plans';
+    btn.disabled = false; spin.style.display = 'none'; lbl.textContent = '🔗 Load Test Plans';
   }
 }
 
