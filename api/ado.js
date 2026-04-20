@@ -13,14 +13,19 @@
  * PAT scopes required:
  *   - Test Management: Read & Write
  *   - Work Items: Read & Write
+ *
+ * Allowed domains:
+ *   - dev.azure.com          — Test Plans, Projects, Work Items
+ *   - app.vssps.visualstudio.com — User Profile, Organisations list
+ *   - vsrm.visualstudio.com  — Release Management (optional)
  */
 
 export default async function handler(req, res) {
-  // ── CORS (same-origin when deployed, allow localhost for dev) ──
-  const origin = req.headers.origin || '';
+  // ── CORS ──────────────────────────────────────────────────────
+  const origin  = req.headers.origin || '';
   const allowed = origin.includes('localhost') || origin.includes('vercel.app') || origin === '';
   if (allowed) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Origin',  origin || '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
@@ -28,7 +33,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── Read PAT from Vercel environment ──────────────────────────
+  // ── Read PAT from Vercel environment ─────────────────────────
   const pat = process.env.ADO_PAT;
   if (!pat) {
     return res.status(500).json({
@@ -37,15 +42,24 @@ export default async function handler(req, res) {
   }
 
   const { url, method: rawMethod = 'GET', body } = req.body || {};
-  const method = rawMethod || 'GET'; // normalise empty string to GET
+  const method = rawMethod || 'GET'; // normalise empty string → GET
 
-  // ── Security: only allow Azure DevOps URLs ────────────────────
-  if (!url || !url.startsWith('https://dev.azure.com/')) {
-    return res.status(403).json({ error: 'Only Azure DevOps URLs are permitted through this proxy.' });
+  // ── Security: only allow known Azure DevOps / VSTS domains ───
+  const ALLOWED_DOMAINS = [
+    'https://dev.azure.com/',                         // Projects, Test Plans, Work Items
+    'https://app.vssps.visualstudio.com/',            // User Profile, Organisations
+    'https://vsrm.visualstudio.com/',                 // Release Management
+    'https://vssps.visualstudio.com/',                // Legacy VSTS profile
+  ];
+
+  const isAllowed = ALLOWED_DOMAINS.some(domain => url && url.startsWith(domain));
+  if (!isAllowed) {
+    return res.status(403).json({
+      error: 'URL not permitted. Only Azure DevOps and Visual Studio services are allowed.'
+    });
   }
 
-  // ── Determine correct Content-Type ───────────────────────────
-  // ADO Work Item creation uses JSON Patch format, everything else is plain JSON
+  // ── Content-Type: JSON Patch for Work Item creation ──────────
   const isWorkItemCreate = method === 'POST' && url.includes('/wit/workitems');
   const contentType = isWorkItemCreate
     ? 'application/json-patch+json'
@@ -55,15 +69,13 @@ export default async function handler(req, res) {
     const adoResponse = await fetch(url, {
       method,
       headers: {
-        'Content-Type': contentType,
+        'Content-Type':  contentType,
         'Authorization': `Basic ${Buffer.from(':' + pat).toString('base64')}`
       },
       body: body !== null && body !== undefined ? JSON.stringify(body) : undefined
     });
 
     const responseData = await adoResponse.json().catch(() => ({}));
-
-    // Preserve the ADO status code so the frontend can detect errors
     return res.status(adoResponse.ok ? 200 : adoResponse.status).json(responseData);
 
   } catch (err) {
