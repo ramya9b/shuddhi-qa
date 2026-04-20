@@ -1690,6 +1690,16 @@
     color: var(--text);
   }
 
+
+  #adoAssignedToSelect {
+    transition: border-color .15s;
+  }
+  #adoAssignedToSelect:focus {
+    outline: none;
+    border-color: var(--d365) !important;
+    box-shadow: 0 0 0 3px var(--d365-dim);
+  }
+
 </style>
 </head>
 <body>
@@ -2481,6 +2491,24 @@
             <div class="child-node">└ 📂 Field Validation</div>
             <div class="child-node">└ 📂 Integration Tests</div>
             <div class="child-node">└ 📂 Negative Test Cases</div>
+          </div>
+
+          <!-- Default Assigned To -->
+          <div class="ado-field">
+            <label style="display:flex;align-items:center;gap:8px">
+              Default Assigned To
+              <span id="adoUsersLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">Loading users…</span>
+              <span id="adoUsersCount" style="display:none;font-size:10px;background:rgba(0,120,212,.1);border:1px solid rgba(0,120,212,.25);color:var(--d365);padding:1px 7px;border-radius:6px;font-family:'JetBrains Mono',monospace"></span>
+            </label>
+            <select id="adoAssignedToSelect"
+              style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                     padding:9px 12px;color:var(--text);font-size:13px;width:100%;cursor:pointer;outline:none;
+                     -webkit-appearance:none;appearance:none;
+                     background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E');
+                     background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+              <option value="">— Use AI-generated roles (default) —</option>
+            </select>
+            <span class="ado-hint">Overrides the "Assigned To" column for all pushed test cases. Leave blank to use AI-generated role names.</span>
           </div>
 
           <!-- Area / Iteration -->
@@ -4507,6 +4535,8 @@ async function initADOModal() {
         }
         if (adoOrg && adoProject) {
           document.getElementById('adoLoadPlansRow').style.display = 'block';
+          // Auto-load users in background
+          loadADOUsers(adoOrg, adoProject);
         }
       }
     }
@@ -4643,16 +4673,14 @@ async function onOrgSelectChange() {
   }
 }
 
-// Step 1c: Project selected → show Load Test Plans button
+// Step 1c: Project selected → show Load Test Plans + load users
 function onProjectSelectChange() {
   const projSel = document.getElementById('adoProjectSelect');
   const project = projSel.value;
   const loadRow = document.getElementById('adoLoadPlansRow');
 
-  // Update hidden input
   document.getElementById('adoProject').value = project;
 
-  // Auto-fill suite name with project
   const suiteEl = document.getElementById('adoSuiteName');
   if (suiteEl && project) {
     const platform = document.getElementById('platform').value || 'QA';
@@ -4662,6 +4690,12 @@ function onProjectSelectChange() {
   }
 
   loadRow.style.display = project ? 'block' : 'none';
+
+  // Load ADO users in background when project selected
+  if (project) {
+    const org = document.getElementById('adoOrg').value.trim();
+    if (org) loadADOUsers(org, project);
+  }
 }
 
 // ── Step 2: Load existing test plans for selected org/project ─
@@ -5003,7 +5037,9 @@ async function createADOTestCase(org, project, _pat, tc, areaPath, iterPath) {
   const module   = document.getElementById('module').value   || '';
   const ops = [
     { op:'add', path:'/fields/System.Title',                       value: tc.title },
-    { op:'add', path:'/fields/System.AssignedTo',                  value: tc.assignedTo },
+    { op:'add', path:'/fields/System.AssignedTo',
+      // Use override user from dropdown if selected, else use AI-generated role
+      value: (document.getElementById('adoAssignedToSelect')?.value || tc.assignedTo) },
     { op:'add', path:'/fields/System.State',                       value: 'Design' },
     { op:'add', path:'/fields/Microsoft.VSTS.Common.Priority',     value: tc.priority },
     { op:'add', path:'/fields/Microsoft.VSTS.TCM.Steps',           value: buildStepsXML(tc.steps) },
@@ -5331,6 +5367,63 @@ async function autoLoadProjectsFromEnv(org, presetProject) {
     if (testRow && (presetProject || projects.length === 1)) testRow.style.display = 'block';
 
   } catch(e) { /* silent — org will still be shown, user can load manually */ }
+}
+
+
+// ── Load ADO team members for Assigned To dropdown ───────────────
+// Uses /teams + /teams/{id}/members — works with Project and Team: Read scope
+async function loadADOUsers(org, project) {
+  const badge   = document.getElementById('adoUsersLoadingBadge');
+  const countEl = document.getElementById('adoUsersCount');
+  const sel     = document.getElementById('adoAssignedToSelect');
+  if (!sel) return;
+
+  if (badge) badge.style.display = 'inline';
+  window.__adoUsersList = [];
+
+  try {
+    // Step 1: Get all teams in the project
+    const teamsUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/teams?api-version=7.1&$top=100`;
+    const teamsData = await adoRequest('GET', teamsUrl, null);
+    const teams = teamsData.value || [];
+
+    // Step 2: Get members from all teams (deduplicated)
+    const usersMap = {};
+    await Promise.all(teams.map(async team => {
+      try {
+        const membersUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/teams/${encodeURIComponent(team.id)}/members?api-version=7.1`;
+        const membersData = await adoRequest('GET', membersUrl, null);
+        (membersData.value || []).forEach(m => {
+          const identity = m.identity || m;
+          const email    = identity.uniqueName || identity.mailAddress || '';
+          const name     = identity.displayName || identity.providerDisplayName || email;
+          if (email && !usersMap[email]) {
+            usersMap[email] = { email, name };
+          }
+        });
+      } catch(e) { /* some teams may be inaccessible */ }
+    }));
+
+    const users = Object.values(usersMap).sort((a,b) => a.name.localeCompare(b.name));
+    window.__adoUsersList = users;
+
+    // Populate dropdown
+    sel.innerHTML = '<option value="">— Use AI-generated roles (default) —</option>';
+    users.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value       = u.email;
+      opt.textContent = `${u.name} (${u.email})`;
+      sel.appendChild(opt);
+    });
+
+    if (badge)   badge.style.display = 'none';
+    if (countEl) { countEl.textContent = `${users.length} users`; countEl.style.display = 'inline'; }
+
+  } catch(e) {
+    if (badge) badge.style.display = 'none';
+    // Silent fail — Assigned To will use AI-generated roles
+    sel.innerHTML = '<option value="">— Use AI-generated roles (default) —</option>';
+  }
 }
 
 // ── Test Connection button click from status card ────────────────
