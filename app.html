@@ -4250,6 +4250,94 @@ header::after { display: none !important; }
     font-size: 12px !important;
   }
 
+
+  /* ── FORCE horizontal layout for sidebar platform items ─────── */
+  .sb-platform-section .platform-card,
+  .sb-platform-section .platform-list-item {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding: 7px 10px 7px 6px !important;
+    gap: 10px !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    cursor: pointer !important;
+    transition: all .13s !important;
+    width: 100% !important;
+    display: flex !important;
+    margin-bottom: 1px !important;
+  }
+  .sb-platform-section .platform-card:hover,
+  .sb-platform-section .platform-list-item:hover {
+    background: var(--surface2) !important;
+  }
+  .sb-platform-section .platform-card.selected,
+  .sb-platform-section .platform-list-item.selected {
+    background: rgba(91,95,239,.07) !important;
+  }
+
+  /* Badge — fixed size, left-aligned */
+  .sb-platform-section .pc-badge {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    color: #fff !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.18) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+
+  /* Name — inline, next to badge */
+  .sb-platform-section .pc-name {
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    flex: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+    line-height: 1.2 !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .sb-platform-section .platform-card.selected .pc-name,
+  .sb-platform-section .platform-list-item.selected .pc-name {
+    color: var(--indigo, #5B5FEF) !important;
+    font-weight: 700 !important;
+  }
+
+  /* Hide sub-label, pc-text wrapper, pc-icon — not needed */
+  .sb-platform-section .pc-sub,
+  .sb-platform-section .pc-text,
+  .sb-platform-section .pc-icon { display: none !important; }
+
+  /* Check mark */
+  .sb-platform-section .pc-check {
+    font-size: 10px !important;
+    color: var(--indigo, #5B5FEF) !important;
+    opacity: 0 !important;
+    flex-shrink: 0 !important;
+    font-weight: 800 !important;
+    margin-left: auto !important;
+    transition: opacity .13s !important;
+  }
+  .sb-platform-section .platform-card.selected .pc-check,
+  .sb-platform-section .platform-list-item.selected .pc-check { opacity: 1 !important; }
+
+  /* Group items indentation */
+  .pc-group-items {
+    padding: 2px 0 4px 8px !important;
+    gap: 0 !important;
+  }
+
 </style>
 </head>
 <body>
