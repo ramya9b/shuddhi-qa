@@ -2517,6 +2517,50 @@ header::after { display: none !important; }
   }
   .sticky-gen-bar.visible { display: block; }
 
+
+  /* Hide Assigned To (col 4) and State (col 5) in rendered view */
+  /* rawMarkdown is preserved — all exports still include them */
+  .output-content table.tc-table th:nth-child(4),
+  .output-content table.tc-table td:nth-child(4),
+  .output-content table.tc-table th:nth-child(5),
+  .output-content table.tc-table td:nth-child(5) {
+    display: none !important;
+  }
+  /* Widen Title + Step Action + Expected Result to fill the space */
+  .output-content table.tc-table th:nth-child(1),
+  .output-content table.tc-table td:nth-child(1) { width: 20% !important; }
+  .output-content table.tc-table th:nth-child(2),
+  .output-content table.tc-table td:nth-child(2) { width: 38% !important; }
+  .output-content table.tc-table th:nth-child(3),
+  .output-content table.tc-table td:nth-child(3) { width: 42% !important; }
+
+  /* ── Cell truncation — max 4 lines with expand ───────────────── */
+  .output-content table.tc-table td:nth-child(2) .cell-text,
+  .output-content table.tc-table td:nth-child(3) .cell-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.55;
+    max-height: calc(1.55em * 4);
+    transition: max-height .2s ease;
+  }
+  .output-content table.tc-table td:nth-child(2) .cell-text.expanded,
+  .output-content table.tc-table td:nth-child(3) .cell-text.expanded {
+    -webkit-line-clamp: unset;
+    max-height: 1000px;
+    overflow: visible;
+  }
+  .cell-expand-btn {
+    display: inline-block; margin-top: 4px;
+    font-size: 10.5px; color: var(--indigo, #6366F1);
+    cursor: pointer; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    background: none; border: none; padding: 0;
+    transition: opacity .15s;
+  }
+  .cell-expand-btn:hover { opacity: .7; }
+
 </style>
 </head>
 <body>
@@ -3279,20 +3323,45 @@ header::after { display: none !important; }
             <span>Generated Test Artifact</span>
           </div>
         </div>
-        <div class="export-row">
+        <div class="export-row" style="position:relative;flex-wrap:nowrap;gap:6px">
+          <!-- Primary exports — always visible -->
           <button class="exp-btn" id="copyBtn" onclick="copyMarkdown()" disabled>📋 Markdown</button>
-          <button class="exp-btn" id="copyXlsBtn" onclick="copyForExcel()" disabled>📋 Copy→Excel</button>
           <button class="exp-btn edit-toggle-btn" id="editBtn" onclick="toggleEditMode()" disabled>✏️ Edit</button>
-          <button class="exp-btn jira-btn" id="jiraBtn" onclick="downloadJiraCSV()" disabled>🟦 Jira</button>
-          <button class="exp-btn" id="testRailBtn" onclick="downloadTestRailCSV()" disabled>🧪 TestRail</button>
-          <button class="exp-btn" id="gherkinBtn" onclick="downloadGherkin()" disabled>🥒 Gherkin</button>
-          <button class="exp-btn" id="playwrightBtn" onclick="downloadPlaywright()" disabled>🎭 Playwright</button>
-          <button class="exp-btn" id="postmanBtn" onclick="downloadPostman()" disabled>📮 Postman</button>
           <button class="exp-btn" id="pdfBtn" onclick="exportPDF()" disabled>📑 PDF</button>
           <button class="exp-btn" id="xlsBtn" onclick="exportExcel()" disabled>📊 Excel</button>
-          <button class="exp-btn" id="coverageBtn" onclick="downloadCoverageMatrix()" disabled>🗺️ Coverage</button>
-          <button class="exp-btn" id="exportAllBtn" onclick="exportAllFormats()" disabled title="Download ZIP with all formats">📦 Export All</button>
           <button class="exp-btn ado-btn" id="adoBtn" onclick="openADOModal()" disabled>🔷 ADO</button>
+
+          <!-- More dropdown -->
+          <div style="position:relative" id="moreExportWrap">
+            <button class="exp-btn" id="moreExportBtn" onclick="toggleMoreExports()" disabled
+              style="white-space:nowrap;font-weight:600">
+              More ▾
+            </button>
+            <div id="moreExportDropdown" style="
+              display:none; position:absolute; top:calc(100% + 6px); right:0;
+              background:var(--surface); border:1.5px solid var(--border2);
+              border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,.12);
+              z-index:200; min-width:170px; padding:6px; overflow:hidden;
+            ">
+              <button class="exp-btn" id="copyXlsBtn" onclick="copyForExcel();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;margin-bottom:3px">📋 Copy→Excel</button>
+              <button class="exp-btn jira-btn" id="jiraBtn" onclick="downloadJiraCSV();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;margin-bottom:3px">🟦 Jira Zephyr</button>
+              <button class="exp-btn" id="testRailBtn" onclick="downloadTestRailCSV();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;margin-bottom:3px">🧪 TestRail</button>
+              <button class="exp-btn" id="gherkinBtn" onclick="downloadGherkin();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;margin-bottom:3px">🥒 Gherkin</button>
+              <button class="exp-btn" id="playwrightBtn" onclick="downloadPlaywright();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;margin-bottom:3px">🎭 Playwright</button>
+              <button class="exp-btn" id="postmanBtn" onclick="downloadPostman();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;margin-bottom:3px">📮 Postman</button>
+              <button class="exp-btn" id="coverageBtn" onclick="downloadCoverageMatrix();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;margin-bottom:3px">🗺️ Coverage</button>
+              <div style="height:0.5px;background:var(--border);margin:4px 0"></div>
+              <button class="exp-btn" id="exportAllBtn" onclick="exportAllFormats();closeMoreExports()" disabled
+                style="width:100%;text-align:left;border:none;border-radius:7px;background:rgba(99,102,241,0.06)">📦 Export All ZIP</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3936,7 +4005,7 @@ function resetForm() {
   document.getElementById('errorMsg').className = 'error-msg';
 
   // ── Export buttons ──
-  ['copyBtn','copyXlsBtn','pdfBtn','xlsBtn','adoBtn','editBtn','jiraBtn','testRailBtn','gherkinBtn','playwrightBtn','postmanBtn','coverageBtn','exportAllBtn'].forEach(id => {
+  ['copyBtn','copyXlsBtn','pdfBtn','xlsBtn','adoBtn','editBtn','jiraBtn','testRailBtn','gherkinBtn','playwrightBtn','postmanBtn','coverageBtn','exportAllBtn','moreExportBtn'].forEach(id => {
     const el = document.getElementById(id); if(el) el.disabled = true;
   });
 
@@ -4859,7 +4928,41 @@ function postProcessTables() {
 
     const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
     const isTCTable = TC_HEADERS.every(h => headers.includes(h));
-    if (isTCTable) table.classList.add('tc-table');
+    if (isTCTable) {
+      table.classList.add('tc-table');
+
+      // Wrap long cell content with truncation + expand button
+      // Only applied to Step Action (col 2) and Step Expected Result (col 3)
+      // rawMarkdown is NEVER modified — this is purely DOM presentation
+      table.querySelectorAll('tbody tr').forEach(row => {
+        [1, 2].forEach(colIdx => {   // 0-indexed: col 1 = Step Action, col 2 = Expected Result
+          const cell = row.cells[colIdx];
+          if (!cell || cell.querySelector('.cell-text')) return; // already processed
+          const rawText = cell.textContent.trim();
+          if (!rawText) return;
+
+          // Only truncate if content is long (> 200 chars or > 4 lines implied)
+          if (rawText.length < 200) return;
+
+          const textSpan = document.createElement('span');
+          textSpan.className = 'cell-text';
+          textSpan.innerHTML = cell.innerHTML;
+
+          const expandBtn = document.createElement('button');
+          expandBtn.className = 'cell-expand-btn';
+          expandBtn.textContent = '▾ Show more';
+          expandBtn.onclick = (e) => {
+            e.stopPropagation();
+            const isExpanded = textSpan.classList.toggle('expanded');
+            expandBtn.textContent = isExpanded ? '▴ Show less' : '▾ Show more';
+          };
+
+          cell.innerHTML = '';
+          cell.appendChild(textSpan);
+          cell.appendChild(expandBtn);
+        });
+      });
+    }
 
     const wrapper = document.createElement('div');
     wrapper.className = 'table-scroll-wrap';
@@ -4867,9 +4970,7 @@ function postProcessTables() {
     wrapper.appendChild(table);
   });
 
-  // FIX GEN-005-CORNER: Strip <code> tags from table cells — the AI sometimes
-  // wraps values in backticks despite the system prompt instruction. cleanCell()
-  // handles exports but the rendered HTML still shows code badges without this fix.
+  // Strip <code> tags from table cells
   el.querySelectorAll('td code, th code').forEach(codeEl => {
     const text = document.createTextNode(codeEl.textContent);
     codeEl.parentNode.replaceChild(text, codeEl);
@@ -8688,4 +8789,49 @@ document.addEventListener('click', e => {
   }
 });
 document.getElementById('flowDesc')?.addEventListener?.('input', updateStickyGenBar);
+</script>
+<script>
+// ── More exports dropdown ────────────────────────────────────────
+function toggleMoreExports() {
+  const dd = document.getElementById('moreExportDropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display === 'block';
+  dd.style.display = isOpen ? 'none' : 'block';
+  // Close when clicking outside
+  if (!isOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', closeMoreExportsOnOutside, { once: true });
+    }, 10);
+  }
+}
+
+function closeMoreExports() {
+  const dd = document.getElementById('moreExportDropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function closeMoreExportsOnOutside(e) {
+  const wrap = document.getElementById('moreExportWrap');
+  if (wrap && !wrap.contains(e.target)) closeMoreExports();
+}
+
+// ── Enable/disable moreExportBtn with other buttons ──────────────
+// Patch the enable-all-buttons logic to include moreExportBtn
+const _origEnableBtns = window.__enableBtns;
+
+// Override the button-enable block in finalizeOutput
+// We do this by hooking into the existing forEach that enables buttons
+// All button IDs are already covered — moreExportBtn just needs same treatment
+document.addEventListener('DOMContentLoaded', () => {
+  // Ensure moreExportBtn mirrors the state of xlsBtn (representative primary)
+  const observer = new MutationObserver(() => {
+    const xlsBtn  = document.getElementById('xlsBtn');
+    const moreBtn = document.getElementById('moreExportBtn');
+    if (xlsBtn && moreBtn) {
+      moreBtn.disabled = xlsBtn.disabled;
+    }
+  });
+  const xlsBtn = document.getElementById('xlsBtn');
+  if (xlsBtn) observer.observe(xlsBtn, { attributes: true, attributeFilter: ['disabled'] });
+});
 </script>
