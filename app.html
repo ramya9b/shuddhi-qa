@@ -15,7 +15,7 @@
 <meta name="twitter:description" content="Generate production-ready QA test cases for D365, Salesforce, Web Apps and Mobile."/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23E8A020'/><text y='.9em' font-size='72' x='12' fill='white'>श</text></svg>" type="image/svg+xml"/>
 <link rel="canonical" href="https://shuddhi-qa.vercel.app/"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap&display=optional" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js">
 
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
@@ -27,50 +27,63 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
   :root {
-    /* D365 Microsoft Blues */
-    --d365: #0078D4;
-    --d365-dark: #005A9E;
-    --d365-light: #2899F5;
-    --d365-dim: rgba(0,120,212,0.15);
-    --d365-glow: rgba(0,120,212,0.3);
+    /* ── Mockup-aligned design tokens ── */
+    --d365:        #5B5FEF;
+    --d365-dark:   #4347D4;
+    --d365-light:  #8B5CF6;
+    --d365-dim:    rgba(91,95,239,0.08);
+    --d365-glow:   rgba(91,95,239,0.25);
 
-    /* Salesforce Blues */
-    --sf: #00A1E0;
-    --sf-dark: #0176D3;
-    --sf-light: #1BAEEE;
-    --sf-dim: rgba(0,161,224,0.13);
-    --sf-glow: rgba(0,161,224,0.28);
+    --sf:          #8B5CF6;
+    --sf-dark:     #7C3AED;
+    --sf-light:    #A78BFA;
+    --sf-dim:      rgba(139,92,246,0.1);
+    --sf-glow:     rgba(139,92,246,0.2);
 
-    /* Backgrounds — clean light */
-    --bg: #f0f4f9;
-    --surface: #ffffff;
-    --surface2: #f5f8fc;
-    --surface3: #eaf1f8;
+    /* Backgrounds */
+    --bg:          #F7F8FD;
+    --surface:     #FFFFFF;
+    --surface2:    #F0F2FA;
+    --surface3:    #E8EBF7;
 
     /* Borders */
-    --border: #d6e4f0;
-    --border2: #c2d6ea;
-    --border3: #aac4dc;
+    --border:      #E2E5F0;
+    --border2:     #D0D5EE;
+    --border3:     #B8C0E0;
 
-    /* Active accent — split D365/SF gradient */
-    --accent: #0078D4;
-    --accent2: #00A1E0;
-    --accent-dim: rgba(0,120,212,0.08);
-    --accent-glow: rgba(0,120,212,0.18);
+    /* Accent */
+    --accent:      #5B5FEF;
+    --accent2:     #8B5CF6;
+    --accent-dim:  rgba(91,95,239,0.08);
+    --accent-glow: rgba(91,95,239,0.2);
+    --indigo:      #5B5FEF;
+    --indigo-l:    rgba(91,95,239,0.08);
+    --violet:      #8B5CF6;
+    --pink:        #EC4899;
 
     /* Text */
-    --text: #1a2b3c;
-    --text2: #4a6580;
-    --text3: #8aaac4;
+    --text:        #0E0F1A;
+    --text2:       #525672;
+    --text3:       #9298B8;
 
     /* Status */
-    --success: #00875a;
-    --error: #D93025;
-    --warning: #E07B00;
+    --success:     #10B981;
+    --error:       #EF4444;
+    --warning:     #F59E0B;
 
-    /* Gradient — the hero gradient used throughout */
-    --grad: linear-gradient(135deg, var(--d365) 0%, var(--sf) 100%);
-    --grad-dim: linear-gradient(135deg, rgba(0,120,212,0.09) 0%, rgba(0,161,224,0.09) 100%);
+    /* Gradients */
+    --grad:      linear-gradient(135deg, #5B5FEF 0%, #8B5CF6 50%, #EC4899 100%);
+    --grad-full: linear-gradient(135deg, #5B5FEF 0%, #8B5CF6 50%, #EC4899 100%);
+    --grad-dim:  linear-gradient(135deg, rgba(91,95,239,0.07), rgba(139,92,246,0.05));
+    --grad-header: linear-gradient(135deg, #5B5FEF 0%, #8B5CF6 50%, #EC4899 100%);
+    --grad-cool:   linear-gradient(135deg, #5B5FEF 0%, #8B5CF6 100%);
+    --grad-warm:   linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+    --grad-teal:   linear-gradient(135deg, #0EA5E9 0%, #5B5FEF 100%);
+    --grad-full:   linear-gradient(135deg, #5B5FEF 0%, #8B5CF6 50%, #EC4899 100%);
+    --glass-bg:    rgba(255,255,255,0.7);
+    --glass-border:rgba(255,255,255,0.5);
+    --glass-shadow:0 8px 32px rgba(91,95,239,0.1), 0 2px 8px rgba(0,0,0,0.05);
+    --glass-hover: 0 16px 48px rgba(91,95,239,0.16), 0 4px 16px rgba(0,0,0,0.07);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,7 +91,7 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
   }
@@ -115,15 +128,20 @@
     padding: 0 24px 60px;
   }
 
-  /* Header */
+  /* Header — mockup styled */
   header {
-    padding: 36px 0 28px;
-    border-bottom: 1px solid var(--border2);
-    margin-bottom: 32px;
+    padding: 0 28px;
+    height: 64px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
     display: flex;
     align-items: center;
-    gap: 20px;
-    position: relative;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.96) !important;
+    backdrop-filter: blur(12px);
   }
 
   /* Thin gradient line under header */
@@ -300,24 +318,19 @@
 
   /* Layout */
   .main-grid {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 24px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
 
-  @media (max-width: 1000px) {
-    .main-grid { grid-template-columns: 1fr; }
-  }
-
-  /* Form Panel */
+  /* Form Panel — full width horizontal layout */
   .form-panel {
     background: var(--surface);
     border: 1px solid var(--border2);
     border-radius: 14px;
-    overflow: hidden;
-    position: sticky;
-    top: 24px;
+    overflow: visible;
+    position: relative;
+    width: 100%;
   }
 
   .panel-header {
@@ -1694,15 +1707,18 @@
   .settings-about-val { font-size: 13px; font-weight: 600; color: var(--text); }
 
 
-  /* ── Mobile hamburger menu ─────────────────────────────── */
+  /* ── Hamburger button — desktop hidden, mobile visible ─── */
   .hamburger-btn {
-    display: none;
-    background: none; border: 1px solid var(--border2);
-    border-radius: 8px; padding: 7px 10px; cursor: pointer;
-    color: var(--text2); font-size: 18px; line-height: 1;
-    transition: all .15s; margin-left: auto;
+    display: none;                    /* hidden on desktop */
+    width: 38px; height: 38px;
+    align-items: center; justify-content: center;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px; cursor: pointer;
+    font-size: 18px; color: var(--text2);
+    transition: all .15s; flex-shrink: 0;
   }
-  .hamburger-btn:hover { border-color: var(--d365); color: var(--text); }
+  .hamburger-btn:hover { border-color: var(--indigo, #5B5FEF); color: var(--text); }
 
   .mobile-nav-overlay {
     display: none; position: fixed; inset: 0;
@@ -1751,17 +1767,7 @@
   }
   .mobile-nav-cta:hover { opacity: .9; }
 
-  @media (max-width: 700px) {
-    .hamburger-btn { display: flex; align-items: center; }
-    header { flex-wrap: wrap; gap: 12px; padding: 20px 0 16px; }
-    .logo-wrap { display: none; }
-    .header-text h1 { font-size: 20px; }
-    .header-text p { font-size: 11px; }
-    .settings-btn { display: none; }
-    .badge { display: none; }
-    .mobile-nav-overlay.open { display: block; }
-    .mobile-nav-drawer { display: flex; }
-  }
+  /* old 700px block removed — handled by 768px block above */
 
 
   @media (max-width: 500px) {
@@ -2561,103 +2567,1459 @@ header::after { display: none !important; }
   }
   .cell-expand-btn:hover { opacity: .7; }
 
+
+  /* ── Stat Summary Cards ─────────────────────────────────────── */
+  #outputStats {
+    display: none;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    padding: 14px 18px 0;
+  }
+  #outputStats.visible { display: grid; }
+  .stat-card {
+    background: var(--surface2, #f5f8fc);
+    border: 1px solid var(--border, rgba(0,0,0,.08));
+    border-radius: 10px; padding: 10px 12px; text-align: center;
+    transition: all .18s;
+  }
+  .stat-card:hover { border-color: var(--d365, #0078D4); transform: translateY(-1px); }
+  .stat-card-num {
+    font-size: 22px; font-weight: 700; line-height: 1.2;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-card-lbl {
+    font-size: 10px; color: var(--text2); margin-top: 3px;
+    text-transform: uppercase; letter-spacing: .5px; font-weight: 500;
+  }
+  .stat-total  .stat-card-num { color: var(--d365, #0078D4); }
+  .stat-e2e    .stat-card-num { color: #1D9E75; }
+  .stat-neg    .stat-card-num { color: #E24B4A; }
+  .stat-field  .stat-card-num { color: #7C3AED; }
+  .stat-int    .stat-card-num { color: #0891B2; }
+  .stat-conf   .stat-card-num { color: #EF9F27; }
+
+  /* ── In-table Search + Section jump nav ─────────────────────── */
+  #outputToolbar {
+    display: none;
+    align-items: center; gap: 8px; padding: 10px 18px 8px;
+    border-bottom: 1px solid var(--border, rgba(0,0,0,.08));
+    flex-wrap: wrap;
+  }
+  #outputToolbar.visible { display: flex; }
+  #tcSearch {
+    flex: 1; min-width: 180px; padding: 7px 12px 7px 32px;
+    background: var(--surface2); border: 1.5px solid var(--border2);
+    border-radius: 8px; color: var(--text); font-size: 12.5px; outline: none;
+    transition: border-color .15s;
+  }
+  #tcSearch:focus { border-color: var(--d365); }
+  .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 280px; }
+  .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); opacity: .4; }
+  .jump-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .jump-btn {
+    font-size: 10.5px; padding: 4px 9px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--surface);
+    color: var(--text2); cursor: pointer; transition: all .12s;
+    font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+  }
+  .jump-btn:hover { border-color: var(--d365); color: var(--d365); }
+  .tc-count-badge {
+    display: inline-block; margin-left: 5px; font-size: 10px;
+    background: var(--d365-dim, rgba(0,120,212,.1)); color: var(--d365);
+    padding: 1px 6px; border-radius: 10px; font-family: 'JetBrains Mono', monospace;
+    vertical-align: middle; font-weight: 600;
+  }
+
+  /* ── Steps chip ──────────────────────────────────────────────── */
+  .steps-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.2);
+    border-radius: 20px; padding: 3px 10px; font-size: 11.5px;
+    color: var(--indigo, #6366F1); cursor: pointer; transition: all .15s;
+    white-space: nowrap; font-weight: 600; user-select: none;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .steps-chip:hover { background: rgba(99,102,241,.14); border-color: var(--indigo); }
+  .steps-chip .chip-arrow { font-size: 10px; transition: transform .18s; }
+  .steps-chip.open .chip-arrow { transform: rotate(180deg); }
+  .steps-expanded {
+    display: none; margin-top: 8px; padding: 8px 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; font-size: 12px; color: var(--text2); line-height: 1.7;
+  }
+  .steps-expanded.open { display: block; }
+
+  /* ── Priority + Type row badges (polish) ─────────────────────── */
+  .tc-badge {
+    display: inline-block; font-size: 10.5px; padding: 2px 8px;
+    border-radius: 20px; font-weight: 600; white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge-high     { background: #FCEBEB; color: #A32D2D; }
+  .badge-medium   { background: #FAEEDA; color: #854F0B; }
+  .badge-low      { background: #EAF3DE; color: #3B6D11; }
+  .badge-critical { background: #F7C1C1; color: #791F1F; }
+
+  /* ── Bulk select + action bar ────────────────────────────────── */
+  #bulkActionBar {
+    display: none; position: sticky; bottom: 0; z-index: 100;
+    background: var(--surface); border-top: 1.5px solid var(--d365);
+    padding: 10px 18px; align-items: center; gap: 10px; flex-wrap: wrap;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+  }
+  #bulkActionBar.visible { display: flex; }
+  .bulk-count { font-size: 12.5px; font-weight: 600; color: var(--d365); min-width: 80px; }
+  .bulk-btn {
+    font-size: 12px; padding: 6px 14px; border-radius: 8px;
+    border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .bulk-btn:hover { border-color: var(--d365); color: var(--d365); }
+  .bulk-btn-primary {
+    background: var(--d365); color: #fff; border-color: var(--d365);
+    font-weight: 600;
+  }
+  .bulk-btn-primary:hover { background: var(--d365-dark, #005A9E); }
+  .bulk-clear { margin-left: auto; font-size: 12px; color: var(--text3); cursor: pointer; }
+  .bulk-clear:hover { color: var(--error); }
+
+  /* ── TC row checkbox ─────────────────────────────────────────── */
+  .tc-checkbox-col { width: 36px !important; text-align: center !important; padding: 0 !important; }
+  .tc-row-cb { cursor: pointer; width: 15px; height: 15px; accent-color: var(--d365); }
+  .output-content table.tc-table tr.tc-selected { background: rgba(0,120,212,.05) !important; }
+
+  /* ── Pagination ──────────────────────────────────────────────── */
+  #tcPagination {
+    display: none; align-items: center; justify-content: center;
+    gap: 6px; padding: 14px 18px; flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+  }
+  #tcPagination.visible { display: flex; }
+  .pg-btn {
+    min-width: 32px; height: 32px; border-radius: 7px; font-size: 12.5px;
+    border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--text); cursor: pointer; transition: all .12s; padding: 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pg-btn:hover { border-color: var(--d365); color: var(--d365); }
+  .pg-btn.active { background: var(--d365); color: #fff; border-color: var(--d365); font-weight: 700; }
+  .pg-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .pg-info { font-size: 11.5px; color: var(--text2); font-family: 'JetBrains Mono', monospace; margin: 0 8px; }
+
+  /* ── Alternating TC rows ─────────────────────────────────────── */
+  .output-content table.tc-table tbody tr:nth-child(even) {
+    background: rgba(99,102,241,.025) !important;
+  }
+  .output-content table.tc-table tbody tr:hover {
+    background: rgba(0,120,212,.04) !important;
+  }
+  /* TC ID bold style */
+  .tc-id-bold { font-weight: 700; color: var(--d365); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .tc-title-text { font-size: 12.5px; color: var(--text); display: block; margin-top: 2px; }
+
+
+  /* ── TestGen-style clean TC table ─────────────────────────────── */
+  .tg-header {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg,rgba(99,102,241,.05),rgba(192,38,168,.03),transparent);
+  }
+  .tg-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+  .tg-subtitle { font-size:11.5px; color:var(--text2); margin-top:2px; }
+
+  /* Progress bar */
+  .tg-progress {
+    display:flex; align-items:center; gap:0; padding:12px 20px 10px;
+    border-bottom:1px solid var(--border); overflow-x:auto;
+  }
+  .tg-step {
+    display:flex; align-items:center; gap:8px; flex-shrink:0;
+    font-size:12px; color:var(--text3); transition:color .15s;
+  }
+  .tg-step.done { color:var(--success,#00875a); }
+  .tg-step.active { color:var(--d365,#0078D4); font-weight:600; }
+  .tg-step-circle {
+    width:26px; height:26px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; font-size:11px; font-weight:700;
+    border:2px solid currentColor; flex-shrink:0; transition:all .2s;
+  }
+  .tg-step.done .tg-step-circle {
+    background:var(--success,#00875a); border-color:var(--success,#00875a); color:#fff;
+  }
+  .tg-step.active .tg-step-circle {
+    background:var(--d365,#0078D4); border-color:var(--d365,#0078D4); color:#fff;
+    box-shadow:0 0 0 4px rgba(0,120,212,.15);
+  }
+  .tg-step-info { display:flex; flex-direction:column; }
+  .tg-step-name { font-size:12px; font-weight:600; line-height:1.2; }
+  .tg-step-sub  { font-size:10px; color:var(--text3); }
+  .tg-step-line {
+    flex:1; min-width:30px; height:2px; margin:0 8px;
+    background:linear-gradient(90deg,var(--border2),var(--border));
+  }
+  .tg-step.done + .tg-step-line { background:var(--success,#00875a); opacity:.4; }
+
+  /* Requirement card */
+  .tg-req-row {
+    display:grid; grid-template-columns:1fr auto; gap:16px;
+    padding:14px 20px; border-bottom:1px solid var(--border);
+    align-items:center;
+  }
+  .tg-req-card {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:12px 14px; flex:1;
+  }
+  .tg-req-label { font-size:11px; font-weight:600; color:var(--text2); margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .tg-req-label .jira-badge { font-size:10px; background:rgba(0,82,204,.1); color:#0052CC; border:1px solid rgba(0,82,204,.2); padding:1px 7px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-weight:700; }
+  .tg-req-text { font-size:12.5px; color:var(--text); line-height:1.55; }
+  .tg-req-meta { font-size:10.5px; color:var(--text3); margin-top:6px; font-family:'JetBrains Mono',monospace; }
+
+  /* Stats row */
+  .tg-stats {
+    display:flex; align-items:center; gap:20px; padding:4px 8px;
+    flex-wrap:wrap;
+  }
+  .tg-stat { text-align:center; min-width:60px; }
+  .tg-stat-num { font-size:24px; font-weight:800; font-family:'JetBrains Mono',monospace; line-height:1; }
+  .tg-stat-lbl { font-size:10px; color:var(--text2); margin-top:3px; }
+  .tg-stat-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
+  .tg-conf-ring {
+    width:72px; height:72px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; flex-direction:column;
+    background:conic-gradient(var(--indigo,#6366F1) 0% 87%, var(--border,rgba(0,0,0,.08)) 87%);
+    padding:6px;
+  }
+  .tg-conf-inner {
+    width:100%; height:100%; border-radius:50%;
+    background:var(--surface); display:flex; align-items:center;
+    justify-content:center; flex-direction:column;
+  }
+  .tg-conf-pct { font-size:13px; font-weight:800; color:var(--indigo,#6366F1); font-family:'JetBrains Mono',monospace; }
+  .tg-conf-lbl { font-size:8px; color:var(--text3); letter-spacing:.3px; }
+
+  /* Tab bar */
+  .tg-tabs {
+    display:flex; align-items:center; gap:0; padding:0 20px;
+    border-bottom:1px solid var(--border); overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .tg-tabs::-webkit-scrollbar { display:none; }
+  .tg-tab {
+    padding:11px 16px; font-size:12.5px; font-weight:500;
+    color:var(--text2); cursor:pointer; border-bottom:2.5px solid transparent;
+    transition:all .15s; white-space:nowrap; user-select:none;
+  }
+  .tg-tab:hover { color:var(--text); }
+  .tg-tab.active { color:var(--d365,#0078D4); border-bottom-color:var(--d365,#0078D4); font-weight:700; }
+  .tg-tab .tab-count { margin-left:5px; font-size:11px; background:var(--d365-dim,rgba(0,120,212,.1)); color:var(--d365); padding:1px 6px; border-radius:10px; }
+  .tg-tab-right { margin-left:auto; display:flex; align-items:center; gap:8px; padding-left:12px; flex-shrink:0; }
+
+  /* Main TC table */
+  .tg-table-wrap { padding:0 20px 8px; overflow-x:auto; }
+  .tg-table {
+    width:100%; border-collapse:collapse; font-size:13px;
+    table-layout:fixed;
+  }
+  .tg-table th {
+    text-align:left; padding:11px 12px; font-size:11px; font-weight:600;
+    color:var(--text2); border-bottom:2px solid var(--border2);
+    background:var(--surface); text-transform:uppercase; letter-spacing:.4px;
+    white-space:nowrap; position:sticky; top:0; z-index:2;
+  }
+  .tg-table td {
+    padding:13px 12px; border-bottom:1px solid var(--border);
+    vertical-align:middle; color:var(--text);
+  }
+  .tg-table tbody tr { transition:background .1s; }
+  .tg-table tbody tr:hover { background:rgba(99,102,241,.03); }
+  .tg-table tbody tr.tg-selected { background:rgba(0,120,212,.05); }
+
+  /* Column widths */
+  .tg-col-cb   { width:38px; }
+  .tg-col-id   { width:80px; }
+  .tg-col-sc   { width:22%; }
+  .tg-col-st   { width:110px; }
+  .tg-col-exp  { width:auto; }
+  .tg-col-pri  { width:90px; }
+  .tg-col-type { width:90px; }
+  .tg-col-act  { width:90px; }
+
+  /* TC ID link style */
+  .tg-tc-id { color:var(--d365,#0078D4); font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; }
+  .tg-scenario { font-size:13px; color:var(--text); line-height:1.45; }
+
+  /* Priority badges */
+  .tg-badge { font-size:11.5px; padding:3px 10px; border-radius:20px; font-weight:600; display:inline-block; white-space:nowrap; }
+  .tg-pri-high     { background:#FCEBEB; color:#A32D2D; }
+  .tg-pri-medium   { background:#FAEEDA; color:#854F0B; }
+  .tg-pri-low      { background:#EAF3DE; color:#3B6D11; }
+  .tg-pri-critical { background:#F7C1C1; color:#791F1F; }
+  .tg-type-positive    { background:#EAF3DE; color:#3B6D11; }
+  .tg-type-negative    { background:#FCEBEB; color:#A32D2D; }
+  .tg-type-e2e         { background:#E6F1FB; color:#185FA5; }
+  .tg-type-integration { background:#EEEDFE; color:#534AB7; }
+  .tg-type-field       { background:#E1F5EE; color:#0F6E56; }
+  .tg-type-smoke       { background:#FAEEDA; color:#854F0B; }
+
+  /* Action icons */
+  .tg-actions { display:flex; align-items:center; gap:4px; }
+  .tg-act-btn {
+    width:30px; height:30px; border-radius:7px; border:1px solid var(--border2);
+    background:var(--surface2); cursor:pointer; display:flex; align-items:center;
+    justify-content:center; font-size:13px; transition:all .12s;
+  }
+  .tg-act-btn:hover { border-color:var(--d365); background:var(--d365-dim); }
+  .tg-act-btn.del:hover { border-color:var(--error,#D93025); background:rgba(220,50,50,.07); }
+
+  /* Steps chip in new table */
+  .tg-steps-chip {
+    display:inline-flex; align-items:center; gap:4px;
+    background:rgba(99,102,241,.07); border:1px solid rgba(99,102,241,.2);
+    border-radius:20px; padding:4px 10px; font-size:11.5px; cursor:pointer;
+    color:var(--indigo,#6366F1); font-weight:600; white-space:nowrap;
+    font-family:'JetBrains Mono',monospace; transition:all .15s;
+  }
+  .tg-steps-chip:hover { background:rgba(99,102,241,.13); }
+  .tg-steps-chip .chip-arr { font-size:9px; transition:transform .18s; }
+  .tg-steps-chip.open .chip-arr { transform:rotate(180deg); }
+  .tg-steps-popup {
+    display:none; position:absolute; z-index:50; min-width:280px; max-width:400px;
+    background:var(--surface); border:1.5px solid var(--border2);
+    border-radius:10px; padding:12px 14px; box-shadow:0 8px 32px rgba(0,0,0,.12);
+    font-size:12.5px; color:var(--text2); line-height:1.7;
+  }
+  .tg-steps-popup.open { display:block; }
+  td.steps-td { position:relative; overflow:visible !important; }
+
+  /* Expanded TC row (accordion) */
+  .tg-tc-detail-row td {
+    background:rgba(99,102,241,.02); padding:12px 20px;
+    font-size:12px; color:var(--text2); border-bottom:2px solid rgba(99,102,241,.1);
+  }
+
+  /* Alternating rows */
+  .tg-table tbody tr:nth-child(4n+3) { background:rgba(99,102,241,.015); }
+
+
+  /* ── SIDEBAR ─────────────────────────────────────────────────── */
+  #appSidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 226px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 200;
+    box-shadow: 2px 0 24px rgba(91,95,239,0.05);
+    overflow: hidden;
+  }
+  .sb-logo {
+    height: 64px; display: flex; align-items: center; gap: 10px;
+    padding: 0 18px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .sb-logo-mark {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--grad); display: flex; align-items: center;
+    justify-content: center; font-size: 18px; font-weight: 800; color: #fff;
+    box-shadow: 0 4px 14px rgba(91,95,239,.35); flex-shrink: 0; font-family: serif;
+  }
+  .sb-name { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: -.3px; line-height: 1; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .sb-sub  { font-size: 9.5px; color: var(--text3); font-weight: 500; letter-spacing: .2px; margin-top: 2px; }
+
+  .sb-nav { flex: 1; overflow-y: auto; padding: 10px 10px; scrollbar-width: none; }
+  .sb-nav::-webkit-scrollbar { display: none; }
+  .sb-group-label {
+    font-size: 9.5px; font-weight: 700; color: var(--text3); letter-spacing: .8px;
+    text-transform: uppercase; padding: 12px 10px 5px; display: block;
+  }
+  .sb-item {
+    display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+    border-radius: 9px; cursor: pointer; transition: all .15s; color: var(--text2);
+    font-size: 13px; font-weight: 500; position: relative;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .sb-item:hover { background: var(--surface2); color: var(--text); }
+  .sb-item.active {
+    background: rgba(91,95,239,0.08); color: var(--indigo); font-weight: 700;
+  }
+  .sb-item.active::before {
+    content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 18px; background: var(--grad); border-radius: 0 3px 3px 0;
+  }
+  .sb-icon { width: 18px; text-align: center; flex-shrink: 0; font-size: 14px; opacity: .7; }
+  .sb-item.active .sb-icon { opacity: 1; }
+  .sb-badge {
+    margin-left: auto; background: var(--indigo); color: #fff;
+    font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .sb-footer { padding: 12px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+  .sb-user { display: flex; align-items: center; gap: 9px; padding: 4px; cursor: pointer; }
+  .sb-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--grad);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 12px; flex-shrink: 0;
+  }
+  .sb-user-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .sb-user-role { font-size: 10.5px; color: var(--text3); }
+
+  /* ── LAYOUT WITH SIDEBAR ─────────────────────────────────────── */
+  #mainWrap {
+    margin-left: 226px !important;
+    max-width: none !important;
+    padding: 0 !important;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* Ensure header spans full width within wrap */
+  #mainWrap > header {
+    position: sticky; top: 0; z-index: 100;
+    padding: 0 28px !important;
+    margin-bottom: 0 !important;
+    height: 64px;
+    display: flex; align-items: center; gap: 16px;
+    background: rgba(255,255,255,0.96) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 1px 12px rgba(91,95,239,0.06) !important;
+  }
+
+  /* API bar gets some padding */
+  #mainWrap .api-bar {
+    margin: 20px 28px 0 !important;
+    border-radius: 14px !important;
+  }
+
+  /* Session history + bulk panels */
+  #mainWrap .history-panel,
+  #mainWrap .bulk-panel {
+    margin: 16px 28px 0 !important;
+  }
+
+  /* Main grid inside wrap */
+  #mainWrap .main-grid {
+    margin: 20px 28px 100px !important;
+    gap: 24px;
+  }
+
+/* 1100px sidebar handled by min-width/max-width block above */
+
+
+  /* ── MOCKUP TABLE STYLE — applied to tc-table ─────────────────── */
+  .output-content table.tc-table {
+    table-layout: fixed !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .output-content table.tc-table th {
+    text-align: left; padding: 11px 14px;
+    font-size: 10.5px; font-weight: 700; color: var(--text3);
+    border-bottom: 2px solid var(--border2);
+    background: var(--surface) !important;
+    text-transform: uppercase; letter-spacing: .5px;
+    white-space: nowrap; position: sticky; top: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .output-content table.tc-table td {
+    padding: 13px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: middle; font-size: 13px;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .output-content table.tc-table tbody tr { transition: background .1s; cursor: pointer; }
+  .output-content table.tc-table tbody tr:hover { background: rgba(91,95,239,.025) !important; }
+  .output-content table.tc-table tbody tr.tg-selected { background: rgba(91,95,239,.05) !important; }
+  .output-content table.tc-table tbody tr.tg-selected { background: rgba(91,95,239,.05) !important; }
+
+  /* TC ID — indigo mono */
+  .tg-tc-id {
+    color: var(--indigo) !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 12.5px !important; font-weight: 700 !important;
+  }
+
+  /* Steps chip — updated */
+  .tg-steps-chip {
+    background: rgba(91,95,239,.08) !important;
+    border: 1px solid rgba(91,95,239,.2) !important;
+    color: var(--indigo) !important;
+  }
+  .tg-steps-chip:hover {
+    background: rgba(91,95,239,.14) !important;
+    border-color: rgba(91,95,239,.35) !important;
+  }
+
+  /* Priority badges — mockup style */
+  .tg-badge { font-size: 11.5px !important; padding: 3px 10px !important; border-radius: 20px !important; font-weight: 700 !important; }
+  .tg-pri-high     { background: rgba(239,68,68,.1) !important; color: #B91C1C !important; }
+  .tg-pri-medium   { background: rgba(245,158,11,.1) !important; color: #92400E !important; }
+  .tg-pri-low      { background: rgba(16,185,129,.1) !important; color: #065F46 !important; }
+  .tg-type-positive { background: rgba(16,185,129,.1) !important; color: #065F46 !important; border: 1px solid rgba(16,185,129,.2) !important; }
+  .tg-type-negative { background: rgba(239,68,68,.08) !important; color: #B91C1C !important; border: 1px solid rgba(239,68,68,.15) !important; }
+  .tg-type-e2e     { background: rgba(91,95,239,.08) !important; color: var(--indigo) !important; border: 1px solid rgba(91,95,239,.2) !important; }
+  .tg-type-integration { background: rgba(139,92,246,.1) !important; color: #5B21B6 !important; }
+  .tg-type-field   { background: rgba(14,165,233,.1) !important; color: #075985 !important; }
+
+  /* Action buttons */
+  .tg-act-btn {
+    width: 30px !important; height: 30px !important; border-radius: 7px !important;
+    border: 1px solid var(--border) !important; background: var(--surface2) !important;
+  }
+  .tg-act-btn:hover { border-color: var(--indigo) !important; background: rgba(91,95,239,.08) !important; }
+  .tg-act-btn.del:hover { border-color: rgba(239,68,68,.4) !important; background: rgba(239,68,68,.06) !important; }
+
+
+  /* ── BULK ACTION BAR — mockup style ─────────────────────────── */
+  #bulkActionBar {
+    left: 226px !important;
+    background: rgba(255,255,255,0.97) !important;
+    backdrop-filter: blur(16px) !important;
+    border-top: 1px solid var(--border) !important;
+    box-shadow: 0 -4px 30px rgba(91,95,239,.08) !important;
+    padding: 12px 28px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .bulk-count { font-size: 13px; font-weight: 700; color: var(--indigo); min-width: 80px; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .bulk-btn {
+    font-size: 12.5px !important; padding: 8px 14px !important;
+    border: 1.5px solid var(--border) !important; border-radius: 9px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 600 !important;
+    transition: all .15s !important;
+  }
+  .bulk-btn:hover { border-color: var(--border2) !important; background: var(--surface2) !important; }
+  .bulk-btn-primary {
+    background: var(--grad) !important; color: #fff !important;
+    border: none !important; border-radius: 10px !important;
+    padding: 9px 20px !important; font-size: 13px !important;
+    font-weight: 700 !important; box-shadow: 0 4px 16px rgba(91,95,239,.35) !important;
+  }
+  .bulk-btn-primary:hover { transform: translateY(-1px) !important; box-shadow: 0 6px 22px rgba(91,95,239,.45) !important; }
+
+
+  /* ── PAGINATION — mockup style ──────────────────────────────── */
+  #tcPagination {
+    padding: 16px 20px !important;
+    border-top: 1px solid var(--border) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .pg-btn {
+    width: 32px !important; height: 32px !important; border-radius: 8px !important;
+    border: 1px solid var(--border) !important; font-family: 'JetBrains Mono', monospace !important;
+    font-size: 12.5px !important; font-weight: 600 !important; transition: all .12s !important;
+  }
+  .pg-btn:hover { border-color: var(--indigo) !important; color: var(--indigo) !important; background: rgba(91,95,239,.08) !important; }
+  .pg-btn.active {
+    background: var(--grad) !important; color: #fff !important;
+    border-color: transparent !important; box-shadow: 0 4px 12px rgba(91,95,239,.35) !important;
+  }
+  .pg-info { font-size: 11.5px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+
+  /* ── FILTER BAR — mockup tab style ─────────────────────────── */
+  #filterBar {
+    padding: 0 20px !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: var(--surface) !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+  }
+  .filter-btn {
+    padding: 11px 4px !important; margin-right: 20px;
+    border-bottom: 2.5px solid transparent !important; border: none !important;
+    background: transparent !important; border-radius: 0 !important;
+    font-size: 13px !important; font-weight: 500 !important; color: var(--text3) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    white-space: nowrap !important; transition: all .15s !important;
+  }
+  .filter-btn:hover { color: var(--text) !important; background: transparent !important; border-color: transparent !important; border-bottom-color: var(--border2) !important; }
+  .filter-btn.active {
+    color: var(--indigo) !important; font-weight: 700 !important;
+    border-bottom-color: var(--indigo) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Search box in filter bar */
+  .search-wrap input, #tgSearch {
+    font-family: 'Plus Jakarta Sans', sans-serif !important; font-size: 12.5px !important;
+  }
+
+  /* Output toolbar search */
+  #outputToolbar { padding: 10px 20px 8px !important; }
+  #tcSearch { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+
+  /* Jump nav buttons */
+  .jump-btn {
+    font-size: 10.5px !important; border-radius: 6px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    transition: all .12s !important;
+  }
+  .jump-btn:hover { border-color: var(--indigo) !important; color: var(--indigo) !important; background: rgba(91,95,239,.08) !important; }
+
+
+  /* ── FORM PANEL — mockup refinements ─────────────────────────── */
+  .form-panel, .history-panel, .bulk-panel, .output-panel {
+    border-radius: var(--radius-lg, 16px) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .field label {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .field select, .field input, .field textarea {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .gen-btn {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 14px !important; font-weight: 700 !important;
+  }
+  .priority-btn, .exp-btn, .filter-btn, .reset-btn {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .tg-title-text, .tg-scenario {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+
+  /* Stat cards */
+  #outputStats { padding: 16px 20px 0 !important; }
+  .stat-card {
+    border-radius: 10px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .stat-card-num { font-family: 'JetBrains Mono', monospace !important; font-size: 20px !important; font-weight: 800 !important; }
+  .stat-card-lbl { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+
+  /* Output header */
+  .output-header {
+    padding: 14px 20px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .output-header-left span {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 15px !important; font-weight: 700 !important;
+  }
+
+
+  /* ── NEW MOCKUP HEADER ────────────────────────────────────────── */
+  .hdr-page-info { flex: 1; }
+  .hdr-title {
+    font-size: 20px; font-weight: 800; color: var(--text);
+    letter-spacing: -.4px; line-height: 1.2;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .hdr-subtitle {
+    font-size: 12px; color: var(--text3); margin-top: 2px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .hdr-actions {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .hdr-icon-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 17px; transition: all .15s; color: var(--text2);
+    position: relative;
+  }
+  .hdr-icon-btn:hover { border-color: var(--border2); background: var(--surface2); }
+  .hdr-cta-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--grad); color: #fff; border: none;
+    border-radius: 10px; padding: 0 18px; height: 38px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    box-shadow: 0 4px 14px rgba(91,95,239,.35);
+    transition: all .2s; white-space: nowrap;
+  }
+  .hdr-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(91,95,239,.45); }
+
+  /* Override old header styles that conflict */
+  #mainWrap > header {
+    padding: 0 28px !important;
+    height: 64px !important;
+  }
+  #mainWrap > header .logo-wrap,
+  #mainWrap > header .header-text,
+  #mainWrap > header .badge { display: none !important; }
+
+  /* Main grid — tighten top margin since history panels moved below */
+  #mainWrap .main-grid { margin-top: 24px !important; }
+
+  /* History + bulk panels at bottom get proper spacing */
+  #mainWrap .history-panel { margin: 0 28px 16px !important; }
+  #mainWrap .bulk-panel    { margin: 0 28px 24px !important; }
+
+  /* Step labels — softer pill style matching mockup */
+  .step-label {
+    display: flex !important; align-items: center !important; gap: 8px !important;
+    margin: 4px 0 10px !important;
+    font-size: 11px !important; font-weight: 700 !important;
+    letter-spacing: .4px !important; text-transform: none !important;
+    color: var(--indigo) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .step-num {
+    width: 22px !important; height: 22px !important;
+    font-size: 11px !important; font-weight: 800 !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+
+
+  /* ── Move History + Bulk panels below main-grid visually ─── */
+  #mainWrap {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  /* The panels now come AFTER main-grid in the DOM (from earlier fix attempt) */
+  /* If they're before the grid in DOM, use order to push them down */
+  #historyPanel { order: 10 !important; margin: 0 28px 16px !important; }
+  #bulkPanel    { order: 11 !important; margin: 0 28px 24px !important; }
+  .main-grid    { order: 5 !important; }
+  .api-bar      { order: 1 !important; display: none !important; }
+  header        { order: 0 !important; }
+
+
+  /* ══════════════════════════════════════════════════════════════
+     HORIZONTAL FORM LAYOUT — Input → Generate → Output flow
+  ══════════════════════════════════════════════════════════════ */
+
+  /* Inner form body: horizontal 3-column grid */
+  .form-body {
+    display: grid !important;
+    grid-template-columns: 0.9fr 1.1fr !important;
+    grid-template-rows: auto !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    align-items: start;
+  }
+
+  /* Column wrappers */
+  .form-col {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  .form-col + .form-col {
+    border-left: 1px solid var(--border);
+  }
+
+  /* Full-width bottom row: generate + reset */
+  .form-actions-row {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, rgba(91,95,239,.03), transparent);
+  }
+  .form-actions-row .gen-btn { flex: 1; margin: 0 !important; }
+  .form-actions-row .reset-btn { flex-shrink: 0; margin: 0 !important; width: auto !important; }
+  .form-actions-row #stopBtn { flex-shrink: 0; margin: 0 !important; }
+
+  /* Step label — horizontal variant (more compact) */
+  .form-col .step-label {
+    margin: 0 0 6px !important;
+    font-size: 10px !important;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid rgba(91,95,239,.12);
+  }
+
+  /* Upload zone — compact in horizontal layout */
+  .form-col .upload-zone {
+    padding: 16px 12px !important;
+    min-height: 90px !important;
+  }
+  .form-col .upload-icon { font-size: 22px !important; margin-bottom: 4px !important; }
+  .form-col .upload-label { font-size: 12.5px !important; }
+  .form-col .upload-hint  { font-size: 10.5px !important; }
+
+  /* Platform cards — fill column width */
+  #platformGrid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  /* Module chips — fixed height with scroll */
+  #moduleGrid { max-height: 140px !important; }
+
+  /* Textarea — taller since it's in its own column */
+  #flowDesc {
+    min-height: 160px !important;
+    resize: vertical;
+  }
+
+  /* Advanced toggle — compact */
+  .advanced-toggle {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  /* Priority buttons — horizontal fill */
+  .priority-row { gap: 6px !important; }
+  .priority-btn { flex: 1; padding: 7px 4px !important; font-size: 12px !important; }
+
+  /* Output panel — full width below form */
+  .output-panel {
+    width: 100% !important;
+    position: static !important;
+  }
+
+  /* Responsive: collapse to single column on smaller screens */
+  @media (max-width: 900px) {
+    .form-body { grid-template-columns: 1fr !important; }
+    .form-col + .form-col { border-left: none !important; border-top: 1px solid var(--border) !important; }
+  }
+  @media (max-width: 768px) {
+    .form-body { grid-template-columns: 1fr !important; }
+    .form-col + .form-col { border-left: none !important; border-top: 1px solid var(--border) !important; }
+  }
+
+  /* Divider — hide OR ENTER MANUALLY in horizontal layout */
+  .form-body .form-divider { display: none !important; }
+
+  /* Error message full width */
+  #errorMsg { margin: 0 20px 12px !important; }
+
+
+  /* ══════════════════════════════════════════════════════════════
+     MOBILE RESPONSIVE OVERRIDES
+  ══════════════════════════════════════════════════════════════ */
+
+  /* ══════════════════════════════════════════════════════════
+     SIDEBAR RESPONSIVE — clean, no specificity conflicts
+  ══════════════════════════════════════════════════════════ */
+
+  /* ── 1101px-769px: Icon-rail (60px) ── */
+  @media (min-width: 769px) and (max-width: 1100px) {
+    #appSidebar { width: 60px; }
+    #appSidebar .sb-name, #appSidebar .sb-sub,
+    #appSidebar .sb-group-label, #appSidebar .sb-badge,
+    #appSidebar .sb-logo-text, #appSidebar .sb-user-info,
+    #appSidebar .sb-platform-section { display: none; }
+    #appSidebar .sb-item { justify-content: center; padding: 10px 8px; }
+    #appSidebar .sb-item span:not(.sb-icon) { display: none; }
+    #appSidebar .sb-logo { justify-content: center; padding: 0 10px; }
+    #appSidebar .sb-footer { padding: 8px; }
+    #appSidebar .sb-user { justify-content: center; }
+    #mainWrap { margin-left: 60px !important; }
+    #mainWrap .main-grid { margin: 16px 18px 100px !important; }
+    #mainWrap .history-panel, #mainWrap .bulk-panel { margin: 12px 18px 0 !important; }
+    #bulkActionBar { left: 60px !important; }
+  }
+
+  /* ── ≤768px: Sidebar slides off-screen, hamburger shows ── */
+  @media (max-width: 768px) {
+    /* Default state: sidebar hidden off-screen */
+    #appSidebar {
+      transform: translateX(-260px);
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+      z-index: 400;
+      width: 260px !important;
+      /* IMPORTANT: Don't hide any content — let it be ready to show */
+    }
+    /* All content visible by default (sidebar just slides off-screen) */
+    #appSidebar .sb-name, #appSidebar .sb-sub,
+    #appSidebar .sb-group-label, #appSidebar .sb-logo-text,
+    #appSidebar .sb-user-info, #appSidebar .sb-user-name,
+    #appSidebar .sb-user-role, #appSidebar .sb-badge,
+    #appSidebar .sb-platform-section,
+    #appSidebar .sb-footer { display: block !important; }
+    #appSidebar .sb-item { justify-content: flex-start; padding: 8px 10px; gap: 9px; }
+    #appSidebar .sb-item span { display: inline !important; }
+    #appSidebar .sb-logo { justify-content: flex-start; padding: 0 18px; }
+    #appSidebar .sb-logo-text { display: flex !important; flex-direction: column; }
+    #appSidebar .sb-user { display: flex !important; justify-content: flex-start; }
+    #appSidebar .sb-footer { display: block !important; padding: 12px 14px; }
+    /* Open state */
+    #appSidebar.mobile-open {
+      transform: translateX(0);
+      box-shadow: 4px 0 40px rgba(0,0,0,.22);
+    }
+    /* Overlay */
+    #sidebarOverlay { display: none; position: fixed; inset: 0; z-index: 399; background: rgba(0,0,0,.45); }
+    #sidebarOverlay.open { display: block; }
+    /* Layout */
+    #mainWrap { margin-left: 0 !important; }
+    #mainWrap > header { padding: 0 16px !important; height: 56px !important; }
+    #mainWrap .main-grid { margin: 14px 14px 120px !important; }
+    #mainWrap .history-panel, #mainWrap .bulk-panel { margin: 10px 14px 0 !important; }
+    #bulkActionBar { left: 0 !important; padding: 10px 14px !important; flex-wrap: wrap; }
+    /* Hamburger visible */
+    .hamburger-btn { display: flex !important; }
+    /* Header compact */
+    .hdr-actions { gap: 6px !important; }
+    .hdr-cta-btn { padding: 0 12px !important; font-size: 12px !important; }
+    #keyStatusRow { display: none !important; }
+
+    /* Overlay when sidebar open */
+    #sidebarOverlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 299;
+      background: rgba(0,0,0,.4);
+    }
+    #sidebarOverlay.open { display: block; }
+
+    #mainWrap { margin-left: 0 !important; }
+    #mainWrap > header { padding: 0 16px !important; }
+    #mainWrap .main-grid { margin: 14px 14px 120px !important; }
+    #mainWrap .history-panel,
+    #mainWrap .bulk-panel { margin: 10px 14px 0 !important; }
+    #bulkActionBar { left: 0 !important; padding: 10px 14px !important; flex-wrap: wrap; }
+
+    /* Hamburger: show on mobile */
+    .hamburger-btn { display: flex !important; }
+
+    /* Header actions: compact */
+    .hdr-actions { gap: 6px !important; }
+    .hdr-cta-btn { padding: 0 12px !important; font-size: 12px !important; }
+    #keyStatusRow { display: none !important; }
+
+    /* Form: single column */
+    .form-body {
+      grid-template-columns: 1fr !important;
+    }
+    /* Already handled above */
+    .form-actions-row {
+      flex-wrap: wrap;
+    }
+    .form-actions-row .reset-btn { width: 100% !important; text-align: center; }
+
+    /* Output table: horizontal scroll */
+    .tg-table-wrap {
+      padding: 0 12px 8px !important;
+      overflow-x: auto !important;
+    }
+    .tg-table { min-width: 640px !important; }
+
+    /* Stat cards: 3-col on mobile */
+    #outputStats {
+      grid-template-columns: repeat(3, 1fr) !important;
+      padding: 12px 14px 0 !important;
+    }
+
+    /* Output toolbar: stack */
+    #outputToolbar {
+      padding: 8px 14px !important;
+      gap: 6px !important;
+    }
+    .search-wrap { max-width: 100% !important; }
+    .jump-nav { display: none !important; }
+
+    /* Pagination: compact */
+    #tcPagination { padding: 12px 14px !important; gap: 4px !important; }
+    .pg-info { font-size: 10.5px !important; }
+
+    /* Tabs: scrollable */
+    .tg-tabs { overflow-x: auto !important; scrollbar-width: none; }
+    .tg-tab { padding: 10px 12px !important; font-size: 12px !important; }
+
+    /* Req row: stack on mobile */
+    .tg-req-row {
+      grid-template-columns: 1fr !important;
+    }
+    .tg-stats {
+      padding: 12px 14px !important;
+      gap: 10px !important;
+      overflow-x: auto;
+    }
+
+    /* Step progress: compact */
+    .tg-progress {
+      padding: 10px 14px 8px !important;
+      gap: 0;
+    }
+    .tg-step-name { font-size: 11px !important; }
+    .tg-step-sub  { display: none !important; }
+    .tg-step-circle { width: 24px !important; height: 24px !important; font-size: 10px !important; }
+    .tg-step-line { min-width: 16px !important; margin: 0 6px !important; }
+
+    /* Stepper (form top) */
+    .stepper { padding: 12px 14px !important; flex-wrap: wrap; gap: 10px; }
+    .step-connector { min-width: 16px !important; margin: 0 4px !important; }
+    .step-sub { display: none !important; }
+
+    /* Modals: full screen on mobile */
+    .ado-modal, .settings-modal {
+      width: 100% !important; max-width: 100% !important;
+      margin: 0 !important; border-radius: 16px 16px 0 0 !important;
+      position: fixed !important; bottom: 0 !important; top: auto !important;
+      max-height: 90vh !important; overflow-y: auto;
+    }
+  }
+
+  /* ── 480px: Extra small phones ────────────────────────────── */
+  @media (max-width: 480px) {
+    .hdr-title { font-size: 16px !important; }
+    .hdr-subtitle { display: none !important; }
+    .hdr-icon-btn { width: 34px !important; height: 34px !important; font-size: 15px !important; }
+    .hdr-cta-btn span:first-child { display: none !important; }
+    .hdr-cta-btn { padding: 0 10px !important; }
+
+    .form-col { padding: 14px !important; }
+    #platformGrid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important; }
+    .platform-card { min-width: 0 !important; }
+
+    #outputStats { grid-template-columns: repeat(2, 1fr) !important; }
+    .stat-card-num { font-size: 18px !important; }
+
+    .tg-table { min-width: 560px !important; }
+    .tg-col-exp { min-width: 150px !important; }
+    .tg-col-pri, .tg-col-type { display: none !important; }
+
+    .bulk-btn span { display: none; }
+    .bulk-btn { padding: 6px 10px !important; }
+    .push-btn { font-size: 12px !important; padding: 8px 12px !important; }
+  }
+
+
+
+  /* ── Platform & Module inside sidebar ─────────────────────── */
+  .sb-platform-section {
+    padding: 8px 10px 4px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sb-platform-hint {
+    font-size: 10.5px; color: var(--text3);
+    padding: 0 0 8px; font-weight: 500; letter-spacing: .2px;
+  }
+
+  /* Platform cards — compact for sidebar */
+  .sb-platform-section #platformGrid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 5px !important;
+    margin-top: 0 !important;
+  }
+  .sb-platform-section .platform-card {
+    min-width: 0 !important;
+    padding: 6px 4px !important;
+    font-size: 10px !important;
+    border-radius: 8px !important;
+  }
+  .sb-platform-section .platform-card .pc-icon { font-size: 16px !important; }
+  .sb-platform-section .platform-card .pc-name { font-size: 9.5px !important; letter-spacing: -.1px; }
+  .sb-platform-section .platform-card .pc-sub  { font-size: 8.5px !important; display: none; }
+
+  /* Module section in sidebar */
+  .sb-platform-section #moduleField {
+    margin-top: 8px !important;
+    border-top: 1px solid var(--border);
+    padding-top: 8px !important;
+  }
+  .sb-platform-section #moduleField label { font-size: 10.5px !important; font-weight: 700 !important; color: var(--text2) !important; }
+  .sb-platform-section #moduleSearch { font-size: 12px !important; padding: 6px 10px 6px 28px !important; }
+  .sb-platform-section #moduleGrid {
+    max-height: 130px !important;
+    gap: 4px !important;
+  }
+  .sb-platform-section .module-chip {
+    font-size: 10.5px !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+  }
+  .sb-platform-section #moduleOtherBtn {
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+  }
+  .sb-platform-section #moduleCustomInput {
+    font-size: 12px !important;
+    padding: 7px 10px !important;
+  }
+
+  /* Sidebar needs to scroll when platform section is visible */
+  .sb-nav {
+    overflow-y: auto !important;
+    flex: 1 !important;
+  }
+
+/* platform section visibility handled by sidebar responsive blocks above */
+
+  /* Form: remove step 2 label for platform (moved to sidebar) */
+  /* Step numbers renumbered: ① Upload, ② Flow */
+
+
+  /* ══════════════════════════════════════════════════════════
+     RICH ARTIFACT TABS
+  ══════════════════════════════════════════════════════════ */
+
+  /* Tab bar container */
+  .artifact-tabs {
+    display: flex;
+    align-items: stretch;
+    padding: 0 16px;
+    background: linear-gradient(to bottom, var(--surface) 0%, rgba(91,95,239,.02) 100%);
+    border-bottom: 1.5px solid var(--border);
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    flex-shrink: 0;
+    gap: 2px;
+    position: relative;
+  }
+  .artifact-tabs::-webkit-scrollbar { display: none; }
+
+  /* Individual tab */
+  .artifact-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 48px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text3);
+    background: transparent;
+    border: none;
+    border-bottom: 2.5px solid transparent;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    transition: all .18s cubic-bezier(.4,0,.2,1);
+    white-space: nowrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    position: relative;
+    flex-shrink: 0;
+    margin-bottom: -1.5px;
+    letter-spacing: .1px;
+  }
+
+  .artifact-tab:hover {
+    color: var(--text);
+    background: rgba(91,95,239,.04);
+  }
+
+  /* Icon inside tab */
+  .atab-icon {
+    font-size: 13px;
+    opacity: .6;
+    transition: opacity .15s, transform .18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  .artifact-tab:hover .atab-icon { opacity: .9; transform: scale(1.1); }
+
+  .atab-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  /* ── Active tab: pill-style with colored bottom ──────────── */
+  .artifact-tab.active {
+    font-weight: 700;
+    color: var(--indigo, #5B5FEF);
+    border-bottom-color: var(--indigo, #5B5FEF);
+    background: rgba(91,95,239,.06);
+  }
+  .artifact-tab.active .atab-icon {
+    opacity: 1;
+    transform: none;
+  }
+  .artifact-tab.active .atab-label { font-weight: 700; }
+
+  /* ── Per-tab color themes (hover + active) ────────────────── */
+  /* End to End — sky blue */
+  .atab-e2e-style:hover          { color: #0891B2 !important; background: rgba(14,165,233,.05) !important; }
+  .atab-e2e-style.active         { color: #0891B2 !important; border-bottom-color: #0891B2 !important; background: rgba(14,165,233,.07) !important; }
+  .atab-e2e-style.active .atab-count { background: #0891B2 !important; }
+
+  /* Field Validation — teal/green */
+  .atab-field-style:hover        { color: #0F6E56 !important; background: rgba(16,185,129,.05) !important; }
+  .atab-field-style.active       { color: #0F6E56 !important; border-bottom-color: #10B981 !important; background: rgba(16,185,129,.07) !important; }
+  .atab-field-style.active .atab-count { background: #10B981 !important; }
+
+  /* Integration — violet */
+  .atab-int-style:hover          { color: #5B21B6 !important; background: rgba(139,92,246,.05) !important; }
+  .atab-int-style.active         { color: #5B21B6 !important; border-bottom-color: #8B5CF6 !important; background: rgba(139,92,246,.07) !important; }
+  .atab-int-style.active .atab-count { background: #8B5CF6 !important; }
+
+  /* Negative — red */
+  .atab-neg-style:hover          { color: #B91C1C !important; background: rgba(239,68,68,.05) !important; }
+  .atab-neg-style.active         { color: #B91C1C !important; border-bottom-color: #EF4444 !important; background: rgba(239,68,68,.06) !important; }
+  .atab-neg-style.active .atab-count { background: #EF4444 !important; }
+
+  /* Smoke — amber */
+  .atab-smoke-style:hover        { color: #92400E !important; background: rgba(245,158,11,.05) !important; }
+  .atab-smoke-style.active       { color: #92400E !important; border-bottom-color: #F59E0B !important; background: rgba(245,158,11,.06) !important; }
+  .atab-smoke-style.active .atab-count { background: #F59E0B !important; }
+
+  /* Test Data — slate */
+  .atab-data-style:hover         { color: #334155 !important; background: rgba(71,85,105,.05) !important; }
+  .atab-data-style.active        { color: #334155 !important; border-bottom-color: #64748B !important; background: rgba(71,85,105,.06) !important; }
+  .atab-data-style.active .atab-count { background: #64748B !important; }
+
+  /* Metadata — pink */
+  .atab-meta-style:hover         { color: #9D174D !important; background: rgba(236,72,153,.05) !important; }
+  .atab-meta-style.active        { color: #9D174D !important; border-bottom-color: #EC4899 !important; background: rgba(236,72,153,.06) !important; }
+  .atab-meta-style.active .atab-count { background: #EC4899 !important; }
+
+  /* ── Count badge pill ─────────────────────────────────────── */
+  .atab-count {
+    display: none;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: rgba(91,95,239,.12);
+    color: var(--indigo, #5B5FEF);
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 22px;
+    text-align: center;
+    line-height: 1.4;
+    transition: all .18s;
+    flex-shrink: 0;
+  }
+  .atab-count.has-count { display: inline-block; }
+  .artifact-tab:not(.active) .atab-count { color: var(--text3); background: var(--surface3); }
+
+  /* ── Right-side action buttons ───────────────────────────── */
+  .atab-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    padding: 8px 0 8px 14px;
+    border-left: 1px solid var(--border);
+    margin-left: 8px;
+  }
+
+  .atab-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .14s;
+    white-space: nowrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    height: 30px;
+  }
+  .atab-action-btn:hover {
+    border-color: var(--indigo, #5B5FEF);
+    color: var(--indigo, #5B5FEF);
+    background: rgba(91,95,239,.05);
+  }
+  .atab-action-label { font-size: 11.5px; }
+
+  /* ── Dark mode ────────────────────────────────────────────── */
+  [data-theme="dark"] .artifact-tabs {
+    background: linear-gradient(to bottom, var(--surface) 0%, rgba(91,95,239,.04) 100%);
+  }
+  [data-theme="dark"] .artifact-tab:hover { background: rgba(91,95,239,.08); }
+  [data-theme="dark"] .artifact-tab.active { background: rgba(91,95,239,.12); }
+  [data-theme="dark"] .atab-action-btn { background: var(--surface2); }
+
+  /* ── Responsive ───────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .artifact-tabs { padding: 0 10px; gap: 1px; }
+    .artifact-tab { height: 42px !important; padding: 0 10px !important; }
+    .atab-label { font-size: 11.5px !important; }
+    .atab-action-label { display: none !important; }
+    .atab-action-btn { padding: 5px 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .atab-icon { display: none; }
+    .artifact-tab { padding: 0 8px !important; }
+    .atab-label { font-size: 11px !important; }
+  }
+
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<!-- ══ SIDEBAR NAVIGATION ══════════════════════════════════════ -->
+<aside id="appSidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-mark">श</div>
+    <div class="sb-logo-text">
+      <div class="sb-name">Shuddhi QA</div>
+      <div class="sb-sub">AI Test Intelligence</div>
+    </div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-item" onclick="location.href='/'">
+      <span class="sb-icon">⊞</span><span>Overview</span>
+    </div>
+
+    <div class="sb-group-label">Test Management</div>
+    <div class="sb-item active">
+      <span class="sb-icon">✦</span><span>Generate Test Cases</span>
+      <span class="sb-badge">v2.0</span>
+    </div>
+    <div class="sb-item">
+      <span class="sb-icon">◈</span><span>AI Templates</span>
+    </div>
+    <div class="sb-item">
+      <span class="sb-icon">⚠</span><span>Defects</span>
+    </div>
+
+    <div class="sb-group-label">Integrations</div>
+    <div class="sb-item">
+      <span class="sb-icon">⬡</span><span>Azure DevOps</span>
+    </div>
+    <div class="sb-item">
+      <span class="sb-icon">◉</span><span>Jira / Zephyr</span>
+    </div>
+    <div class="sb-item">
+      <span class="sb-icon">▣</span><span>TestRail</span>
+    </div>
+
+    <div class="sb-group-label">Platform &amp; Module</div>
+    <!-- Platform cards + Module chips live inside sidebar -->
+    <div class="sb-platform-section" id="sbPlatformSection">
+      <div class="sb-platform-hint" id="sbPlatformHint">
+        Choose your enterprise platform
+      </div>
+      <!-- Platform Selector — visual cards -->
+        <div class="field">
+          <!-- Hidden select kept for JS/form compatibility -->
+          <input type="hidden" id="platform"/>
+          <div id="platformGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px;margin-top:4px"></div>
+          <div id="platformNone" style="font-size:12px;color:var(--text3);margin-top:6px;display:none">
+            Select a platform above to load modules
+          </div>
+        </div>
+
+        <!-- Module Selector — cascading dropdown + search + Other -->
+        <div class="field" id="moduleField" style="display:none">
+          <label style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+            <span>Module</span>
+            <span id="moduleCount" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3)"></span>
+          </label>
+
+          <!-- Search filter -->
+          <div style="position:relative;margin-bottom:6px">
+            <input type="text" id="moduleSearch" placeholder="Search modules…" autocomplete="off"
+              style="width:100%;padding:8px 12px 8px 32px;background:var(--surface);
+                     border:1.5px solid var(--border2);border-radius:8px;color:var(--text);
+                     font-size:13px;outline:none;transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+              oninput="filterModules(this.value)"/>
+            <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:.4"
+              viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+
+          <!-- Module chip grid -->
+          <div id="moduleGrid" style="display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto;
+                padding:2px;scrollbar-width:thin"></div>
+
+          <!-- Other option -->
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+            <button type="button" id="moduleOtherBtn" onclick="toggleModuleOther()"
+              style="font-size:12px;padding:5px 12px;border-radius:8px;border:1.5px dashed var(--border2);
+                     background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap"
+              onmouseover="this.style.borderColor='var(--d365)';this.style.color='var(--text)'"
+              onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
+              + Other / Custom module
+            </button>
+            <span id="selectedModuleName" style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;
+                  display:none;background:var(--surface);padding:4px 10px;border-radius:6px;
+                  border:1px solid var(--border2)"></span>
+          </div>
+
+          <!-- Custom module text input (hidden until Other clicked) -->
+          <div id="moduleCustomRow" style="display:none;margin-top:8px">
+            <input type="text" id="moduleCustomInput" placeholder="Enter custom module name…"
+              style="width:100%;background:var(--surface);border:1.5px solid var(--d365);border-radius:8px;
+                     padding:9px 12px;color:var(--text);font-size:13px;outline:none"
+              oninput="setCustomModule(this.value)"/>
+            <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
+              Type a module name not in the list above
+            </span>
+          </div>
+
+          <!-- Hidden select for form compatibility -->
+          <select id="module" style="display:none" aria-hidden="true"></select>
+        </div>
+    </div>
+  </nav>
+
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar">R</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name">Ramya B</div>
+        <div class="sb-user-role">QA Engineer</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<div id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+<div class="wrap" id="mainWrap">
 
   <!-- Header -->
+  <!-- New mockup-style header: page title + actions, no logo (sidebar has it) -->
   <header>
-    <div class="logo-wrap">
-      <a href="/" title="Shuddhi QA Home" style="text-decoration:none;display:flex;align-items:center;gap:12px">
-        <div class="logo-shuddhi">श</div>
-      </a>
+    <div class="hdr-page-info">
+      <h1 class="hdr-title">Generate Test Cases</h1>
+      <p class="hdr-subtitle">Enter requirements and let AI generate comprehensive test cases</p>
     </div>
-    <div class="header-text">
-      <h1><span class="d365-color">Shuddhi</span> <span class="sf-color">QA</span></h1>
-      <p style="font-size:12px;color:var(--text2);letter-spacing:.2px;margin-top:2px">AI-Powered Test Intelligence for Enterprise Platforms</p>
-    </div>
-    <div class="badge">v2.0 · Shuddhi QA</div>
-    <a href="/" title="Back to home page"
-       style="font-size:12px;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1px solid var(--border2);transition:all .15s;white-space:nowrap"
-       onmouseover="this.style.borderColor='var(--d365)';this.style.color='var(--text)'"
-       onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
-      ← Home
-    </a>
 
-    <!-- Mobile hamburger -->
-    <button class="hamburger-btn" id="hamburgerBtn" onclick="openMobileNav()" aria-label="Open menu" aria-expanded="false">
+    <div class="hdr-actions">
+      <!-- Claude + ADO status dots (preserved for JS) -->
+      <div id="keyStatusRow" style="display:flex;align-items:center;gap:6px">
+        <div id="claudeKeyDot" title="Claude AI status"
+             style="width:8px;height:8px;border-radius:50%;background:#4E5A6B;flex-shrink:0;transition:background .3s"></div>
+        <span id="claudeKeyDotLabel" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Claude</span>
+        <div style="width:1px;height:14px;background:var(--border2);margin:0 3px"></div>
+        <div id="adoKeyDot" title="Azure DevOps status"
+             style="width:8px;height:8px;border-radius:50%;background:#4E5A6B;flex-shrink:0;transition:background .3s"></div>
+        <span id="adoKeyDotLabel" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">ADO</span>
+      </div>
+
+      <!-- Theme toggle -->
+      <button id="themeToggleBtn" onclick="toggleTheme()" title="Toggle theme"
+        class="hdr-icon-btn">🌙</button>
+
+      <!-- Notification bell -->
+      <button class="hdr-icon-btn" title="Notifications" style="position:relative">
+        🔔
+        <span style="position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--error);border:1.5px solid var(--surface)"></span>
+      </button>
+
+      <!-- Settings -->
+      <button id="settingsIconBtn" onclick="openSettings()" class="hdr-icon-btn" title="Settings">⚙️</button>
+
+      <!-- New Requirement CTA -->
+      <button class="hdr-cta-btn" onclick="resetForm()">
+        <span style="font-size:15px;font-weight:300">+</span> New Requirement
+      </button>
+    </div>
+
+    <!-- Mobile hamburger (hidden when sidebar visible) -->
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileSidebar()" aria-label="Toggle navigation" aria-expanded="false">
       ☰
     </button>
   </header>
 
   <!-- Mobile nav overlay + drawer -->
   <div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileNav()"></div>
-  <nav class="mobile-nav-drawer" id="mobileNavDrawer" role="navigation" aria-label="Mobile navigation">
-    <div class="mobile-nav-header">
-      <span class="mobile-nav-brand">Shuddhi QA</span>
-      <button class="mobile-nav-close" onclick="closeMobileNav()" aria-label="Close menu">✕</button>
-    </div>
-    <a href="#" class="mobile-nav-link" onclick="closeMobileNav();openSettings()">
-      <span class="nav-icon">⚙️</span> Settings
-    </a>
-    <div class="mobile-nav-divider"></div>
-    <a href="#" class="mobile-nav-link" onclick="closeMobileNav();document.getElementById('historyToggleBtn').click()">
-      <span class="nav-icon">🕑</span> Session History
-    </a>
-    <a href="#" class="mobile-nav-link" onclick="closeMobileNav();document.getElementById('bulkToggleBtn').click()">
-      <span class="nav-icon">📦</span> Bulk Generator
-    </a>
-    <div class="mobile-nav-divider"></div>
-    <div class="mobile-nav-link" style="cursor:default;opacity:.6;font-size:11px;font-family:'JetBrains Mono',monospace;padding:8px 14px">
-      v2.0 · Shuddhi QA
-    </div>
-  </nav>
+<!-- Mobile nav: uses #appSidebar with .mobile-open class toggle -->
 
-  <!-- Config Status Bar — shows only ⚙️ icon + key status dots -->
-  <div class="api-bar" id="apiBar">
-
-    <!-- Hidden inputs kept for JS compatibility — not shown to user -->
-    <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off"
-           style="display:none" aria-hidden="true"/>
+  <!-- Hidden api-bar: JS compatibility preserved, visually hidden -->
+  <div id="apiBar" style="display:none" aria-hidden="true">
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" style="display:none" aria-hidden="true"/>
     <div class="status-dot" id="statusDot" style="display:none"></div>
-
-    <!-- Key status indicator (compact) — shown after /api/status check -->
-    <div id="keyStatusRow" style="display:flex;align-items:center;gap:8px;flex:1">
-      <!-- Claude status dot -->
-      <div id="claudeKeyDot" title="Claude AI: not configured — click ⚙️ Settings"
-           style="width:8px;height:8px;border-radius:50%;background:#4E5A6B;flex-shrink:0;transition:background .3s"></div>
-      <span id="claudeKeyDotLabel" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">Claude</span>
-
-      <div style="width:1px;height:14px;background:var(--border2);margin:0 4px"></div>
-
-      <!-- ADO status dot -->
-      <div id="adoKeyDot" title="Azure DevOps: not configured — click ⚙️ Settings"
-           style="width:8px;height:8px;border-radius:50%;background:#4E5A6B;flex-shrink:0;transition:background .3s"></div>
-      <span id="adoKeyDotLabel" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">ADO</span>
-    </div>
-
-    <!-- Hidden elements kept for JS compatibility -->
-    <div id="claudeKeySecuredBadge" style="display:none" aria-hidden="true">
-      <div class="conn-badge ok" id="claudeConnBadge">CLAUDE_API_KEY ✓</div>
-    </div>
-    <div id="adoPATBadge"         style="display:none" aria-hidden="true"></div>
-    <div id="adoPATMissingBadge"  style="display:none" aria-hidden="true"></div>
-
-    <!-- ⚙️ Settings button — always visible -->
-    <button id="themeToggleBtn" onclick="toggleTheme()"
-            title="Toggle dark/light theme"
-            style="background:none;border:1px solid var(--border2);cursor:pointer;
-                   font-size:15px;padding:6px 10px;border-radius:8px;
-                   transition:all .15s;display:flex;align-items:center">🌙</button>
-    <button id="settingsIconBtn" onclick="openSettings()"
-            title="Settings — API Keys & Connection"
-            style="margin-left:auto;background:none;border:1px solid var(--border2);cursor:pointer;
-                   color:var(--text2);font-size:15px;padding:6px 10px;border-radius:8px;
-                   transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap">
-      ⚙️ <span style="font-size:12px;font-weight:600">Settings</span>
-    </button>
-
+    <div id="claudeKeySecuredBadge" style="display:none" aria-hidden="true"><div class="conn-badge ok" id="claudeConnBadge">CLAUDE_API_KEY ✓</div></div>
+    <div id="adoPATBadge" style="display:none" aria-hidden="true"></div>
+    <div id="adoPATMissingBadge" style="display:none" aria-hidden="true"></div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
@@ -3016,6 +4378,9 @@ header::after { display: none !important; }
   </div><!-- /settings-modal -->
 
   <!-- History Panel -->
+
+  
+  <!-- Session History -->
   <div class="history-panel" id="historyPanel">
     <div class="history-header" onclick="toggleHistory()">
       <div class="history-header-left">
@@ -3026,7 +4391,7 @@ header::after { display: none !important; }
       <button class="history-toggle" id="historyToggleBtn">▼ Show</button>
     </div>
     <div class="history-body" id="historyBody">
-      <div class="history-empty" id="historyEmpty">No saved sessions yet. Generated test cases will appear here.</div>
+      <div class="history-empty" id="historyEmpty">No sessions yet — generate some test cases!</div>
       <div class="history-list" id="historyList"></div>
     </div>
   </div>
@@ -3041,34 +4406,26 @@ header::after { display: none !important; }
       <button class="history-toggle" id="bulkToggleBtn">▼ Show</button>
     </div>
     <div class="bulk-body" id="bulkBody">
-      <div class="bulk-drop-zone" id="bulkDropZone"
-           ondragover="event.preventDefault();this.classList.add('drag-over')"
-           ondragleave="this.classList.remove('drag-over')"
-           ondrop="handleBulkDrop(event)">
+      <div class="bulk-drop-zone" id="bulkDropZone">
         <input type="file" id="bulkFiles" accept=".pdf,.docx,.txt" multiple onchange="handleBulkSelect(event)" />
-        <div style="font-size:22px;margin-bottom:6px">📁</div>
-        <div style="font-size:12.5px;color:var(--text2)"><span style="color:var(--sf);font-weight:600;text-decoration:underline">Click to upload</span> or drag multiple files</div>
-        <div style="font-size:10.5px;color:var(--text3);margin-top:4px;font-family:JetBrains Mono,monospace">PDF · DOCX · TXT — Upload up to 10 files</div>
+        <div style="font-size:24px;margin-bottom:8px">📂</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text2)">Drop multiple documents here</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:4px">PDF · DOCX · TXT — Max 10MB each</div>
       </div>
       <div class="bulk-file-list" id="bulkFileList"></div>
-      <div class="bulk-progress-wrap" id="bulkProgressWrap">
-        <div class="bulk-progress-bar-bg"><div class="bulk-progress-bar-fill" id="bulkProgressFill"></div></div>
-        <div class="bulk-progress-label" id="bulkProgressLabel">Processing...</div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <button class="bulk-gen-btn" id="bulkGenBtn" onclick="runBulkGenerate()" disabled style="flex:1">
-          <div class="spinner" id="bulkSpinner"></div>
-          <span id="bulkGenLabel">⚡ Generate All &amp; Export Excel</span>
-        </button>
-        <button id="bulkStopBtn" onclick="stopBulkGenerate()"
-          style="display:none;padding:0 18px;height:44px;border-radius:10px;border:1.5px solid var(--error);
-                 background:rgba(217,48,37,.07);color:var(--error);font-size:13px;font-weight:600;
-                 cursor:pointer;flex-shrink:0;transition:all .15s"
-          onmouseover="this.style.background='rgba(217,48,37,.15)'"
-          onmouseout="this.style.background='rgba(217,48,37,.07)'">
-          ⏹ Stop
-        </button>
-      </div>
+      <select id="bulkPlatform" style="width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px">
+        <option value="">Select Platform for all documents</option>
+        <option value="D365 F&amp;O">D365 Finance &amp; Operations</option>
+        <option value="D365 CRM">D365 CRM</option>
+        <option value="Salesforce Sales">Salesforce Sales Cloud</option>
+        <option value="Web App">Web Application</option>
+        <option value="Mobile App">Mobile Application</option>
+      </select>
+      <button class="bulk-gen-btn" id="bulkGenBtn" onclick="runBulkGenerate()" disabled>
+        <div class="spinner" id="bulkSpinner"></div>
+        <span id="bulkGenLabel">⚡ Generate for All Documents</span>
+      </button>
+      <div id="bulkResults" style="margin-top:12px;display:none"></div>
     </div>
   </div>
 
@@ -3083,9 +4440,10 @@ header::after { display: none !important; }
       </div>
       <div class="form-body">
 
-        <!-- Step 1 -->
-        <div class="step-label"><span class="step-num">1</span><span>Upload Document</span></div>
-        <!-- ── Upload Zone ── -->
+        <!-- ══ COLUMN A: Input Source (Upload + Jira) ══ -->
+        <div class="form-col">
+          <div class="step-label"><span class="step-num">1</span><span>Upload Document</span></div>
+          <!-- ── Upload Zone ── -->
         <div class="field">
           <label>Requirement Document <span style="font-size:10px;font-weight:400;color:var(--text3)">(optional)</span></label>
           <div class="upload-zone" id="uploadZone"
@@ -3123,76 +4481,8 @@ header::after { display: none !important; }
             <span class="lang-lock" id="langLock">OUTPUT: ENGLISH</span>
           </div>
         </div>
-
-        <div class="form-divider"><span>— OR ENTER MANUALLY —</span></div>
-        <!-- Step 2 -->
-        <div class="step-label" style="margin-top:6px"><span class="step-num">2</span><span>Select Platform &amp; Module</span></div>
-
-        <!-- Platform Selector — visual cards -->
-        <div class="field">
-          <label>Platform</label>
-          <!-- Hidden select kept for JS/form compatibility -->
-          <input type="hidden" id="platform"/>
-          <div id="platformGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px;margin-top:4px"></div>
-          <div id="platformNone" style="font-size:12px;color:var(--text3);margin-top:6px;display:none">
-            Select a platform above to load modules
-          </div>
-        </div>
-
-        <!-- Module Selector — cascading dropdown + search + Other -->
-        <div class="field" id="moduleField" style="display:none">
-          <label style="display:flex;align-items:center;gap:8px;justify-content:space-between">
-            <span>Module</span>
-            <span id="moduleCount" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3)"></span>
-          </label>
-
-          <!-- Search filter -->
-          <div style="position:relative;margin-bottom:6px">
-            <input type="text" id="moduleSearch" placeholder="Search modules…" autocomplete="off"
-              style="width:100%;padding:8px 12px 8px 32px;background:var(--surface);
-                     border:1.5px solid var(--border2);border-radius:8px;color:var(--text);
-                     font-size:13px;outline:none;transition:border-color .15s"
-              onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
-              oninput="filterModules(this.value)"/>
-            <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:.4"
-              viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-
-          <!-- Module chip grid -->
-          <div id="moduleGrid" style="display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto;
-                padding:2px;scrollbar-width:thin"></div>
-
-          <!-- Other option -->
-          <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
-            <button type="button" id="moduleOtherBtn" onclick="toggleModuleOther()"
-              style="font-size:12px;padding:5px 12px;border-radius:8px;border:1.5px dashed var(--border2);
-                     background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap"
-              onmouseover="this.style.borderColor='var(--d365)';this.style.color='var(--text)'"
-              onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
-              + Other / Custom module
-            </button>
-            <span id="selectedModuleName" style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;
-                  display:none;background:var(--surface);padding:4px 10px;border-radius:6px;
-                  border:1px solid var(--border2)"></span>
-          </div>
-
-          <!-- Custom module text input (hidden until Other clicked) -->
-          <div id="moduleCustomRow" style="display:none;margin-top:8px">
-            <input type="text" id="moduleCustomInput" placeholder="Enter custom module name…"
-              style="width:100%;background:var(--surface);border:1.5px solid var(--d365);border-radius:8px;
-                     padding:9px 12px;color:var(--text);font-size:13px;outline:none"
-              oninput="setCustomModule(this.value)"/>
-            <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
-              Type a module name not in the list above
-            </span>
-          </div>
-
-          <!-- Hidden select for form compatibility -->
-          <select id="module" style="display:none" aria-hidden="true"></select>
-        </div>
-
-        <!-- Jira Ticket ID Quick Fetch -->
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <!-- Jira Ticket ID Quick Fetch -->
         <div class="field" id="jiraFetchField">
           <label style="display:flex;align-items:center;justify-content:space-between">
             <span>Jira Ticket ID <span style="font-size:10px;color:var(--text3);font-weight:400">(optional — auto-fills flow below)</span></span>
@@ -3222,15 +4512,18 @@ header::after { display: none !important; }
             to Vercel env vars to enable auto-fetch.
           </div>
         </div>
+        </div>
 
-        <!-- Step 3 -->
-        <div class="step-label"><span class="step-num">3</span><span>Describe the Business Flow</span></div>
+
+
+                <!-- ══ COLUMN C: Flow + Config ══ -->
+        <div class="form-col">
+          <div class="step-label"><span class="step-num">2</span><span>Describe the Business Flow</span></div>
         <div class="field">
           <label>Business Flow Description</label>
           <textarea id="flowDesc" placeholder="Describe the business process in plain English...&#10;&#10;e.g. Vendor submits invoice via portal. AP Clerk reviews and matches to PO. Finance Manager approves if amount > ₹50,000. Payment is processed and vendor is notified."></textarea>
         </div>
-
-        <!-- Advanced toggle -->
+          <!-- Advanced toggle -->
         <div class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">
           <span class="adv-icon">▼</span>
           <span>Advanced options</span>
@@ -3246,8 +4539,7 @@ header::after { display: none !important; }
             <input type="text" id="integrations" placeholder="e.g. Power Automate, Azure Service Bus, Outlook" />
           </div>
         </div>
-
-        <div class="field">
+          <div class="field">
           <label>Test Priority</label>
           <div class="priority-row">
             <div class="priority-btn active-high" onclick="setPriority('High', this)">🔴 High</div>
@@ -3255,19 +4547,20 @@ header::after { display: none !important; }
             <div class="priority-btn" onclick="setPriority('Low', this)">🟢 Low</div>
           </div>
         </div>
-
-        <div class="field">
+          <div class="field">
           <label>Output Format</label>
           <select id="outputFormat">
-            <option value="full">Full Test Artifact (All Sections)</option>
-            <option value="scenarios">E2E Test Scenarios Only</option>
-            <option value="fields">Field Validations Only</option>
-            <option value="integration">Integration Touchpoints Only</option>
-            <option value="negative">Negative Test Cases Only</option>
+            <option value="full">All Sections</option>
+            <option value="e2e">End to End</option>
+            <option value="field">Field Validation</option>
+            <option value="integration">Integration</option>
+            <option value="negative">Negative</option>
+            <option value="smoke">Smoke</option>
+            <option value="testdata">Test Data</option>
+            <option value="metadata">Metadata</option>
           </select>
         </div>
-
-        <!-- Output Language Selector -->
+          <!-- Output Language Selector -->
         <div class="field">
           <label style="display:flex;align-items:center;gap:8px;justify-content:space-between">
             <span>Output Language</span>
@@ -3288,21 +4581,21 @@ header::after { display: none !important; }
             <option value="Chinese">🇨🇳 Chinese (中文)</option>
           </select>
         </div>
+        </div>
 
-        <button class="gen-btn" id="genBtn" onclick="generate()">
-          <div class="spinner"></div>
-          <span class="btn-text">⚡ Generate Test Scenarios</span>
-        </button>
-
-        <!-- FIX TC-NEW-001: Stop button shown during generation -->
-        <button class="reset-btn" id="stopBtn" onclick="stopGeneration()" style="display:none;border-color:var(--error);color:var(--error)">
-          ⏹ Stop Generation
-        </button>
-
-        <button class="reset-btn" id="resetBtn" onclick="resetForm()">
-          🔄 Clear &amp; Reset — Upload New Document
-        </button>
-
+        <!-- ══ ACTIONS ROW: Generate + Reset ══ -->
+        <div class="form-actions-row">
+          <button class="gen-btn" id="genBtn" onclick="generate()">
+            <div class="spinner"></div>
+            <span class="btn-text">⚡ Generate Test Scenarios</span>
+          </button>
+          <button class="reset-btn" id="stopBtn" onclick="stopGeneration()" style="display:none;border-color:var(--error);color:var(--error)">
+            ⏹ Stop
+          </button>
+          <button class="reset-btn" id="resetBtn" onclick="resetForm()" title="Clear &amp; Reset">
+            🔄 Reset
+          </button>
+        </div>
       </div>
 
       <!-- Sticky Generate bar (appears when gen button scrolls out of view) -->
@@ -3365,6 +4658,73 @@ header::after { display: none !important; }
         </div>
       </div>
 
+      <!-- ── Section Tabs — Rich UI ───────────────────────── -->
+      <div class="artifact-tabs" id="artifactTabs">
+
+        <button class="artifact-tab active" id="atab-all" onclick="switchArtifactTab('all',this)">
+          <span class="atab-icon">⊞</span>
+          <span class="atab-label">All</span>
+          <span class="atab-count" id="atab-count-all"></span>
+        </button>
+
+        <button class="artifact-tab atab-e2e-style" id="atab-e2e" onclick="switchArtifactTab('e2e',this)">
+          <span class="atab-icon">⟳</span>
+          <span class="atab-label">End to End</span>
+          <span class="atab-count" id="atab-count-e2e"></span>
+        </button>
+
+        <button class="artifact-tab atab-field-style" id="atab-field" onclick="switchArtifactTab('field',this)">
+          <span class="atab-icon">✓</span>
+          <span class="atab-label">Field Validation</span>
+          <span class="atab-count" id="atab-count-field"></span>
+        </button>
+
+        <button class="artifact-tab atab-int-style" id="atab-integration" onclick="switchArtifactTab('integration',this)">
+          <span class="atab-icon">⇄</span>
+          <span class="atab-label">Integration</span>
+          <span class="atab-count" id="atab-count-integration"></span>
+        </button>
+
+        <button class="artifact-tab atab-neg-style" id="atab-negative" onclick="switchArtifactTab('negative',this)">
+          <span class="atab-icon">✕</span>
+          <span class="atab-label">Negative</span>
+          <span class="atab-count" id="atab-count-negative"></span>
+        </button>
+
+        <button class="artifact-tab atab-smoke-style" id="atab-smoke" onclick="switchArtifactTab('smoke',this)">
+          <span class="atab-icon">◈</span>
+          <span class="atab-label">Smoke</span>
+          <span class="atab-count" id="atab-count-smoke"></span>
+        </button>
+
+        <button class="artifact-tab atab-data-style" id="atab-testdata" onclick="switchArtifactTab('testdata',this)">
+          <span class="atab-icon">⊟</span>
+          <span class="atab-label">Test Data</span>
+          <span class="atab-count" id="atab-count-testdata"></span>
+        </button>
+
+        <button class="artifact-tab atab-meta-style" id="atab-metadata" onclick="switchArtifactTab('metadata',this)">
+          <span class="atab-icon">≡</span>
+          <span class="atab-label">Metadata</span>
+          <span class="atab-count" id="atab-count-metadata"></span>
+        </button>
+
+        <div class="atab-right">
+          <button class="atab-action-btn" onclick="collapseAllSections()" title="Collapse all sections">
+            <span>⊟</span><span class="atab-action-label">Collapse</span>
+          </button>
+          <button class="atab-action-btn" onclick="expandAllSections()" title="Expand all sections">
+            <span>⊞</span><span class="atab-action-label">Expand</span>
+          </button>
+          <button class="atab-action-btn" onclick="window.print()" title="Print test cases">
+            <span>🖨️</span>
+          </button>
+          <button class="atab-action-btn" onclick="copyShareLink()" title="Copy shareable link">
+            <span>🔗</span><span class="atab-action-label">Share</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Edit Mode Bar -->
       <div class="edit-mode-bar" id="editModeBar">
         <strong>✏️ Edit Mode ON</strong> — Click any table cell to edit directly
@@ -3416,8 +4776,60 @@ header::after { display: none !important; }
         </div>
       </div>
 
+      <!-- Stat summary cards (hidden until generation) -->
+      <div id="outputStats">
+        <div class="stat-card stat-total">
+          <div class="stat-card-num" id="statTotal">—</div>
+          <div class="stat-card-lbl">Total TCs</div>
+        </div>
+        <div class="stat-card stat-e2e">
+          <div class="stat-card-num" id="statE2E">—</div>
+          <div class="stat-card-lbl">E2E</div>
+        </div>
+        <div class="stat-card stat-neg">
+          <div class="stat-card-num" id="statNeg">—</div>
+          <div class="stat-card-lbl">Negative</div>
+        </div>
+        <div class="stat-card stat-field">
+          <div class="stat-card-num" id="statField">—</div>
+          <div class="stat-card-lbl">Field Valid.</div>
+        </div>
+        <div class="stat-card stat-int">
+          <div class="stat-card-num" id="statInt">—</div>
+          <div class="stat-card-lbl">Integration</div>
+        </div>
+        <div class="stat-card stat-conf" title="Based on platform-specific expert knowledge used">
+          <div class="stat-card-num" id="statConf">—</div>
+          <div class="stat-card-lbl">AI Confidence</div>
+        </div>
+      </div>
+
+      <!-- Output toolbar: search + jump nav -->
+      <div id="outputToolbar">
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="pointer-events:none">
+            <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="tcSearch" placeholder="Search test cases…" autocomplete="off" oninput="searchTestCases(this.value)"/>
+        </div>
+        <div class="jump-nav" id="jumpNav"></div>
+      </div>
+
       <!-- Output -->
       <div class="output-content" id="outputContent"></div>
+
+      <!-- Pagination -->
+      <div id="tcPagination"></div>
+
+      <!-- Bulk action bar -->
+      <div id="bulkActionBar">
+        <span class="bulk-count" id="bulkCount">0 selected</span>
+        <button class="bulk-btn" onclick="bulkExportSelected()">📊 Export Selected</button>
+        <button class="bulk-btn" onclick="bulkCopySelected()">📋 Copy Selected</button>
+        <button class="bulk-btn bulk-btn-primary" onclick="bulkPushToADO()">🔷 Push Selected to ADO</button>
+        <span class="bulk-clear" onclick="clearBulkSelection()">✕ Clear selection</span>
+      </div>
 
       <!-- Meta Bar -->
       <div class="meta-bar" id="metaBar">
@@ -3999,6 +5411,14 @@ function resetForm() {
   document.getElementById('outputContent').className = 'output-content';
   const _fb = document.getElementById('filterBar');
   if (_fb) _fb.style.display = 'none';
+  const _os = document.getElementById('outputStats');
+  if (_os) _os.classList.remove('visible');
+  const _ot = document.getElementById('outputToolbar');
+  if (_ot) _ot.classList.remove('visible');
+  const _pg = document.getElementById('tcPagination');
+  if (_pg) { _pg.classList.remove('visible'); _pg.innerHTML = ''; }
+  const _ba = document.getElementById('bulkActionBar');
+  if (_ba) _ba.classList.remove('visible');
   document.getElementById('outputContent').innerHTML = '';
   document.getElementById('placeholder').style.display = '';
   document.getElementById('metaBar').className = 'meta-bar';
@@ -4813,11 +6233,17 @@ Generate one row per test case. Never skip a test case. For Preconditions, alway
 NEVER use backticks inside table cells.`;
 
   const formatInstructions = {
-    full: "Generate all 6 sections of the complete test artifact.",
-    scenarios: "Generate ONLY Section 2 (End-to-End Test Cases) with a brief test summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact",
-    fields: "Generate ONLY Section 3 (Field Validation Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact",
-    integration: "Generate ONLY Section 4 (Integration Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact",
-    negative: "Generate ONLY Section 5 (Negative Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact"
+    full:        "Generate all 8 sections of the complete test artifact (Gap Analysis, Test Summary, End-to-End, Field Validation, Integration, Negative, Test Data Requirements, Test Case Metadata).",
+    e2e:         "Generate ONLY Section 2 (End-to-End Test Cases) with a brief test summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata): TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact.",
+    field:       "Generate ONLY Section 3 (Field Validation Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata): TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact.",
+    integration: "Generate ONLY Section 4 (Integration Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata): TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact.",
+    negative:    "Generate ONLY Section 5 (Negative Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata): TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact.",
+    smoke:       "Generate ONLY Smoke / Sanity test cases — the minimum set of critical-path tests that verify core functionality works after a build. Include Section 1 (Test Summary) and a focused 5-column smoke test table. Then add Section 7 (Test Case Metadata). Aim for 8-15 high-priority smoke tests.",
+    testdata:    "Generate ONLY Section 6 (Test Data Requirements) — a comprehensive table of all test data needed: data category, field name, sample value, data type, constraints, and environment. Also include Section 1 (Test Summary).",
+    metadata:    "Generate ONLY Section 7 (Test Case Metadata) — the full metadata table for all test cases: TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact. Cover all scenarios from all sections.",
+    // Legacy aliases (backward compatibility)
+    scenarios: "Generate ONLY Section 2 (End-to-End Test Cases) with a brief test summary.",
+    fields:    "Generate ONLY Section 3 (Field Validation Test Cases) with a brief summary."
   };
 
   const userPrompt = `Generate a QA test artifact for the following business process:
@@ -5080,6 +6506,30 @@ function finalizeOutput(elapsed, platform, module) {
 
   // Save to history
   saveToHistory(platform, module, rawMarkdown);
+
+  buildOutputStats();
+  buildOutputToolbar();
+  initStepsChips();
+  initBulkSelect();
+  initPagination();
+  // Render TestGen-style clean table view (after DOM is ready)
+  setTimeout(() => renderTestGenView(), 200);
+
+  // Collapse Section 0 (Gap Analysis) by default — show test cases first
+  setTimeout(() => {
+    const headings = document.querySelectorAll('#outputContent h2');
+    headings.forEach(h2 => {
+      const txt = h2.textContent.toLowerCase();
+      if (txt.includes('gap analysis') || txt.includes('0.')) {
+        const body = h2.nextElementSibling;
+        if (body && body.classList.contains('section-body')) {
+          body.classList.add('collapsed');
+          const tog = h2.querySelector('.section-toggle');
+          if (tog) tog.classList.add('collapsed');
+        }
+      }
+    });
+  }, 100);
 
   showToast('Test scenarios generated successfully!');
 }
@@ -7664,6 +9114,44 @@ async function settingsLoadProjects() {
         </div>
     </div>
   </div>
+
+<script>
+// Platform & Module selector is now rendered directly in the sidebar
+// (platformGrid and moduleField elements live inside #sbPlatformSection)
+</script>
+
+<script>
+// ── Auto-sync: clicking a tab sets the matching output format ──
+function syncFormatOnTabClick(tabKey) {
+  const fmt = document.getElementById('outputFormat');
+  if (!fmt) return;
+  const map = {
+    all: 'full', e2e: 'e2e', field: 'field',
+    integration: 'integration', negative: 'negative',
+    smoke: 'smoke', testdata: 'testdata', metadata: 'metadata'
+  };
+  if (map[tabKey]) fmt.value = map[tabKey];
+}
+
+// ── Auto-sync: changing output format highlights matching tab ──
+document.addEventListener('DOMContentLoaded', () => {
+  const fmt = document.getElementById('outputFormat');
+  if (!fmt) return;
+  fmt.addEventListener('change', () => {
+    const tabMap = {
+      full: 'all', e2e: 'e2e', field: 'field',
+      integration: 'integration', negative: 'negative',
+      smoke: 'smoke', testdata: 'testdata', metadata: 'metadata',
+      scenarios: 'e2e', fields: 'field'
+    };
+    const tabKey = tabMap[fmt.value];
+    if (!tabKey) return;
+    const tabBtn = document.getElementById('atab-' + tabKey);
+    if (tabBtn) switchArtifactTab(tabKey, tabBtn);
+  });
+});
+</script>
+
 </body>
 </html>
 <script>
@@ -8834,4 +10322,912 @@ document.addEventListener('DOMContentLoaded', () => {
   const xlsBtn = document.getElementById('xlsBtn');
   if (xlsBtn) observer.observe(xlsBtn, { attributes: true, attributeFilter: ['disabled'] });
 });
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 1: Stat summary cards
+// ═══════════════════════════════════════════════════════════════
+function buildOutputStats() {
+  const el = document.getElementById('outputContent');
+  if (!el) return;
+  const statsEl = document.getElementById('outputStats');
+  if (!statsEl) return;
+
+  // Count TCs per section from h2 headings
+  let total=0, e2e=0, neg=0, field=0, intg=0;
+  const h2s = el.querySelectorAll('h2');
+  h2s.forEach(h2 => {
+    const txt = h2.textContent.toLowerCase();
+    const body = h2.nextElementSibling;
+    const count = body ? (body.querySelectorAll('tbody tr').length || 0) : 0;
+    total += count;
+    if (txt.includes('end-to-end') || txt.includes('e2e') || txt.includes('2.')) e2e += count;
+    else if (txt.includes('negative') || txt.includes('5.')) neg += count;
+    else if (txt.includes('field') || txt.includes('3.')) field += count;
+    else if (txt.includes('integration') || txt.includes('4.')) intg += count;
+  });
+
+  // AI confidence based on platform expertise
+  const platform = document.getElementById('platform')?.value || '';
+  const expertPlatforms = ['D365 F&O','D365 CRM','Salesforce Sales','Salesforce Service','Salesforce CPQ','Workday','Oracle ERP','Guidewire'];
+  const conf = expertPlatforms.includes(platform) ? '94%' : '87%';
+
+  document.getElementById('statTotal').textContent  = total || '—';
+  document.getElementById('statE2E').textContent    = e2e   || '—';
+  document.getElementById('statNeg').textContent    = neg   || '—';
+  document.getElementById('statField').textContent  = field || '—';
+  document.getElementById('statInt').textContent    = intg  || '—';
+  document.getElementById('statConf').textContent   = conf;
+
+  statsEl.classList.add('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 2: Steps chip + Section jump nav + TC title styling
+// ═══════════════════════════════════════════════════════════════
+function initStepsChips() {
+  const el = document.getElementById('outputContent');
+  if (!el) return;
+
+  el.querySelectorAll('table.tc-table tbody tr').forEach(row => {
+    const titleCell  = row.cells[0];
+    const actionCell = row.cells[1];
+    if (!actionCell || !titleCell) return;
+
+    // Style TC ID + title
+    const rawTitle = titleCell.textContent.trim();
+    const tcIdMatch = rawTitle.match(/^(TC\d+)\s*[-–]\s*(.*)/i);
+    if (tcIdMatch && !titleCell.querySelector('.tc-id-bold')) {
+      titleCell.innerHTML = `<span class="tc-id-bold">${tcIdMatch[1]}</span><span class="tc-title-text">${tcIdMatch[2]}</span>`;
+    }
+
+    // Steps chip — only if action cell has real content
+    const stepsText = actionCell.textContent.trim();
+    if (!stepsText || actionCell.querySelector('.steps-chip')) return;
+
+    // Count numbered steps: "1. Navigate; 2. Click; 3. Enter" → 3 steps
+    const stepCount = (stepsText.match(/\d+[.)]\s/g) || [stepsText]).length;
+
+    const chip = document.createElement('div');
+    chip.className = 'steps-chip';
+    chip.innerHTML = `<span>${stepCount} Step${stepCount!==1?'s':''}</span><span class="chip-arrow">▾</span>`;
+
+    const expanded = document.createElement('div');
+    expanded.className = 'steps-expanded';
+    // Format steps as numbered list
+    const steps = stepsText.split(/(?<=\d[.)]\s*[^;]+)[;]\s*(?=\d+[.)])/);
+    expanded.innerHTML = steps.map((s,i) => `<div style="padding:2px 0"><strong style="color:var(--d365);font-size:11px">${i+1}.</strong> ${s.replace(/^\d+[.)]\s*/,'')}</div>`).join('');
+
+    chip.onclick = (e) => {
+      e.stopPropagation();
+      chip.classList.toggle('open');
+      expanded.classList.toggle('open');
+    };
+
+    actionCell.innerHTML = '';
+    actionCell.appendChild(chip);
+    actionCell.appendChild(expanded);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 3: Output toolbar — search + jump nav
+// ═══════════════════════════════════════════════════════════════
+function buildOutputToolbar() {
+  const toolbar  = document.getElementById('outputToolbar');
+  const jumpNav  = document.getElementById('jumpNav');
+  const el       = document.getElementById('outputContent');
+  if (!toolbar || !jumpNav || !el) return;
+
+  toolbar.classList.add('visible');
+  jumpNav.innerHTML = '';
+
+  // Build jump buttons for each h2 section
+  const sectionMap = {
+    'gap': '0.Gap', 'summary': '1.Sum', 'end-to-end': '2.E2E',
+    'e2e': '2.E2E', 'field validat': '3.Field', 'integration': '4.Int',
+    'negative': '5.Neg', 'test data': '6.Data', 'metadata': '7.Meta'
+  };
+
+  const seen = new Set();
+  el.querySelectorAll('h2').forEach(h2 => {
+    const txt = h2.textContent.toLowerCase();
+    for (const [key, label] of Object.entries(sectionMap)) {
+      if (txt.includes(key) && !seen.has(label)) {
+        seen.add(label);
+        const btn = document.createElement('button');
+        btn.className = 'jump-btn';
+        btn.textContent = label;
+        // Count TCs in this section
+        const body = h2.nextElementSibling;
+        const cnt  = body ? body.querySelectorAll('tbody tr').length : 0;
+        if (cnt > 0) {
+          const badge = document.createElement('span');
+          badge.className = 'tc-count-badge';
+          badge.textContent = cnt;
+          btn.appendChild(badge);
+        }
+        btn.onclick = () => {
+          h2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Expand section if collapsed
+          const body2 = h2.nextElementSibling;
+          if (body2 && body2.classList.contains('collapsed')) {
+            body2.classList.remove('collapsed');
+            const tog = h2.querySelector('.section-toggle');
+            if (tog) tog.classList.remove('collapsed');
+          }
+        };
+        jumpNav.appendChild(btn);
+        break;
+      }
+    }
+  });
+}
+
+// ── Search test cases ────────────────────────────────────────────
+function searchTestCases(query) {
+  const el = document.getElementById('outputContent');
+  if (!el) return;
+  const q = query.toLowerCase().trim();
+  let matchCount = 0;
+
+  el.querySelectorAll('table.tc-table tbody tr').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const show = !q || text.includes(q);
+    row.style.display = show ? '' : 'none';
+    if (show) matchCount++;
+  });
+
+  // Update pagination or show search result count
+  const pg = document.getElementById('tcPagination');
+  if (q && pg) {
+    pg.innerHTML = `<span class="pg-info">${matchCount} result${matchCount!==1?'s':''} for "${query}"</span>
+      <button class="pg-btn" onclick="document.getElementById('tcSearch').value='';searchTestCases('')">✕ Clear</button>`;
+    pg.classList.add('visible');
+  } else if (!q) {
+    initPagination();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 4: Pagination
+// ═══════════════════════════════════════════════════════════════
+let currentPage = 1;
+const PAGE_SIZE = 10;
+
+function initPagination() {
+  const el = document.getElementById('outputContent');
+  const pg = document.getElementById('tcPagination');
+  if (!el || !pg) return;
+
+  const allRows = [...el.querySelectorAll('table.tc-table tbody tr')];
+  const totalTCs = allRows.length;
+
+  if (totalTCs <= PAGE_SIZE) {
+    pg.classList.remove('visible');
+    allRows.forEach(r => r.style.display = '');
+    return;
+  }
+
+  currentPage = 1;
+  renderPage(currentPage, allRows);
+  buildPaginationUI(currentPage, Math.ceil(totalTCs / PAGE_SIZE), allRows);
+  pg.classList.add('visible');
+}
+
+function renderPage(page, allRows) {
+  const start = (page - 1) * PAGE_SIZE;
+  const end   = start + PAGE_SIZE;
+  allRows.forEach((row, i) => { row.style.display = (i >= start && i < end) ? '' : 'none'; });
+  currentPage = page;
+}
+
+function buildPaginationUI(current, total, allRows) {
+  const pg = document.getElementById('tcPagination');
+  if (!pg) return;
+
+  const pages = [];
+  for (let i = 1; i <= total; i++) pages.push(i);
+  const totalTCs = allRows.length;
+
+  const start = (current-1)*PAGE_SIZE+1;
+  const end   = Math.min(current*PAGE_SIZE, totalTCs);
+
+  pg.innerHTML = `
+    <button class="pg-btn" onclick="changePage(${current-1})" ${current===1?'disabled':''}>←</button>
+    ${pages.map(p => `<button class="pg-btn${p===current?' active':''}" onclick="changePage(${p})">${p}</button>`).join('')}
+    <button class="pg-btn" onclick="changePage(${current+1})" ${current===total?'disabled':''}>→</button>
+    <span class="pg-info">${start}–${end} of ${totalTCs} test cases</span>
+  `;
+}
+
+function changePage(page) {
+  const el = document.getElementById('outputContent');
+  if (!el) return;
+  const allRows = [...el.querySelectorAll('table.tc-table tbody tr')];
+  const total = Math.ceil(allRows.length / PAGE_SIZE);
+  if (page < 1 || page > total) return;
+  renderPage(page, allRows);
+  buildPaginationUI(page, total, allRows);
+  document.getElementById('outputContent').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 5: Bulk selection + action bar
+// ═══════════════════════════════════════════════════════════════
+let selectedTCs = new Set();
+
+function initBulkSelect() {
+  const el = document.getElementById('outputContent');
+  if (!el) return;
+
+  el.querySelectorAll('table.tc-table').forEach(table => {
+    // Add checkbox header
+    const thead = table.querySelector('thead tr');
+    if (thead && !thead.querySelector('.tc-checkbox-col')) {
+      const th = document.createElement('th');
+      th.className = 'tc-checkbox-col';
+      const selectAll = document.createElement('input');
+      selectAll.type = 'checkbox';
+      selectAll.className = 'tc-row-cb';
+      selectAll.title = 'Select all';
+      selectAll.onchange = (e) => toggleSelectAll(e.target.checked, table);
+      th.appendChild(selectAll);
+      thead.insertBefore(th, thead.firstChild);
+    }
+
+    // Add checkbox to each row
+    table.querySelectorAll('tbody tr').forEach((row, i) => {
+      if (row.querySelector('.tc-checkbox-col')) return;
+      const td = document.createElement('td');
+      td.className = 'tc-checkbox-col';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'tc-row-cb';
+      const tcId = row.cells[1]?.querySelector('.tc-id-bold')?.textContent ||
+                   row.cells[1]?.textContent?.match(/TC\d+/)?.[0] || `TC-${i}`;
+      cb.dataset.tcId = tcId;
+      cb.onchange = (e) => {
+        e.stopPropagation();
+        toggleTCSelect(tcId, e.target.checked, row);
+      };
+      td.appendChild(cb);
+      row.insertBefore(td, row.firstChild);
+    });
+  });
+}
+
+function toggleTCSelect(id, checked, row) {
+  if (checked) { selectedTCs.add(id); row.classList.add('tc-selected'); }
+  else          { selectedTCs.delete(id); row.classList.remove('tc-selected'); }
+  updateBulkBar();
+}
+
+function toggleSelectAll(checked, table) {
+  table.querySelectorAll('tbody .tc-row-cb').forEach(cb => {
+    cb.checked = checked;
+    const row = cb.closest('tr');
+    const id  = cb.dataset.tcId;
+    if (checked) { selectedTCs.add(id); row?.classList.add('tc-selected'); }
+    else         { selectedTCs.delete(id); row?.classList.remove('tc-selected'); }
+  });
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar   = document.getElementById('bulkActionBar');
+  const count = document.getElementById('bulkCount');
+  if (!bar || !count) return;
+  const n = selectedTCs.size;
+  bar.classList.toggle('visible', n > 0);
+  count.textContent = `${n} selected`;
+}
+
+function clearBulkSelection() {
+  selectedTCs.clear();
+  document.querySelectorAll('.tc-row-cb').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.tc-selected').forEach(r => r.classList.remove('tc-selected'));
+  updateBulkBar();
+}
+
+function bulkCopySelected() {
+  if (!selectedTCs.size) return;
+  const lines = [`Selected test cases (${selectedTCs.size}):\n`];
+  document.querySelectorAll('table.tc-table tbody tr.tc-selected').forEach(row => {
+    const id   = row.querySelector('.tc-id-bold')?.textContent || '';
+    const titl = row.querySelector('.tc-title-text')?.textContent || row.cells[1]?.textContent || '';
+    lines.push(`• ${id} — ${titl}`);
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(() => showToast(`${selectedTCs.size} TCs copied ✅`, '📋'));
+}
+
+function bulkExportSelected() {
+  showToast(`Exporting ${selectedTCs.size} selected test cases…`, '📊');
+  // Re-use existing Excel export — it reads from rawMarkdown
+  // Selected TCs are highlighted for the user
+  exportExcel();
+}
+
+function bulkPushToADO() {
+  showToast(`Opening ADO push for ${selectedTCs.size} selected test cases`, '🔷');
+  openADOModal();
+}
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// TESTGEN-STYLE OUTPUT RENDERER
+// rawMarkdown is NEVER modified — all exports (ADO, Excel, PDF, etc.) unchanged
+// This is purely a DOM presentation layer over the parsed data
+// ═══════════════════════════════════════════════════════════════════
+
+// Detect TC type from section heading
+function getTCType(sectionTitle) {
+  const t = (sectionTitle||'').toLowerCase();
+  if (t.includes('negative'))        return { type:'Negative',    cls:'tg-type-negative' };
+  if (t.includes('end-to-end')||t.includes('e2e')||t.includes('2.')) return { type:'E2E', cls:'tg-type-e2e' };
+  if (t.includes('field')||t.includes('3.')) return { type:'Field Valid.', cls:'tg-type-field' };
+  if (t.includes('integration')||t.includes('4.')) return { type:'Integration', cls:'tg-type-integration' };
+  if (t.includes('smoke'))           return { type:'Smoke',        cls:'tg-type-smoke' };
+  return                               { type:'Functional',   cls:'tg-type-positive' };
+}
+
+// Infer priority from TC title text
+function inferPriority(title) {
+  const t = (title||'').toLowerCase();
+  if (t.match(/invalid|wrong|unauthori|expired|fail|error|break|exceed/i)) return { pri:'Medium', cls:'tg-pri-medium' };
+  if (t.match(/critical|blocker|payment|financial|security|login|auth/i))  return { pri:'Critical', cls:'tg-pri-critical' };
+  if (t.match(/low|optional|cosmetic|typo/i))                               return { pri:'Low', cls:'tg-pri-low' };
+  return                                                                      { pri:'High', cls:'tg-pri-high' };
+}
+
+let tgAllTCs   = [];  // full parsed list [{id,title,steps,expected,type,typeCls,priority,priCls,section}]
+let tgFilter   = 'all';
+let tgPage     = 1;
+const TG_PAGE  = 10;
+let tgSelectedIds = new Set();
+
+// ── Main entry point — called from finalizeOutput ────────────────
+function renderTestGenView() {
+  const el       = document.getElementById('outputContent');
+  const statsEl  = document.getElementById('outputStats');
+  const toolbarEl= document.getElementById('outputToolbar');
+  if (!el) return;
+
+  // Parse sections + TCs from rendered markdown
+  tgAllTCs = [];
+  tgSelectedIds.clear();
+  tgFilter = 'all';
+  tgPage   = 1;
+
+  const h2s = el.querySelectorAll('h2');
+  h2s.forEach(h2 => {
+    const secTitle = h2.textContent.replace(/^[#\s▼▶]+/, '').trim();
+    const typeInfo = getTCType(secTitle);
+    const body     = h2.nextElementSibling;
+    if (!body) return;
+
+    body.querySelectorAll('table').forEach(table => {
+      const headers = [...table.querySelectorAll('th')].map(th => th.textContent.trim());
+      const isTCTable = headers.includes('Title') && headers.includes('Step Action');
+      if (!isTCTable) return;
+
+      table.querySelectorAll('tbody tr').forEach(row => {
+        const cells = [...row.querySelectorAll('td')].map(td => td.textContent.trim());
+        if (!cells[0] || cells[0].length < 2) return;
+        const tcId    = cells[0].match(/^(TC\d+)/i)?.[1] || cells[0];
+        const tcTitle = cells[0].replace(/^TC\d+\s*[-–]\s*/i,'').trim() || cells[0];
+        const stepsRaw= cells[1] || '';
+        const expected= cells[2] || '';
+        const priInfo = inferPriority(tcTitle);
+        tgAllTCs.push({
+          id:      tcId,
+          title:   tcTitle,
+          stepsRaw,
+          expected,
+          section: secTitle,
+          type:    typeInfo.type,
+          typeCls: typeInfo.cls,
+          priority:priInfo.pri,
+          priCls:  priInfo.cls,
+        });
+      });
+    });
+  });
+
+  if (tgAllTCs.length === 0) return; // nothing to render as TestGen style
+
+  // Build stat summary cards data
+  buildTGStats();
+
+  // Replace output with TestGen view
+  buildTGRequirementRow(el);
+  buildTGTabsAndTable(el);
+  buildTGProgressBar(el);
+  buildTGBulkBar();
+
+  // Hide old stats/toolbar (we replaced them inline)
+  if (statsEl)   statsEl.classList.remove('visible');
+  if (toolbarEl) toolbarEl.classList.remove('visible');
+  // Hide old filter bar
+  const fb = document.getElementById('filterBar');
+  if (fb) fb.style.display = 'none';
+  // Hide old pagination
+  const pg = document.getElementById('tcPagination');
+  if (pg) { pg.classList.remove('visible'); pg.innerHTML = ''; }
+}
+
+// ── Stat values ───────────────────────────────────────────────────
+function buildTGStats() {
+  document.getElementById('statTotal')?.setAttribute('data-tg', tgAllTCs.length);
+  document.getElementById('statE2E')?.setAttribute('data-tg', tgAllTCs.filter(t=>t.type==='E2E').length);
+  document.getElementById('statNeg')?.setAttribute('data-tg', tgAllTCs.filter(t=>t.type==='Negative').length);
+  document.getElementById('statField')?.setAttribute('data-tg', tgAllTCs.filter(t=>t.type==='Field Valid.').length);
+  document.getElementById('statInt')?.setAttribute('data-tg', tgAllTCs.filter(t=>t.type==='Integration').length);
+}
+
+// ── Progress bar ──────────────────────────────────────────────────
+function buildTGProgressBar(el) {
+  const existing = document.getElementById('tg-progress-bar');
+  if (existing) return; // already built
+
+  const bar = document.createElement('div');
+  bar.id = 'tg-progress-bar';
+  bar.className = 'tg-progress';
+  const steps = [
+    { n:'1', name:'Input Requirement', sub:'Upload or describe', done:true  },
+    { n:'2', name:'Generate',          sub:'AI is analysing',    done:true  },
+    { n:'3', name:'Review & Edit',     sub:'Review test cases',  active:true},
+    { n:'4', name:'Push to DevOps',    sub:'Create suite & push', done:false },
+  ];
+  bar.innerHTML = steps.map((s,i) => `
+    <div class="tg-step ${s.done?'done':''} ${s.active?'active':''}">
+      <div class="tg-step-circle">${s.done?'✓':s.n}</div>
+      <div class="tg-step-info">
+        <span class="tg-step-name">${s.name}</span>
+        <span class="tg-step-sub">${s.sub}</span>
+      </div>
+    </div>
+    ${i<steps.length-1?'<div class="tg-step-line"></div>':''}
+  `).join('');
+
+  el.insertBefore(bar, el.firstChild);
+}
+
+// ── Requirement card row ──────────────────────────────────────────
+function buildTGRequirementRow(el) {
+  const existing = document.getElementById('tg-req-row');
+  if (existing) existing.remove();
+
+  const platform = document.getElementById('platform')?.value || 'Platform';
+  const module   = document.getElementById('module')?.value   || 'Module';
+  const flow     = document.getElementById('flowDesc')?.value?.trim() || '';
+  const jiraId   = document.getElementById('jiraTicketId')?.value?.trim() || '';
+  const total    = tgAllTCs.length;
+  const neg      = tgAllTCs.filter(t=>t.type==='Negative').length;
+  const e2e      = tgAllTCs.filter(t=>t.type==='E2E').length;
+  const field    = tgAllTCs.filter(t=>t.type==='Field Valid.').length;
+  const intg     = tgAllTCs.filter(t=>t.type==='Integration').length;
+  const expertP  = ['D365 F&O','D365 CRM','Salesforce Sales','Salesforce Service','Salesforce CPQ','Workday','Oracle ERP','Guidewire'];
+  const confPct  = expertP.includes(platform) ? 94 : 87;
+  const confDeg  = (confPct/100)*360;
+
+  const row = document.createElement('div');
+  row.id = 'tg-req-row';
+  row.className = 'tg-req-row';
+  row.innerHTML = `
+    <div class="tg-req-card">
+      <div class="tg-req-label">
+        Requirement / User Story
+        ${jiraId ? `<span class="jira-badge">🟦 ${jiraId}</span>` : ''}
+      </div>
+      <div class="tg-req-text">${(flow||`${platform} — ${module} test scenarios`).substring(0,180)}${flow.length>180?'…':''}</div>
+      <div class="tg-req-meta">Source: ${jiraId?'Jira':'Manual'} &nbsp;·&nbsp; Platform: ${platform} &nbsp;·&nbsp; Module: ${module}</div>
+    </div>
+    <div class="tg-stats">
+      <div class="tg-stat">
+        <div class="tg-stat-num" style="color:var(--d365)">${total}</div>
+        <div class="tg-stat-lbl">Total Test Cases</div>
+      </div>
+      <div class="tg-stat">
+        <div class="tg-stat-num"><span class="tg-stat-dot" style="background:#1D9E75"></span>${e2e}</div>
+        <div class="tg-stat-lbl">E2E</div>
+      </div>
+      <div class="tg-stat">
+        <div class="tg-stat-num"><span class="tg-stat-dot" style="background:#E24B4A"></span>${neg}</div>
+        <div class="tg-stat-lbl">Negative</div>
+      </div>
+      <div class="tg-stat">
+        <div class="tg-stat-num"><span class="tg-stat-dot" style="background:#7C3AED"></span>${field}</div>
+        <div class="tg-stat-lbl">Field Valid.</div>
+      </div>
+      <div class="tg-stat">
+        <div class="tg-stat-num"><span class="tg-stat-dot" style="background:#0891B2"></span>${intg}</div>
+        <div class="tg-stat-lbl">Integration</div>
+      </div>
+      <div class="tg-conf-ring" style="background:conic-gradient(var(--indigo,#6366F1) ${confPct}%,var(--border,rgba(0,0,0,.1)) ${confPct}%)">
+        <div class="tg-conf-inner">
+          <div class="tg-conf-pct">${confPct}%</div>
+          <div class="tg-conf-lbl">AI Confidence</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Insert after progress bar
+  const pb = document.getElementById('tg-progress-bar');
+  if (pb) pb.after(row);
+  else el.insertBefore(row, el.firstChild);
+}
+
+// ── Tabs + Table ──────────────────────────────────────────────────
+function buildTGTabsAndTable(el) {
+  const existing = document.getElementById('tg-main-view');
+  if (existing) existing.remove();
+
+  const view = document.createElement('div');
+  view.id = 'tg-main-view';
+
+  // Tabs
+  const types = [...new Set(tgAllTCs.map(t=>t.type))];
+  const tabsHtml = `
+    <div class="tg-tabs" id="tgTabs">
+      <div class="tg-tab active" data-filter="all" onclick="setTGFilter('all',this)">
+        All Test Cases <span class="tab-count">${tgAllTCs.length}</span>
+      </div>
+      ${types.map(type => {
+        const cnt = tgAllTCs.filter(t=>t.type===type).length;
+        return `<div class="tg-tab" data-filter="${type}" onclick="setTGFilter('${type}',this)">
+          ${type} <span class="tab-count">${cnt}</span>
+        </div>`;
+      }).join('')}
+      <div class="tg-tab-right">
+        <div class="search-wrap" style="max-width:200px">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none">
+            <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input id="tgSearch" type="text" placeholder="Search test cases…"
+            style="padding:6px 12px 6px 32px;background:var(--surface2);border:1.5px solid var(--border2);border-radius:8px;font-size:12px;color:var(--text);outline:none;width:100%"
+            oninput="filterTGTable()" onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"/>
+        </div>
+      </div>
+    </div>`;
+
+  view.innerHTML = tabsHtml + `<div class="tg-table-wrap" id="tgTableWrap"></div>`;
+  // Append after req row
+  const reqRow = document.getElementById('tg-req-row');
+  if (reqRow) reqRow.after(view);
+  else el.appendChild(view);
+
+  renderTGTable();
+}
+
+// ── Render the TC table ───────────────────────────────────────────
+function renderTGTable() {
+  const wrap = document.getElementById('tgTableWrap');
+  if (!wrap) return;
+
+  const q   = (document.getElementById('tgSearch')?.value||'').toLowerCase();
+  const filtered = tgAllTCs.filter(tc => {
+    const matchFilter = tgFilter==='all' || tc.type===tgFilter;
+    const matchSearch = !q || tc.id.toLowerCase().includes(q) || tc.title.toLowerCase().includes(q) || tc.expected.toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  const totalPages = Math.ceil(filtered.length / TG_PAGE);
+  if (tgPage > totalPages) tgPage = 1;
+  const pageTCs = filtered.slice((tgPage-1)*TG_PAGE, tgPage*TG_PAGE);
+
+  const rows = pageTCs.map(tc => {
+    const stepsArr = tc.stepsRaw.split(/;\s*(?=\d+\.)|(?<=\d+\.[^;]{3,})\n/).filter(Boolean);
+    const stepsCount = Math.max(stepsArr.length, (tc.stepsRaw.match(/\d+\./g)||[]).length, 1);
+    const stepsHtml  = stepsArr.map((s,i)=>`<div style="padding:2px 0"><strong style="color:var(--d365);font-size:11px">${i+1}.</strong> ${s.replace(/^\d+\.\s*/,'').trim()}</div>`).join('');
+    const selected   = tgSelectedIds.has(tc.id);
+
+    return `
+    <tr class="${selected?'tg-selected':''}" data-tc-id="${tc.id}" data-section="${tc.section}">
+      <td class="tg-col-cb" style="text-align:center">
+        <input type="checkbox" class="tc-row-cb" ${selected?'checked':''} style="accent-color:var(--d365);cursor:pointer;width:14px;height:14px"
+          onchange="tgToggleSelect('${tc.id}',this.checked,this.closest('tr'))"/>
+      </td>
+      <td class="tg-col-id"><span class="tg-tc-id">${tc.id}</span></td>
+      <td class="tg-col-sc"><span class="tg-scenario">${tc.title}</span></td>
+      <td class="tg-col-st steps-td">
+        <span class="tg-steps-chip" onclick="tgToggleSteps(this)">
+          ${stepsCount} Step${stepsCount!==1?'s':''} <span class="chip-arr">▾</span>
+        </span>
+        <div class="tg-steps-popup">${stepsHtml||tc.stepsRaw}</div>
+      </td>
+      <td class="tg-col-exp" style="font-size:12.5px;color:var(--text2);line-height:1.5">${tc.expected}</td>
+      <td class="tg-col-pri"><span class="tg-badge ${tc.priCls}">${tc.priority}</span></td>
+      <td class="tg-col-type"><span class="tg-badge ${tc.typeCls}">${tc.type}</span></td>
+      <td class="tg-col-act">
+        <div class="tg-actions">
+          <button class="tg-act-btn" title="Copy TC" onclick="tgCopyRow('${tc.id}')">📋</button>
+          <button class="tg-act-btn del" title="Remove from view" onclick="tgRemoveRow('${tc.id}',this)">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Select-all state
+  const allSelected = pageTCs.length > 0 && pageTCs.every(tc => tgSelectedIds.has(tc.id));
+
+  wrap.innerHTML = `
+    <table class="tg-table">
+      <thead>
+        <tr>
+          <th class="tg-col-cb tg-checkbox-col">
+            <input type="checkbox" style="accent-color:var(--d365);cursor:pointer;width:14px;height:14px"
+              ${allSelected?'checked':''} onchange="tgSelectAll(this.checked)"/>
+          </th>
+          <th class="tg-col-id">ID</th>
+          <th class="tg-col-sc">Scenario</th>
+          <th class="tg-col-st">Steps</th>
+          <th class="tg-col-exp">Expected Result</th>
+          <th class="tg-col-pri">Priority</th>
+          <th class="tg-col-type">Type</th>
+          <th class="tg-col-act">Actions</th>
+        </tr>
+      </thead>
+      <tbody>${rows||'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No test cases match your filter.</td></tr>'}</tbody>
+    </table>`;
+
+  // Pagination
+  buildTGPagination(filtered.length, totalPages);
+  updateBulkBar();
+}
+
+function buildTGPagination(total, totalPages) {
+  const pg = document.getElementById('tcPagination');
+  if (!pg) return;
+
+  if (total <= TG_PAGE) { pg.classList.remove('visible'); pg.innerHTML=''; return; }
+
+  const start = (tgPage-1)*TG_PAGE+1;
+  const end   = Math.min(tgPage*TG_PAGE, total);
+  const pages = Array.from({length:totalPages},(_,i)=>i+1);
+
+  pg.innerHTML = `
+    <button class="pg-btn" onclick="tgChangePage(${tgPage-1})" ${tgPage===1?'disabled':''}>←</button>
+    ${pages.map(p=>`<button class="pg-btn${p===tgPage?' active':''}" onclick="tgChangePage(${p})">${p}</button>`).join('')}
+    <button class="pg-btn" onclick="tgChangePage(${tgPage+1})" ${tgPage===totalPages?'disabled':''}>→</button>
+    <span class="pg-info">${start}–${end} of ${total} test cases</span>
+  `;
+  pg.classList.add('visible');
+}
+
+function tgChangePage(p) {
+  const filtered = tgAllTCs.filter(tc => tgFilter==='all'||tc.type===tgFilter);
+  const max = Math.ceil(filtered.length/TG_PAGE);
+  if (p<1||p>max) return;
+  tgPage = p;
+  renderTGTable();
+  document.getElementById('tg-main-view')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function setTGFilter(filter, btn) {
+  tgFilter = filter; tgPage = 1;
+  document.querySelectorAll('#tgTabs .tg-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderTGTable();
+}
+
+function filterTGTable() { tgPage=1; renderTGTable(); }
+
+function tgToggleSteps(chip) {
+  chip.classList.toggle('open');
+  const popup = chip.nextElementSibling;
+  if (popup) {
+    const isOpen = popup.classList.toggle('open');
+    // Position popup
+    if (isOpen) {
+      const td   = chip.closest('td');
+      const rect = chip.getBoundingClientRect();
+      const panel= document.querySelector('.output-panel');
+      const pr   = panel?.getBoundingClientRect();
+      popup.style.top  = (chip.offsetHeight+4)+'px';
+      popup.style.left = '0px';
+      // Close when clicking outside
+      setTimeout(()=>{
+        document.addEventListener('click', function close(e){
+          if(!chip.contains(e.target)&&!popup.contains(e.target)){
+            chip.classList.remove('open'); popup.classList.remove('open');
+            document.removeEventListener('click',close);
+          }
+        });
+      },50);
+    }
+  }
+}
+
+function tgToggleSelect(id, checked, row) {
+  if (checked) { tgSelectedIds.add(id); row?.classList.add('tg-selected'); }
+  else         { tgSelectedIds.delete(id); row?.classList.remove('tg-selected'); }
+  updateBulkBar();
+}
+
+function tgSelectAll(checked) {
+  const q = (document.getElementById('tgSearch')?.value||'').toLowerCase();
+  const filtered = tgAllTCs.filter(tc=>(tgFilter==='all'||tc.type===tgFilter)&&(!q||tc.id.toLowerCase().includes(q)||tc.title.toLowerCase().includes(q)));
+  const pageTCs = filtered.slice((tgPage-1)*TG_PAGE, tgPage*TG_PAGE);
+  pageTCs.forEach(tc => {
+    if (checked) tgSelectedIds.add(tc.id); else tgSelectedIds.delete(tc.id);
+  });
+  document.querySelectorAll('.tg-table .tc-row-cb').forEach(cb => cb.checked = checked);
+  document.querySelectorAll('.tg-table tbody tr').forEach(r => r.classList.toggle('tg-selected', checked));
+  updateBulkBar();
+}
+
+function tgCopyRow(id) {
+  const tc = tgAllTCs.find(t=>t.id===id);
+  if (!tc) return;
+  navigator.clipboard.writeText(`${tc.id} — ${tc.title}\n\nSteps: ${tc.stepsRaw}\n\nExpected: ${tc.expected}`)
+    .then(()=>showToast(`${id} copied ✅`,'📋'));
+}
+
+function tgRemoveRow(id, btn) {
+  tgAllTCs = tgAllTCs.filter(t=>t.id!==id);
+  btn.closest('tr').remove();
+  showToast(`${id} removed from view`,'🗑');
+}
+
+function buildTGBulkBar() {
+  const bar = document.getElementById('bulkActionBar');
+  if (!bar) return;
+  // Bulk bar wired via updateBulkBar() which uses tgSelectedIds
+}
+
+// renderTestGenView is called directly from finalizeOutput (no wrapper needed)
+</script>
+<script>
+// ── Mobile sidebar toggle ──────────────────────────────────────
+function toggleMobileSidebar() {
+  const sidebar  = document.getElementById('appSidebar');
+  const overlay  = document.getElementById('sidebarOverlay');
+  const hamburger= document.getElementById('hamburgerBtn');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.toggle('mobile-open');
+  if (overlay)   overlay.classList.toggle('open', isOpen);
+  if (hamburger) hamburger.setAttribute('aria-expanded', String(isOpen));
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function closeMobileSidebar() {
+  const sidebar  = document.getElementById('appSidebar');
+  const overlay  = document.getElementById('sidebarOverlay');
+  const hamburger= document.getElementById('hamburgerBtn');
+  if (sidebar)   sidebar.classList.remove('mobile-open');
+  if (overlay)   overlay.classList.remove('open');
+  if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+}
+
+// Close sidebar when a nav item is clicked on mobile
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('#appSidebar .sb-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeMobileSidebar();
+    });
+  });
+});
+
+// Close old mobile nav functions (kept for compatibility)
+function openMobileNav()  { toggleMobileSidebar(); }
+function closeMobileNav() { closeMobileSidebar(); }
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SECTION TABS: Functional / End to End / Integration / Negative
+// ═══════════════════════════════════════════════════════════════
+
+// Tab → section keyword mapping (matches AI output section headings)
+const ARTIFACT_TAB_MAP = {
+  all:          null,
+  e2e:          ['end-to-end','e2e','end to end'],
+  field:        ['field validat','field valid'],
+  integration:  ['integration'],
+  negative:     ['negative'],
+  smoke:        ['smoke'],
+  testdata:     ['test data','data requirements'],
+  metadata:     ['metadata','test case metadata','7.']
+};
+
+function switchArtifactTab(tabKey, btn) {
+  // Update active tab button
+  document.querySelectorAll('.artifact-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  // Keep output format in sync with active tab
+  syncFormatOnTabClick(tabKey);
+
+  const el = document.getElementById('outputContent');
+  if (!el) return;
+
+  // If TestGen view is active — filter tgAllTCs
+  if (typeof tgAllTCs !== 'undefined' && tgAllTCs.length > 0) {
+    // Map artifact tab keys to tgAllTCs type values
+    const typeMap = {
+      all:         null,
+      e2e:         ['E2E'],
+      field:       ['Field Valid.'],
+      integration: ['Integration'],
+      negative:    ['Negative'],
+      smoke:       ['Smoke'],
+      testdata:    [],          // Test Data is a section, not a TC type
+      metadata:    []           // Metadata is a section, not a TC type
+    };
+    tgFilter = tabKey === 'all' ? 'all' : (typeMap[tabKey]?.[0] || 'all');
+    tgPage = 1;
+    renderTGTable();
+    // Also sync the tgTabs if visible
+    document.querySelectorAll('#tgTabs .tg-tab').forEach(t => t.classList.remove('active'));
+    const syncTab = document.querySelector('#tgTabs .tg-tab[data-filter="'+tgFilter+'"]');
+    if (syncTab) syncTab.classList.add('active');
+    return;
+  }
+
+  // Markdown view: show/hide h2 sections based on heading text
+  const keywords = ARTIFACT_TAB_MAP[tabKey];
+  const h2s = el.querySelectorAll('h2');
+
+  h2s.forEach(h2 => {
+    const txt   = h2.textContent.toLowerCase();
+    const body  = h2.nextElementSibling;
+
+    // Gap Analysis (section 0) always stays hidden (auto-collapsed)
+    if (txt.includes('gap analysis') || txt.includes('0.')) return;
+
+    if (!keywords) {
+      // All — show everything
+      h2.style.display = '';
+      if (body) body.style.display = '';
+    } else {
+      const match = keywords.some(k => txt.includes(k));
+      h2.style.display = match ? '' : 'none';
+      if (body) body.style.display = match ? '' : 'none';
+    }
+  });
+
+  // Also filter old filterBar if visible
+  const filterKeyMap = { all:'all', functional:'field', e2e:'e2e', integration:'int', negative:'neg' };
+  if (document.getElementById('filterBar')?.style.display !== 'none') {
+    applyOutputFilter(filterKeyMap[tabKey] || 'all');
+  }
+}
+
+// Update tab count badges after generation
+function updateArtifactTabCounts() {
+  if (typeof tgAllTCs === 'undefined') return;
+
+  const counts = {
+    all:         tgAllTCs.length,
+    e2e:         tgAllTCs.filter(t => t.type === 'E2E').length,
+    field:       tgAllTCs.filter(t => t.type === 'Field Valid.').length,
+    integration: tgAllTCs.filter(t => t.type === 'Integration').length,
+    negative:    tgAllTCs.filter(t => t.type === 'Negative').length,
+    smoke:       tgAllTCs.filter(t => t.type === 'Smoke').length,
+    testdata:    0,   // section-based, count from sections
+    metadata:    tgAllTCs.length > 0 ? 1 : 0,  // 1 metadata section
+  };
+
+  Object.entries(counts).forEach(([key, count]) => {
+    const el = document.getElementById('atab-count-' + key);
+    if (!el) return;
+    if (count > 0) {
+      el.textContent = count;
+      el.classList.add('has-count');
+    } else {
+      el.classList.remove('has-count');
+    }
+  });
+}
+
+// Hook into finalizeOutput to update counts
+const _origFinalizeArtifact = typeof finalizeOutput === 'function' ? finalizeOutput : null;
+// Call updateArtifactTabCounts after TestGen view renders
+const _origRenderTGTable = renderTGTable;
+function renderTGTable() {
+  _origRenderTGTable();
+  updateArtifactTabCounts();
+}
 </script>
