@@ -1369,36 +1369,139 @@
   }
 
   /* ── History Panel ──────────────────────────────── */
+  /* ── Session History Panel ─────────────────────────────────────── */
   .history-panel {
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: 14px; overflow: hidden; margin-bottom: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    overflow: visible;          /* was hidden — was clipping body content */
+    margin-bottom: 24px;
   }
   .history-header {
-    padding: 12px 18px; border-bottom: 1px solid var(--border2);
-    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     background: linear-gradient(90deg,rgba(0,120,212,0.07) 0%,transparent 100%);
     cursor: pointer;
+    border-radius: 14px 14px 0 0;
   }
   .history-header-left { display:flex; align-items:center; gap:10px; }
-  .history-header-left span { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; color:var(--text); }
-  .history-toggle { font-size:11px; color:var(--text2); background:var(--surface2); border:1px solid var(--border2); border-radius:5px; padding:3px 9px; cursor:pointer; transition:all .15s; }
-  .history-toggle:hover { border-color:var(--d365); color:var(--d365); }
-  .history-body { padding:12px; display:none; }
-  .history-body.open { display:block; }
-  .history-empty { text-align:center; padding:20px; font-size:12.5px; color:var(--text3); }
-  .history-list { display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; }
-  .history-item {
-    display:flex; align-items:center; gap:10px; padding:10px 12px;
-    background:var(--surface2); border:1px solid var(--border); border-radius:8px;
-    cursor:pointer; transition:all .15s;
+  .history-header-left span {
+    font-family:'Syne',sans-serif; font-weight:700; font-size:13px; color:var(--text);
   }
-  .history-item:hover { border-color:var(--d365); background:var(--d365-dim); }
-  .history-item-info { flex:1; min-width:0; }
-  .history-item-title { font-size:12.5px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .history-item-meta  { font-size:10.5px; color:var(--text2); font-family:'JetBrains Mono',monospace; margin-top:2px; }
-  .history-item-del { background:none; border:none; cursor:pointer; color:var(--text3); font-size:14px; padding:2px 6px; border-radius:4px; transition:all .15s; flex-shrink:0; }
-  .history-item-del:hover { color:var(--error); background:rgba(240,78,78,0.1); }
-  .history-count { background:var(--d365); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; font-family:'JetBrains Mono',monospace; }
+  .history-toggle {
+    font-size:11px; color:var(--text2); background:var(--surface2);
+    border:1px solid var(--border2); border-radius:5px; padding:3px 9px;
+    cursor:pointer; transition:all .15s; white-space:nowrap;
+  }
+  .history-toggle:hover { border-color:var(--d365); color:var(--d365); }
+  .history-body {
+    padding: 12px 14px 14px;
+    display: none;
+  }
+  .history-body.open { display: block; }
+  .history-empty {
+    text-align:center; padding:24px 20px;
+    font-size:12.5px; color:var(--text3);
+  }
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 320px;      /* increased from 220px */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 3px;     /* space for scrollbar */
+  }
+  .history-list::-webkit-scrollbar { width: 4px; }
+  .history-list::-webkit-scrollbar-track { background: transparent; }
+  .history-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 10px 15px;   /* extra left padding for accent bar */
+    min-height: 52px;                /* prevents row compression */
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .18s ease;
+    position: relative;
+    overflow: visible;               /* was hidden — was clipping icon */
+  }
+  .history-item:hover {
+    border-color: var(--d365);
+    background: var(--d365-dim);
+    transform: none;                  /* remove translateX that caused overlap feel */
+    box-shadow: 0 2px 12px rgba(0,120,212,0.12);
+  }
+  .history-item-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--grad-dim, rgba(0,120,212,0.08));
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+  }
+  .history-item-info {
+    flex: 1;
+    min-width: 0;               /* allows text truncation */
+    overflow: hidden;
+  }
+  .history-item-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+  }
+  .history-item-meta {
+    font-size: 10.5px;
+    color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .history-item-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 14px;
+    padding: 4px 7px;
+    border-radius: 5px;
+    transition: all .15s;
+    flex-shrink: 0;
+    opacity: 0;               /* hidden by default — only show on row hover */
+    transition: opacity .15s, background .15s, color .15s;
+  }
+  .history-item:hover .history-item-del { opacity: 1; }
+  .history-item-del:hover {
+    color: var(--error);
+    background: rgba(240,78,78,0.1);
+  }
+  .history-count {
+    background: var(--d365);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
 
   /* ── Inline Edit ──────────────────────────────────*/
   .edit-mode-bar {
@@ -1977,7 +2080,7 @@ header::after { display: none !important; }
   border-radius: 18px !important;
   box-shadow: var(--glass-shadow) !important;
   transition: box-shadow .25s ease, transform .25s ease !important;
-  overflow: hidden !important;
+  overflow: visible !important;   /* fixed: was clipping body content */
   position: relative !important;
 }
 
@@ -2080,30 +2183,26 @@ header::after { display: none !important; }
 
 /* ── HISTORY ITEMS — glossy cards ───────────────────────────────── */
 .history-item {
-  background: rgba(255,255,255,0.5) !important;
-  border: 1px solid rgba(99,102,241,0.12) !important;
+  background: rgba(255,255,255,0.55) !important;
+  border: 1px solid rgba(99,102,241,0.15) !important;
   border-radius: 10px !important;
   transition: all .2s ease !important;
   position: relative !important;
-  overflow: hidden !important;
+  overflow: visible !important;        /* fixed: was clipping content */
+  min-height: 52px !important;
 }
 
 .history-item:hover {
-  background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(192,38,168,0.05)) !important;
+  background: linear-gradient(135deg, rgba(99,102,241,0.07), rgba(192,38,168,0.04)) !important;
   border-color: rgba(99,102,241,0.35) !important;
-  transform: translateX(2px) !important;
-  box-shadow: 0 4px 16px rgba(99,102,241,0.12) !important;
+  transform: none !important;           /* fixed: no translateX — caused visual overlap */
+  box-shadow: 0 3px 14px rgba(99,102,241,0.14) !important;
 }
 
-.history-item::before {
-  content: '' !important;
-  position: absolute !important;
-  left: 0; top: 0; bottom: 0; width: 3px !important;
-  background: var(--grad-warm) !important;
-  opacity: 0; transition: opacity .2s !important;
+/* Left accent bar — using box-shadow instead of ::before to avoid overflow issues */
+.history-item:hover {
+  box-shadow: -3px 0 0 0 rgba(124,58,237,0.7), 0 3px 14px rgba(99,102,241,0.14) !important;
 }
-
-.history-item:hover::before { opacity: 1 !important; }
 
 .history-count {
   background: var(--grad-cool) !important;
@@ -2357,6 +2456,66 @@ header::after { display: none !important; }
 [data-theme="dark"] .history-item:hover {
   background: linear-gradient(90deg, rgba(99,102,241,0.12), rgba(192,38,168,0.08)) !important;
 }
+
+
+  /* ── Step labels ──────────────────────────────────────────────── */
+  .step-label {
+    display: flex; align-items: center; gap: 8px;
+    margin: 4px 0 10px;
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  }
+  .step-num {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: #fff;
+    background: var(--grad-full, linear-gradient(135deg,#0078D4,#6B4FD8,#C026A8));
+    box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+  }
+  .step-label span { color: var(--indigo, #6366F1); }
+
+  /* ── Advanced toggle ───────────────────────────────────────────── */
+  .advanced-toggle {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; margin: 2px 0;
+    background: rgba(99,102,241,0.04);
+    border: 1px dashed rgba(99,102,241,0.2);
+    border-radius: 8px; cursor: pointer;
+    font-size: 12px; color: var(--indigo, #6366F1);
+    font-weight: 600; transition: all .15s;
+    user-select: none;
+  }
+  .advanced-toggle:hover {
+    background: rgba(99,102,241,0.08);
+    border-color: rgba(99,102,241,0.4);
+  }
+  .advanced-toggle .adv-icon {
+    font-size: 11px; transition: transform .2s;
+    display: inline-block;
+  }
+  .advanced-toggle.open .adv-icon { transform: rotate(180deg); }
+  .advanced-fields {
+    display: none; flex-direction: column; gap: 14px;
+    padding: 2px 0;
+    animation: fadeSlideIn .2s ease;
+  }
+  .advanced-fields.open { display: flex; }
+  @keyframes fadeSlideIn {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* ── Sticky Generate bar ───────────────────────────────────────── */
+  .sticky-gen-bar {
+    display: none;
+    position: sticky; bottom: 0; left: 0; right: 0;
+    padding: 10px 18px;
+    background: var(--glass-bg, rgba(255,255,255,0.9));
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(99,102,241,0.15);
+    z-index: 10;
+  }
+  .sticky-gen-bar.visible { display: block; }
 
 </style>
 </head>
@@ -2880,9 +3039,11 @@ header::after { display: none !important; }
       </div>
       <div class="form-body">
 
+        <!-- Step 1 -->
+        <div class="step-label"><span class="step-num">1</span><span>Upload Document</span></div>
         <!-- ── Upload Zone ── -->
         <div class="field">
-          <label>Requirement Document (Optional)</label>
+          <label>Requirement Document <span style="font-size:10px;font-weight:400;color:var(--text3)">(optional)</span></label>
           <div class="upload-zone" id="uploadZone"
                ondragover="event.preventDefault(); this.classList.add('drag-over')"
                ondragleave="this.classList.remove('drag-over')"
@@ -2920,6 +3081,8 @@ header::after { display: none !important; }
         </div>
 
         <div class="form-divider"><span>— OR ENTER MANUALLY —</span></div>
+        <!-- Step 2 -->
+        <div class="step-label" style="margin-top:6px"><span class="step-num">2</span><span>Select Platform &amp; Module</span></div>
 
         <!-- Platform Selector — visual cards -->
         <div class="field">
@@ -3016,19 +3179,28 @@ header::after { display: none !important; }
           </div>
         </div>
 
+        <!-- Step 3 -->
+        <div class="step-label"><span class="step-num">3</span><span>Describe the Business Flow</span></div>
         <div class="field">
           <label>Business Flow Description</label>
           <textarea id="flowDesc" placeholder="Describe the business process in plain English...&#10;&#10;e.g. Vendor submits invoice via portal. AP Clerk reviews and matches to PO. Finance Manager approves if amount > ₹50,000. Payment is processed and vendor is notified."></textarea>
         </div>
 
-        <div class="field">
-          <label>User Roles Involved</label>
-          <input type="text" id="roles" placeholder="e.g. AP Clerk, Finance Manager, Vendor, Admin" />
+        <!-- Advanced toggle -->
+        <div class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">
+          <span class="adv-icon">▼</span>
+          <span>Advanced options</span>
+          <span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:4px">(Roles · Integrations)</span>
         </div>
-
-        <div class="field">
-          <label>Integrations / Systems</label>
-          <input type="text" id="integrations" placeholder="e.g. Power Automate, Azure Service Bus, Outlook" />
+        <div class="advanced-fields" id="advancedFields">
+          <div class="field">
+            <label>User Roles Involved</label>
+            <input type="text" id="roles" placeholder="e.g. AP Clerk, Finance Manager, Vendor, Admin" />
+          </div>
+          <div class="field">
+            <label>Integrations / Systems</label>
+            <input type="text" id="integrations" placeholder="e.g. Power Automate, Azure Service Bus, Outlook" />
+          </div>
         </div>
 
         <div class="field">
@@ -3088,6 +3260,14 @@ header::after { display: none !important; }
         </button>
 
       </div>
+
+      <!-- Sticky Generate bar (appears when gen button scrolls out of view) -->
+      <div class="sticky-gen-bar">
+        <button class="gen-btn" style="margin:0" onclick="generate()">
+          <div class="spinner"></div>
+          <span class="btn-text">⚡ Generate Test Scenarios</span>
+        </button>
+      </div>
     </div>
 
     <!-- Output Panel -->
@@ -3134,7 +3314,7 @@ header::after { display: none !important; }
           <div class="ph-logo sf">☁️</div>
         </div>
         <div class="placeholder-title">Ready to Generate</div>
-        <div class="placeholder-sub">Select your ERP platform and module, describe the business flow, and click Generate.</div>
+        <div class="placeholder-sub">Follow the 3 steps on the left — upload a document or describe your flow, pick a platform, and click Generate. Your structured test cases will appear here, organised by section and ready to push to ADO or Jira.</div>
         <div class="sample-chips">
           <div class="chip" onclick="fillSample('fo')">Invoice Approval D365 F&O</div>
           <div class="chip" onclick="fillSample('crm')">Lead to Opportunity CRM</div>
@@ -3151,7 +3331,7 @@ header::after { display: none !important; }
       <div class="error-msg" id="errorMsg"></div>
 
       <!-- Priority / Section Filter Bar (shown after generation) -->
-      <div id="filterBar" style="display:none;padding:8px 16px 0;display:none;flex-wrap:wrap;align-items:center;gap:6px;border-bottom:0.5px solid var(--border)">
+      <div id="filterBar" style="display:none;padding:8px 16px 0;flex-wrap:wrap;align-items:center;gap:6px;border-bottom:0.5px solid var(--border)">
         <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-right:4px">FILTER:</span>
         <button class="filter-btn active" data-filter="all"    onclick="applyOutputFilter('all')"         >All</button>
         <button class="filter-btn"        data-filter="e2e"    onclick="applyOutputFilter('e2e')"         >E2E</button>
@@ -3734,6 +3914,11 @@ function resetForm() {
   document.getElementById('integrations').value = '';
   document.getElementById('outputFormat').value  = 'full';
   if (document.getElementById('outputLanguage')) document.getElementById('outputLanguage').value = 'English';
+  // Close advanced fields on reset
+  const adv = document.getElementById('advancedFields');
+  const advT = document.getElementById('advancedToggle');
+  if (adv)  { adv.classList.remove('open'); }
+  if (advT) { advT.classList.remove('open'); }
 
   // ── Priority back to High ──
   priority = 'High';
@@ -4751,6 +4936,9 @@ function applyMetadataStyling(container) {
       }
     });
   });
+  // Additional passes — all in one function, no recursion
+  initSectionCollapse(container);
+  addCopySingleButtons(container);
 }
 
 function finalizeOutput(elapsed, platform, module) {
@@ -5299,7 +5487,7 @@ function renderHistory() {
   emptyEl.style.display = 'none';
   listEl.innerHTML = history.map(s => `
     <div class="history-item" onclick="loadHistory('${s.id}')">
-      <div style="font-size:22px;flex-shrink:0">📄</div>
+      <div class="history-item-icon">📄</div>
       <div class="history-item-info">
         <div class="history-item-title">${s.platform} — ${s.module || 'General'}</div>
         <div class="history-item-meta">${s.date} · ${s.tcCount} test cases</div>
@@ -5353,6 +5541,12 @@ function toggleHistory() {
 document.addEventListener('DOMContentLoaded', () => {
   renderHistory();
   renderPlatformCards();
+  // Clear any stale error state from previous sessions
+  const errEl = document.getElementById('errorMsg');
+  if (errEl) { errEl.className = 'error-msg'; errEl.textContent = ''; }
+  // Ensure filter bar is hidden on fresh load
+  const fb = document.getElementById('filterBar');
+  if (fb) fb.style.display = 'none';
 });
 renderHistory();
 
@@ -6041,6 +6235,11 @@ function onProjectSelectChange() {
   }
 
   loadRow.style.display = project ? 'block' : 'none';
+
+  // Auto-load current sprint when project selected (background, no recursion)
+  if (project) {
+    setTimeout(() => { if (typeof loadCurrentSprint === 'function') loadCurrentSprint(); }, 800);
+  }
 
   // Load ADO users in background when project selected
   if (project) {
@@ -7900,12 +8099,7 @@ function copyShareLink() {
   } catch(e) { /* invalid share link — ignore */ }
 })();
 
-// ── Hook section collapse into finalizeOutput and streaming ──────
-const _origApplyMeta = applyMetadataStyling;
-function applyMetadataStyling(container) {
-  _origApplyMeta(container);
-  initSectionCollapse(container);
-}
+// initSectionCollapse now called directly inside applyMetadataStyling (no wrapper needed)
 </script>
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -8246,12 +8440,7 @@ async function fetchJiraTicket() {
   }
 }
 
-// Check Jira config on load + hook copy buttons into applyMetadataStyling
-const _prevApplyMeta2 = applyMetadataStyling;
-function applyMetadataStyling(container) {
-  _prevApplyMeta2(container);
-  addCopySingleButtons(container);
-}
+// addCopySingleButtons now called directly inside applyMetadataStyling (no wrapper needed)
 
 // Check if JIRA is configured
 (async function checkJiraConfig() {
@@ -8454,16 +8643,49 @@ async function loadCurrentSprint() {
   }
 }
 
-// Auto-trigger sprint load when project is selected
-const _origOnProjectChange = onProjectSelectChange;
-function onProjectSelectChange() {
-  _origOnProjectChange();
-  // Load sprint in background after short delay
-  setTimeout(() => {
-    const project = document.getElementById('adoProject')?.value || document.getElementById('adoProjectSelect')?.value;
-    if (project) loadCurrentSprint();
-  }, 800);
-}
+// loadCurrentSprint now called directly inside onProjectSelectChange (no wrapper needed)
 
 // openSettings extended inline — see fixed function below
+</script>
+<script>
+// ── Advanced toggle ─────────────────────────────────────────────
+function toggleAdvanced() {
+  const toggle = document.getElementById('advancedToggle');
+  const fields  = document.getElementById('advancedFields');
+  if (!toggle || !fields) return;
+  const isOpen = fields.classList.toggle('open');
+  toggle.classList.toggle('open', isOpen);
+  toggle.querySelector('.adv-icon').style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+// ── Sticky Generate bar — appears when form has content ─────────
+function updateStickyGenBar() {
+  const platform = document.getElementById('platform')?.value || '';
+  const flow     = document.getElementById('flowDesc')?.value?.trim() || '';
+  const bar      = document.querySelector('.sticky-gen-bar');
+  if (!bar) return;
+  // Show sticky bar when platform + flow both filled and user has scrolled past gen button
+  const genBtn = document.getElementById('genBtn');
+  if (!genBtn) return;
+  const rect = genBtn.getBoundingClientRect();
+  const shouldShow = platform && flow && rect.bottom < 0;
+  bar.classList.toggle('visible', shouldShow);
+}
+
+// Observe scroll on the left panel
+document.addEventListener('DOMContentLoaded', () => {
+  const panel = document.querySelector('.form-panel');
+  if (panel) panel.addEventListener('scroll', updateStickyGenBar);
+  window.addEventListener('scroll', updateStickyGenBar);
+});
+
+// ── Platform cards — update sticky bar on selection ─────────────
+const _origSelectPlatform = selectPlatform;
+// Don't wrap — just add to the existing selectPlatform's end via event
+document.addEventListener('click', e => {
+  if (e.target.closest('.platform-card')) {
+    setTimeout(updateStickyGenBar, 100);
+  }
+});
+document.getElementById('flowDesc')?.addEventListener?.('input', updateStickyGenBar);
 </script>
