@@ -4381,6 +4381,17 @@ header::after { display: none !important; }
   body.sidebar-collapsed #mainWrap { margin-left: 64px !important; }
   body.sidebar-collapsed #bulkActionBar { left: 64px !important; }
 
+
+  /* ── Brand logo inside platform badge ───────────────────── */
+  .pc-logo {
+    width: 16px !important;
+    height: 16px !important;
+    object-fit: contain !important;
+    filter: brightness(0) invert(1) !important; /* always white */
+    display: block !important;
+    pointer-events: none;
+  }
+
 </style>
 </head>
 <body>
@@ -5702,20 +5713,20 @@ let startTime = 0;
 
 // ── Platform data ───────────────────────────────────────────────
 const PLATFORMS = [
-  { value: 'D365 F&O',          label: 'D365 F&O',       sub: 'Finance & Operations',     icon: '📋', badge: '#2196F3', badgeLetter: 'F',  group: 'Microsoft' },
-  { value: 'D365 CRM',          label: 'D365 CRM',        sub: 'CRM / Customer Engagement', icon: '🤝', badge: '#FF9800', badgeLetter: 'C',  group: 'Microsoft' },
-  { value: 'D365 BC',           label: 'D365 BC',         sub: 'Business Central',          icon: '📊', badge: '#5B5FEF', badgeLetter: 'B',  group: 'Microsoft' },
-  { value: 'D365+Salesforce',   label: 'D365 + SF',       sub: 'Integration',               icon: '🔗', badge: '#00BCD4', badgeLetter: '+',  group: 'Microsoft' },
-  { value: 'Salesforce Sales',  label: 'SF Sales',        sub: 'Sales Cloud',               icon: '☁️', badge: '#29B6F6', badgeLetter: 'S',  group: 'Salesforce' },
-  { value: 'Salesforce Service',label: 'SF Service',      sub: 'Service Cloud',             icon: '🎯', badge: '#EF5350', badgeLetter: 'Sv', group: 'Salesforce' },
-  { value: 'Salesforce CPQ',    label: 'SF CPQ',          sub: 'Configure Price Quote',     icon: '💰', badge: '#FF7043', badgeLetter: 'Q',  group: 'Salesforce' },
-  { value: 'SAP',               label: 'SAP',             sub: 'ERP / S4HANA / R3',         icon: '⚙️', badge: '#E53935', badgeLetter: 'S',  group: 'Enterprise ERP' },
-  { value: 'Oracle ERP',        label: 'Oracle ERP',      sub: 'Fusion / NetSuite / HCM',   icon: '🔴', badge: '#C62828', badgeLetter: 'O',  group: 'Enterprise ERP' },
-  { value: 'Workday',           label: 'Workday',         sub: 'HCM / Payroll / Finance',   icon: '💼', badge: '#F04B23', badgeLetter: 'W',  group: 'Enterprise ERP' },
-  { value: 'Guidewire',         label: 'Guidewire',       sub: 'Policy / Claims / Billing', icon: '🏗️', badge: '#1B7F8E', badgeLetter: 'G',  group: 'Enterprise ERP' },
-  { value: 'ServiceNow',        label: 'ServiceNow',      sub: 'ITSM / HRSD / ITOM',        icon: '🛎️', badge: '#43A047', badgeLetter: 'N',  group: 'Enterprise ERP' },
-  { value: 'Web App',           label: 'Web App',         sub: 'General Web Application',   icon: '🌐', badge: '#26C6DA', badgeLetter: 'W',  group: 'Web / Mobile' },
-  { value: 'Mobile App',        label: 'Mobile App',      sub: 'iOS / Android',             icon: '📱', badge: '#7E57C2', badgeLetter: 'M',  group: 'Web / Mobile' },
+  { value: 'D365 F&O',          label: 'D365 F&O',        sub: 'Finance & Operations',      badge: '#0078D4', logoUrl: 'https://cdn.simpleicons.org/microsoftazure/white',   group: 'Microsoft' },
+  { value: 'D365 CRM',          label: 'D365 CRM',         sub: 'CRM / Customer Engagement', badge: '#0078D4', logoUrl: 'https://cdn.simpleicons.org/dynamics365/white',       group: 'Microsoft' },
+  { value: 'D365 BC',           label: 'D365 BC',          sub: 'Business Central',          badge: '#0078D4', logoUrl: 'https://cdn.simpleicons.org/microsoft/white',         group: 'Microsoft' },
+  { value: 'D365+Salesforce',   label: 'D365 + SF',        sub: 'Integration',               badge: '#5B5FEF', logoUrl: 'https://cdn.simpleicons.org/microsoftazure/white',   group: 'Microsoft' },
+  { value: 'Salesforce Sales',  label: 'SF Sales',         sub: 'Sales Cloud',               badge: '#00A1E0', logoUrl: 'https://cdn.simpleicons.org/salesforce/white',        group: 'Salesforce' },
+  { value: 'Salesforce Service',label: 'SF Service',       sub: 'Service Cloud',             badge: '#00A1E0', logoUrl: 'https://cdn.simpleicons.org/salesforce/white',        group: 'Salesforce' },
+  { value: 'Salesforce CPQ',    label: 'SF CPQ',           sub: 'Configure Price Quote',     badge: '#00A1E0', logoUrl: 'https://cdn.simpleicons.org/salesforce/white',        group: 'Salesforce' },
+  { value: 'SAP',               label: 'SAP',              sub: 'ERP / S4HANA / R3',         badge: '#0070F2', logoUrl: 'https://cdn.simpleicons.org/sap/white',              group: 'Enterprise ERP' },
+  { value: 'Oracle ERP',        label: 'Oracle ERP',       sub: 'Fusion / NetSuite / HCM',   badge: '#C74634', logoUrl: 'https://cdn.simpleicons.org/oracle/white',           group: 'Enterprise ERP' },
+  { value: 'Workday',           label: 'Workday',          sub: 'HCM / Payroll / Finance',   badge: '#F04B23', logoUrl: 'https://cdn.simpleicons.org/workday/white',          group: 'Enterprise ERP' },
+  { value: 'Guidewire',         label: 'Guidewire',        sub: 'Policy / Claims / Billing', badge: '#1B7F8E', logoUrl: 'https://cdn.simpleicons.org/guidewire/white',        group: 'Enterprise ERP' },
+  { value: 'ServiceNow',        label: 'ServiceNow',       sub: 'ITSM / HRSD / ITOM',        badge: '#62D84E', logoUrl: 'https://cdn.simpleicons.org/servicenow/white',       group: 'Enterprise ERP' },
+  { value: 'Web App',           label: 'Web App',          sub: 'General Web Application',   badge: '#26C6DA', logoUrl: 'https://cdn.simpleicons.org/googlechrome/white',     group: 'Web / Mobile' },
+  { value: 'Mobile App',        label: 'Mobile App',       sub: 'iOS / Android',             badge: '#7E57C2', logoUrl: 'https://cdn.simpleicons.org/android/white',         group: 'Web / Mobile' },
 ];
 
 // Category gradient badges
@@ -5737,10 +5748,10 @@ function renderPlatformCards() {
   grid.style.display = 'block';
 
   const GROUP_ICONS = {
-    'Microsoft':     { icon: '⊞', bg: 'linear-gradient(135deg,#0078D4,#2899F5)' },
-    'Salesforce':    { icon: '☁', bg: 'linear-gradient(135deg,#00A1E0,#0176D3)' },
-    'Enterprise ERP':{ icon: '⚡', bg: 'linear-gradient(135deg,#7B5EA7,#C74634)' },
-    'Web / Mobile':  { icon: '🌐', bg: 'linear-gradient(135deg,#1D9E75,#0891B2)' }
+    'Microsoft':     { logo: 'https://cdn.simpleicons.org/microsoft/white',   bg: 'linear-gradient(135deg,#0078D4,#2899F5)' },
+    'Salesforce':    { logo: 'https://cdn.simpleicons.org/salesforce/white',   bg: 'linear-gradient(135deg,#00A1E0,#0176D3)' },
+    'Enterprise ERP':{ logo: 'https://cdn.simpleicons.org/sap/white',          bg: 'linear-gradient(135deg,#7B5EA7,#C74634)' },
+    'Web / Mobile':  { logo: 'https://cdn.simpleicons.org/googlechrome/white', bg: 'linear-gradient(135deg,#1D9E75,#0891B2)' }
   };
 
   PLATFORM_GROUPS.forEach((groupName, gi) => {
@@ -5756,7 +5767,10 @@ function renderPlatformCards() {
     groupHeader.className = 'pc-group-header' + (isOpen ? ' open' : '');
     groupHeader.dataset.group = groupName;
     groupHeader.innerHTML = `
-      <span class="pc-group-icon" style="background:${grpInfo.bg}">${grpInfo.icon}</span>
+      <span class="pc-group-icon" style="background:${grpInfo.bg}">
+        <img src="${grpInfo.logo}" alt="${groupName}" class="pc-logo"
+             onerror="this.style.display='none'"/>
+      </span>
       <span class="pc-group-name">${groupName}</span>
       <span class="pc-group-chevron">▾</span>
     `;
@@ -5773,7 +5787,10 @@ function renderPlatformCards() {
       item.className = 'platform-card platform-list-item';
       item.dataset.value = p.value;
       item.innerHTML = `
-        <span class="pc-badge" style="background:${p.badge}">${p.badgeLetter}</span>
+        <span class="pc-badge" style="background:${p.badge}">
+          <img src="${p.logoUrl}" alt="${p.label}" class="pc-logo"
+               onerror="this.style.display='none';this.parentNode.textContent='${p.label.charAt(0)}'"/>
+        </span>
         <span class="pc-name">${p.label}</span>
         <span class="pc-check">✓</span>
       `;
