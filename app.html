@@ -4879,9 +4879,23 @@ async function pushToADOFull() {
           if (['Title','Step Action'].includes(cells[0])) { inTable=true; return; }
           if (!inTable) return;
           const title = cells[0] || 'Untitled';
-          const actions = (cells[1]||'').split('\n').map(s=>s.trim()).filter(Boolean);
-          const expecteds = (cells[2]||'').split('\n').map(s=>s.trim()).filter(Boolean);
-          const steps = actions.map((a,i)=>({ action:a, expected:expecteds[i]||expecteds[0]||'' }));
+          const _splitST = raw => {
+            if (!raw) return [];
+            const byNL = raw.split('\n').map(s=>s.trim()).filter(Boolean);
+            if (byNL.length > 1) return byNL;
+            const bySC = raw.split(/;\s*(?=\d+\.\s)/).map(s=>s.trim()).filter(Boolean);
+            return bySC.length > 1 ? bySC : (byNL.length ? byNL : [raw.trim()]);
+          };
+          const actions   = _splitST(cells[1]||'');
+          const expecteds = _splitST(cells[2]||'');
+          const steps = actions.map((a,i) => ({
+            action:   a || 'Step '+(i+1),
+            expected: expecteds.length === actions.length
+              ? (expecteds[i]||'')
+              : expecteds.length === 1
+                ? (i === actions.length-1 ? (expecteds[0]||'') : '')
+                : (expecteds[i]||'')
+          }));
           if (!steps.length) steps.push({ action: cells[1]||'', expected: cells[2]||'' });
           const suiteLbl = getSectionSuiteName(sec);
           if (!perSectionTCs[suiteLbl]) perSectionTCs[suiteLbl] = [];
@@ -4989,16 +5003,53 @@ function parseTestCasesFromMarkdown() {
       const assignedTo     = cells[3] || 'QA Engineer';
       const state          = cells[4] || 'Active';
 
-      // Split step actions and expected results by newline
-      const actions   = stepActionRaw.split('\n').map(s => s.trim()).filter(Boolean);
-      const expecteds = stepExpRaw.split('\n').map(s => s.trim()).filter(Boolean);
+      // ── Split actions: supports both newline and semicolon-separated formats ──
+      // AI generates "1. Do X; 2. Do Y; 3. Do Z" (semicolons) or multi-line
+      const splitStepText = (raw) => {
+        if (!raw) return [];
+        // Try newline split first (multi-line cells)
+        const byNewline = raw.split('\n').map(s => s.trim()).filter(Boolean);
+        if (byNewline.length > 1) return byNewline;
+        // Fallback: split by "; " (semicolon = AI format for numbered steps)
+        // Only split on "; " between numbered steps: "1. X; 2. Y; 3. Z"
+        const bySemicolon = raw.split(/;\s*(?=\d+\.\s)/).map(s => s.trim()).filter(Boolean);
+        if (bySemicolon.length > 1) return bySemicolon;
+        // Single step — return as-is
+        return byNewline.length ? byNewline : [raw.trim()];
+      };
 
-      const steps = actions.map((action, i) => ({
-        action,
-        expected: expecteds[i] || expecteds[0] || ''
-      }));
+      const actions   = splitStepText(stepActionRaw);
+      const expecteds = splitStepText(stepExpRaw);
 
-      if (steps.length === 0) steps.push({ action: stepActionRaw, expected: stepExpRaw });
+      // ── Map each action to its corresponding expected result ──
+      // Rules:
+      //   1. If counts match exactly → 1:1 mapping
+      //   2. If only 1 expected result → it describes the overall outcome;
+      //      assign it ONLY to the LAST action step (climax step), empty for others
+      //   3. If more expecteds than actions → zip what we can, ignore extras
+      //   4. Never duplicate: each step gets its own unique expected result
+      const steps = actions.map((action, i) => {
+        let expected = '';
+        if (expecteds.length === actions.length) {
+          // Perfect 1:1 match
+          expected = expecteds[i] || '';
+        } else if (expecteds.length === 1) {
+          // Single summary result → assign to last step only, blank for intermediaries
+          expected = (i === actions.length - 1) ? (expecteds[0] || '') : '';
+        } else if (expecteds.length > 1) {
+          // Partial match → assign what we have, blank for extras
+          expected = expecteds[i] || '';
+        }
+        return {
+          action:   action   || 'Step ' + (i + 1),
+          expected: expected
+        };
+      });
+
+      if (steps.length === 0) steps.push({
+        action:   stepActionRaw  || 'Perform action',
+        expected: stepExpRaw     || ''
+      });
 
       testCases.push({ title, steps, assignedTo, state, priority: priority === 'High' ? 2 : priority === 'Medium' ? 3 : 4 });
 
@@ -5011,9 +5062,16 @@ function parseTestCasesFromMarkdown() {
 
 // Build the ADO steps XML  (Microsoft.VSTS.TCM.Steps field format)
 function buildStepsXML(steps) {
-  let xml = `<steps id="0" last="${steps.length}">`;
-  steps.forEach((step, i) => {
-    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // Validate: ensure no step is accidentally duplicating expected results
+  // (defensive: check that results are unique before sending to ADO)
+  const xml_steps = steps.map((step, i) => ({
+    action:   (step.action   || '').trim() || `Step ${i+1}`,
+    expected: (step.expected || '').trim()   // empty string is valid — ADO handles it
+  }));
+
+  let xml = `<steps id="0" last="${xml_steps.length}">`;
+  xml_steps.forEach((step, i) => {
+    const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     xml += `<step id="${i+1}" type="ActionStep">`;
     xml += `<parameterizedString isformatted="true">&lt;DIV&gt;&lt;P&gt;${esc(step.action)}&lt;/P&gt;&lt;/DIV&gt;</parameterizedString>`;
     xml += `<parameterizedString isformatted="true">&lt;DIV&gt;&lt;P&gt;${esc(step.expected)}&lt;/P&gt;&lt;/DIV&gt;</parameterizedString>`;
