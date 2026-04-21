@@ -11301,46 +11301,76 @@ function renderTestGenView() {
   const toolbarEl= document.getElementById('outputToolbar');
   if (!el) return;
 
-  // Parse sections + TCs from rendered markdown
+  // Parse TCs from rawMarkdown using cleanCell (mirrors parseTestCasesFromMarkdown)
   tgAllTCs = [];
   tgSelectedIds.clear();
   tgFilter = 'all';
   tgPage   = 1;
 
-  const h2s = el.querySelectorAll('h2');
-  h2s.forEach(h2 => {
-    const secTitle = h2.textContent.replace(/^[#\s▼▶]+/, '').trim();
-    const typeInfo = getTCType(secTitle);
-    const body     = h2.nextElementSibling;
-    if (!body) return;
+  let currentSection = 'General';
+  let currentType    = getTCType('General');
+  const mdLines      = (typeof rawMarkdown === 'string' ? rawMarkdown : '').split('\n');
+  let inTCTable      = false;
 
-    body.querySelectorAll('table').forEach(table => {
-      const headers = [...table.querySelectorAll('th')].map(th => th.textContent.trim());
-      const isTCTable = headers.includes('Title') && headers.includes('Step Action');
-      if (!isTCTable) return;
+  for (const line of mdLines) {
+    const trimmed = line.trim();
 
-      table.querySelectorAll('tbody tr').forEach(row => {
-        const cells = [...row.querySelectorAll('td')].map(td => td.textContent.trim());
-        if (!cells[0] || cells[0].length < 2) return;
-        const tcId    = cells[0].match(/^(TC\d+)/i)?.[1] || cells[0];
-        const tcTitle = cells[0].replace(/^TC\d+\s*[-–]\s*/i,'').trim() || cells[0];
-        const stepsRaw= cells[1] || '';
-        const expected= cells[2] || '';
-        const priInfo = inferPriority(tcTitle);
-        tgAllTCs.push({
-          id:      tcId,
-          title:   tcTitle,
-          stepsRaw,
-          expected,
-          section: secTitle,
-          type:    typeInfo.type,
-          typeCls: typeInfo.cls,
-          priority:priInfo.pri,
-          priCls:  priInfo.cls,
-        });
-      });
+    // Section heading detection
+    if (/^#{1,3}\s/.test(trimmed)) {
+      const heading  = trimmed.replace(/^#{1,3}\s+/, '').replace(/\*\*/g,'').replace(/^[▶▼►]\s*/, '').trim();
+      currentSection = heading;
+      currentType    = getTCType(heading);
+      inTCTable      = false;
+      continue;
+    }
+
+    // Skip non-table lines
+    if (!trimmed.startsWith('|')) {
+      if (inTCTable) inTCTable = false;
+      continue;
+    }
+
+    // Skip separator rows  |---|---|
+    if (trimmed.match(/^\|[\s\-:|]+\|$/)) continue;
+
+    // Parse cells using cleanCell (same as working export parser)
+    const cells = trimmed.split('|').map(c => cleanCell(c)).filter(c => c !== '');
+    if (cells.length < 2) continue;
+
+    // Header row detection — set inTCTable flag
+    if (['Title','Step Action','Steps','Test Case Title','TC Title','Test Steps']
+        .some(h => cells[0] && cells[0].toLowerCase().includes(h.toLowerCase()))) {
+      inTCTable = true;
+      continue;
+    }
+
+    if (!inTCTable) continue;
+
+    // Data row — cells[0]=Title, cells[1]=Step Action, cells[2]=Expected
+    const rawTitle = cells[0] || '';
+    if (!rawTitle || rawTitle.length < 2) continue;
+
+    // Extract TC ID and scenario title
+    const idMatch  = rawTitle.match(/^(TC[-\s]?\d+)\s*[-–—:\.]\s*/i);
+    const tcId     = idMatch ? idMatch[1].replace(/\s/,'') : ('TC' + String(tgAllTCs.length + 1).padStart(3,'0'));
+    const tcTitle  = idMatch ? rawTitle.slice(idMatch[0].length).trim() : rawTitle;
+
+    const stepsRaw = cells[1] || '';
+    const expected = cells[2] || '';
+    const priInfo  = inferPriority(tcTitle || rawTitle);
+
+    tgAllTCs.push({
+      id:       tcId,
+      title:    tcTitle || rawTitle,
+      stepsRaw: stepsRaw,
+      expected: expected,
+      section:  currentSection,
+      type:     currentType.type,
+      typeCls:  currentType.cls,
+      priority: priInfo.pri,
+      priCls:   priInfo.cls,
     });
-  });
+  }
 
   if (tgAllTCs.length === 0) return; // nothing to render as TestGen style
 
