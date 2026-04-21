@@ -4398,6 +4398,87 @@ header::after { display: none !important; }
   .atab-edge-style.active .atab-count { background: #F97316 !important; }
   /* Edge Cases type badge */
   .tg-type-edge { background: rgba(249,115,22,.1) !important; color: #C2410C !important; border: 1px solid rgba(249,115,22,.2) !important; }
+
+  /* ── TC Section Cards ──────────────────────────────────────── */
+  #tgSectionsWrap { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .tg-section-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+    transition: box-shadow .15s;
+  }
+  .tg-section-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+
+  .tg-section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(90deg, var(--surface2) 0%, var(--surface) 100%);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: background .13s;
+  }
+  .tg-section-hdr:hover { background: var(--surface2); }
+
+  .tg-section-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tg-section-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    flex: 1;
+  }
+  .tg-section-count {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tg-section-chevron {
+    font-size: 12px;
+    color: var(--text3);
+    transition: transform .2s;
+    flex-shrink: 0;
+  }
+  .tg-section-card.collapsed .tg-section-chevron { transform: rotate(-90deg); }
+  .tg-section-card.collapsed .tg-section-body { display: none; }
+
+  .tg-section-body {
+    overflow-x: auto;
+  }
+  .tg-section-body .tg-table {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+
+  /* Empty section placeholder */
+  .tg-section-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 12.5px;
+    font-style: italic;
+  }
+
+  /* Remove pagination since sections replace it */
+  #tcPagination { display: none !important; }
+
+  @media (max-width: 768px) {
+    #tgSectionsWrap { padding: 10px 12px; gap: 10px; }
+    .tg-section-hdr { padding: 10px 12px; }
+    .tg-section-title { font-size: 12.5px; }
+  }
+
 </style>
 </head>
 <body>
@@ -11416,9 +11497,11 @@ function renderTestGenView() {
     if (!rawTitle || rawTitle.length < 2) continue;
 
     // Extract TC ID and scenario title
-    const idMatch  = rawTitle.match(/^(TC[-\s]?\d+)\s*[-–—:\.]\s*/i);
-    const tcId     = idMatch ? idMatch[1].replace(/\s/,'') : ('TC' + String(tgAllTCs.length + 1).padStart(3,'0'));
-    const tcTitle  = idMatch ? rawTitle.slice(idMatch[0].length).trim() : rawTitle;
+    // Extract TC ID — more robust: use replace() instead of slice()
+    const idPart  = rawTitle.match(/^(TC[-\s]?\d+(?:\.\d+)?)/i);
+    const tcId    = idPart ? idPart[1].replace(/[\s]/g,'') : ('TC' + String(tgAllTCs.length + 1).padStart(3,'0'));
+    // Title = strip TC ID + any separator characters from the start
+    const tcTitle = rawTitle.replace(/^TC[-\s]?\d+(?:\.\d+)?\s*[-–—:.\s]+/i,'').trim() || rawTitle;
 
     const stepsRaw = cells[1] || '';
     const expected = cells[2] || '';
@@ -11566,40 +11649,51 @@ function buildTGRequirementRow(el) {
 
 // ── Tabs + Table ──────────────────────────────────────────────────
 function buildTGTabsAndTable(el) {
-  const existing = document.getElementById('tg-main-view');
-  if (existing) existing.remove();
+  // ── Remove any prior tg view ──────────────────────────────────
+  document.getElementById('tg-main-view')?.remove();
 
+  // ── Clear original markdown from outputContent ───────────────
+  // Keep only tg-progress-bar and tg-req-row (prepended elements)
+  const keep = ['tg-progress-bar','tg-req-row'];
+  [...el.children].forEach(child => {
+    if (!keep.includes(child.id)) child.remove();
+  });
+
+  // ── Build main view container ─────────────────────────────────
   const view = document.createElement('div');
   view.id = 'tg-main-view';
 
-  // Tabs
-  const types = [...new Set(tgAllTCs.map(t=>t.type))];
+  // ── Internal search + filter tabs ────────────────────────────
+  const types    = [...new Set(tgAllTCs.map(t => t.type))];
   const tabsHtml = `
     <div class="tg-tabs" id="tgTabs">
       <div class="tg-tab active" data-filter="all" onclick="setTGFilter('all',this)">
-        All Test Cases <span class="tab-count">${tgAllTCs.length}</span>
+        All <span class="tab-count">${tgAllTCs.length}</span>
       </div>
       ${types.map(type => {
-        const cnt = tgAllTCs.filter(t=>t.type===type).length;
-        return `<div class="tg-tab" data-filter="${type}" onclick="setTGFilter('${type}',this)">
+        const cnt = tgAllTCs.filter(t => t.type === type).length;
+        const typeClsMap = {
+          'E2E':'tg-tab-e2e','Negative':'tg-tab-neg','Field Valid.':'tg-tab-field',
+          'Integration':'tg-tab-int','Functional':'tg-tab-func','Edge Cases':'tg-tab-edge',
+          'Smoke':'tg-tab-smoke','Test Data':'tg-tab-data','Metadata':'tg-tab-meta'
+        };
+        return `<div class="tg-tab ${typeClsMap[type]||''}" data-filter="${type}" onclick="setTGFilter('${type}',this)">
           ${type} <span class="tab-count">${cnt}</span>
         </div>`;
       }).join('')}
       <div class="tg-tab-right">
-        <div class="search-wrap" style="max-width:200px">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none">
-            <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <input id="tgSearch" type="text" placeholder="Search test cases…"
-            style="padding:6px 12px 6px 32px;background:var(--surface2);border:1.5px solid var(--border2);border-radius:8px;font-size:12px;color:var(--text);outline:none;width:100%"
-            oninput="filterTGTable()" onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"/>
-        </div>
+        <input id="tgSearch" type="text" placeholder="🔍 Search test cases…"
+          style="padding:6px 14px;background:var(--surface2);border:1.5px solid var(--border2);
+                 border-radius:8px;font-size:12px;color:var(--text);outline:none;width:220px"
+          oninput="renderTGTable()"
+          onfocus="this.style.borderColor='var(--d365)'"
+          onblur="this.style.borderColor='var(--border2)'"/>
       </div>
     </div>`;
 
-  view.innerHTML = tabsHtml + `<div class="tg-table-wrap" id="tgTableWrap"></div>`;
-  // Append after req row
+  // ── Grouped section wrapper ───────────────────────────────────
+  view.innerHTML = tabsHtml + `<div id="tgSectionsWrap"></div>`;
+
   const reqRow = document.getElementById('tg-req-row');
   if (reqRow) reqRow.after(view);
   else el.appendChild(view);
@@ -11609,7 +11703,7 @@ function buildTGTabsAndTable(el) {
 
 // ── Render the TC table ───────────────────────────────────────────
 function renderTGTable() {
-  const wrap = document.getElementById('tgTableWrap');
+  const wrap = document.getElementById('tgSectionsWrap');
   if (!wrap) return;
 
   const q   = (document.getElementById('tgSearch')?.value||'').toLowerCase();
@@ -11623,7 +11717,8 @@ function renderTGTable() {
   if (tgPage > totalPages) tgPage = 1;
   const pageTCs = filtered.slice((tgPage-1)*TG_PAGE, tgPage*TG_PAGE);
 
-  const rows = pageTCs.map(tc => {
+  // rows placeholder - not used in section view (uses buildTGRow directly)
+  const rows = filtered.map(tc => {
     const stepsArr = tc.stepsRaw.split(/;\s*(?=\d+\.)|(?<=\d+\.[^;]{3,})\n/).filter(Boolean);
     const stepsCount = Math.max(stepsArr.length, (tc.stepsRaw.match(/\d+\./g)||[]).length, 1);
     const stepsHtml  = stepsArr.map((s,i)=>`<div style="padding:2px 0"><strong style="color:var(--d365);font-size:11px">${i+1}.</strong> ${s.replace(/^\d+\.\s*/,'').trim()}</div>`).join('');
@@ -11655,28 +11750,79 @@ function renderTGTable() {
     </tr>`;
   }).join('');
 
-  // Select-all state
-  const allSelected = pageTCs.length > 0 && pageTCs.every(tc => tgSelectedIds.has(tc.id));
+  // ── GROUP by type and render section cards ──────────────────────
+  if (tgFilter === 'all' || tgFilter === '') {
+    // Grouped view — one section per type
+    const typeOrder = ['Functional','E2E','Field Valid.','Integration','Negative','Edge Cases','Smoke','Test Data','Metadata'];
+    const grouped   = {};
+    filtered.forEach(tc => { (grouped[tc.type] = grouped[tc.type]||[]).push(tc); });
 
-  wrap.innerHTML = `
-    <table class="tg-table">
-      <thead>
-        <tr>
-          <th class="tg-col-cb tg-checkbox-col">
-            <input type="checkbox" style="accent-color:var(--d365);cursor:pointer;width:14px;height:14px"
-              ${allSelected?'checked':''} onchange="tgSelectAll(this.checked)"/>
-          </th>
-          <th class="tg-col-id">ID</th>
-          <th class="tg-col-sc">Scenario</th>
-          <th class="tg-col-st">Steps</th>
-          <th class="tg-col-exp">Expected Result</th>
-          <th class="tg-col-pri">Priority</th>
-          <th class="tg-col-type">Type</th>
-          <th class="tg-col-act">Actions</th>
-        </tr>
-      </thead>
-      <tbody>${rows||'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No test cases match your filter.</td></tr>'}</tbody>
-    </table>`;
+    const sectionsHTML = typeOrder
+      .filter(t => grouped[t] && grouped[t].length > 0)
+      .map(type => {
+        const tcs   = grouped[type];
+        const color = { 'E2E':'#0891B2','Negative':'#EF4444','Field Valid.':'#10B981',
+          'Integration':'#8B5CF6','Functional':'#5B5FEF','Edge Cases':'#F97316',
+          'Smoke':'#F59E0B','Test Data':'#64748B','Metadata':'#EC4899' }[type] || '#5B5FEF';
+        const tableRows = tcs.map(tc => buildTGRow(tc)).join('');
+        return `
+          <div class="tg-section-card" id="tgsec-${type.replace(/[\s.]/g,'-')}">
+            <div class="tg-section-hdr" onclick="this.closest('.tg-section-card').classList.toggle('collapsed')">
+              <span class="tg-section-dot" style="background:${color}"></span>
+              <span class="tg-section-title">${type}</span>
+              <span class="tg-section-count" style="background:${color}20;color:${color};border:1px solid ${color}40">${tcs.length} TC${tcs.length!==1?'s':''}</span>
+              <span class="tg-section-chevron">▾</span>
+            </div>
+            <div class="tg-section-body">
+              <table class="tg-table">
+                <thead><tr>
+                  <th class="tg-col-cb"><input type="checkbox" style="accent-color:var(--d365);cursor:pointer;width:13px;height:13px"
+                    onchange="tgSelectSection('${type}',this.checked)"/></th>
+                  <th class="tg-col-id">ID</th>
+                  <th class="tg-col-sc">Scenario</th>
+                  <th class="tg-col-st">Steps</th>
+                  <th class="tg-col-exp">Expected Result</th>
+                  <th class="tg-col-pri">Priority</th>
+                  <th class="tg-col-act">Actions</th>
+                </tr></thead>
+                <tbody>${tableRows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }).join('');
+
+    wrap.innerHTML = sectionsHTML ||
+      '<div style="text-align:center;padding:40px;color:var(--text3)">No test cases generated yet.</div>';
+
+  } else {
+    // Single-type flat view
+    const tableRows = filtered.map(tc => buildTGRow(tc)).join('');
+    const color = { 'E2E':'#0891B2','Negative':'#EF4444','Field Valid.':'#10B981',
+      'Integration':'#8B5CF6','Functional':'#5B5FEF','Edge Cases':'#F97316',
+      'Smoke':'#F59E0B','Test Data':'#64748B','Metadata':'#EC4899' }[tgFilter] || '#5B5FEF';
+    wrap.innerHTML = `
+      <div class="tg-section-card">
+        <div class="tg-section-hdr">
+          <span class="tg-section-dot" style="background:${color}"></span>
+          <span class="tg-section-title">${tgFilter}</span>
+          <span class="tg-section-count" style="background:${color}20;color:${color};border:1px solid ${color}40">
+            ${filtered.length} TC${filtered.length!==1?'s':''}
+          </span>
+        </div>
+        <div class="tg-section-body">
+          <table class="tg-table">
+            <thead><tr>
+              <th class="tg-col-cb"><input type="checkbox" style="accent-color:var(--d365);cursor:pointer;width:13px;height:13px"
+                onchange="tgSelectAll(this.checked)"/></th>
+              <th class="tg-col-id">ID</th><th class="tg-col-sc">Scenario</th>
+              <th class="tg-col-st">Steps</th><th class="tg-col-exp">Expected Result</th>
+              <th class="tg-col-pri">Priority</th><th class="tg-col-act">Actions</th>
+            </tr></thead>
+            <tbody>${tableRows||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No test cases in this category.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
 
   // Pagination
   buildTGPagination(filtered.length, totalPages);
