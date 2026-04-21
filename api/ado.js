@@ -24,7 +24,8 @@ export default async function handler(req, res) {
   });
 
   const { url, method: rawMethod = 'GET', body } = req.body || {};
-  const method = rawMethod || 'GET';
+  // Defensive normalisation: empty method with body = POST, empty method without body = GET
+  const method = rawMethod || (body !== null && body !== undefined ? 'POST' : 'GET');
 
   const ALLOWED = ['https://dev.azure.com/', 'https://vsrm.visualstudio.com/'];
   if (!url || !ALLOWED.some(d => url.startsWith(d))) {

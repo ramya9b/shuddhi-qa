@@ -4744,7 +4744,7 @@ async function adoCreateTestPlan(org, project, _pat, planName, areaPath) {
     areaPath: areaPath || project,
     iteration: project
   };
-  const data = await adoRequest('', url, null, body);
+  const data = await adoRequest('POST', url, null, body);
   return { planId: data.id, rootSuiteId: data.rootSuite?.id };
 }
 
@@ -4756,7 +4756,7 @@ async function adoCreateTestSuite(org, project, _pat, planId, parentSuiteId, sui
     name: suiteName,
     parentSuite: { id: parentSuiteId }
   };
-  const data = await adoRequest('', url, null, body);
+  const data = await adoRequest('POST', url, null, body);
   return data.id;
 }
 
@@ -4765,7 +4765,7 @@ async function adoAddTCsToSuite(org, project, _pat, planId, suiteId, tcIds) {
   if (!tcIds.length) return;
   const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/testplan/plans/${planId}/suites/${suiteId}/TestCase?api-version=7.1-preview.3`;
   const body = tcIds.map(id => ({ workItem: { id } }));
-  await adoRequest('', url, null, body);
+  await adoRequest('POST', url, null, body);
 }
 
 // ── Section → suite name map ──────────────────────────────────
@@ -4843,7 +4843,7 @@ async function pushToADOFull() {
       if (!rootId) {
         // Fetch plan to get rootSuite id
         const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/testplan/plans/${planId}?api-version=7.1-preview.1`;
-        const pd = await adoRequest('', url, null);
+        const pd = await adoRequest('GET', url, null);
         rootId = pd.rootSuite?.id;
       }
       addResult('ℹ️', `Using existing Test Plan: <strong>${plan?.name || planId}</strong>`);
