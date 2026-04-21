@@ -4173,6 +4173,83 @@ header::after { display: none !important; }
     #appSidebar:not(.mobile-open) .sb-platform-section { display: none; }
   }
 
+
+  /* ── Platform items — screenshot exact match ───────────────── */
+  .platform-list-item .pc-badge {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    color: #fff !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.18) !important;
+    transition: transform .14s, box-shadow .14s !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    letter-spacing: -.3px !important;
+  }
+  .platform-list-item:hover .pc-badge {
+    transform: scale(1.06) !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.22) !important;
+  }
+  .platform-list-item.selected .pc-badge {
+    box-shadow: 0 3px 12px rgba(91,95,239,.4) !important;
+  }
+  .platform-list-item .pc-name {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    flex: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .platform-list-item.selected .pc-name {
+    color: var(--indigo, #5B5FEF) !important;
+    font-weight: 600 !important;
+  }
+  .platform-list-item {
+    padding: 7px 10px 7px 6px !important;
+    gap: 10px !important;
+    border-radius: 8px !important;
+    margin-bottom: 1px !important;
+  }
+  .platform-list-item.selected {
+    background: rgba(91,95,239,.07) !important;
+    border-color: transparent !important;
+  }
+  /* Platform subtitle text under the section */
+  .sb-platform-hint {
+    font-size: 11px !important;
+    color: var(--text3) !important;
+    padding: 0 10px 8px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  /* Group items indentation */
+  .pc-group-items {
+    padding: 2px 0 6px 4px !important;
+    gap: 1px !important;
+  }
+  /* Group header */
+  .pc-group-header {
+    padding: 6px 10px !important;
+    margin-bottom: 1px !important;
+  }
+  .pc-group-name {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+  .pc-group-icon {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+  }
+
 </style>
 </head>
 <body>
@@ -5501,20 +5578,20 @@ let startTime = 0;
 
 // ── Platform data ───────────────────────────────────────────────
 const PLATFORMS = [
-  { value: 'D365 F&O',          label: 'D365 F&O',       sub: 'Finance & Operations',     icon: '🏢', color: '#0078D4', group: 'Microsoft' },
-  { value: 'D365 CRM',          label: 'D365 CRM',        sub: 'CRM / Customer Engagement', icon: '🤝', color: '#0078D4', group: 'Microsoft' },
-  { value: 'D365 BC',           label: 'D365 BC',         sub: 'Business Central',          icon: '📊', color: '#0078D4', group: 'Microsoft' },
-  { value: 'D365+Salesforce',   label: 'D365 + SF',       sub: 'Integration',               icon: '🔗', color: '#7B5EA7', group: 'Microsoft' },
-  { value: 'Salesforce Sales',  label: 'SF Sales',        sub: 'Sales Cloud',               icon: '☁️', color: '#00A1E0', group: 'Salesforce' },
-  { value: 'Salesforce Service',label: 'SF Service',      sub: 'Service Cloud',             icon: '🎯', color: '#00A1E0', group: 'Salesforce' },
-  { value: 'Salesforce CPQ',    label: 'SF CPQ',          sub: 'Configure Price Quote',     icon: '💰', color: '#00A1E0', group: 'Salesforce' },
-  { value: 'SAP',               label: 'SAP',             sub: 'ERP / S4HANA / R3',         icon: '⚙️', color: '#0E6B9E', group: 'Enterprise ERP' },
-  { value: 'Oracle ERP',        label: 'Oracle ERP',      sub: 'Fusion / NetSuite / HCM',   icon: '🔴', color: '#C74634', group: 'Enterprise ERP' },
-  { value: 'Workday',           label: 'Workday',         sub: 'HCM / Payroll / Finance',   icon: '💼', color: '#F04B23', group: 'Enterprise ERP' },
-  { value: 'Guidewire',         label: 'Guidewire',       sub: 'Policy / Claims / Billing', icon: '🏗️', color: '#1B7F8E', group: 'Enterprise ERP' },
-  { value: 'ServiceNow',        label: 'ServiceNow',      sub: 'ITSM / HRSD / ITOM',        icon: '🛎️', color: '#62D84E', group: 'Enterprise ERP' },
-  { value: 'Web App',           label: 'Web App',         sub: 'General Web Application',   icon: '🌐', color: '#1D9E75', group: 'Web / Mobile' },
-  { value: 'Mobile App',        label: 'Mobile App',      sub: 'iOS / Android',             icon: '📱', color: '#1D9E75', group: 'Web / Mobile' },
+  { value: 'D365 F&O',          label: 'D365 F&O',       sub: 'Finance & Operations',     icon: '📋', badge: '#2196F3', badgeLetter: 'F',  group: 'Microsoft' },
+  { value: 'D365 CRM',          label: 'D365 CRM',        sub: 'CRM / Customer Engagement', icon: '🤝', badge: '#FF9800', badgeLetter: 'C',  group: 'Microsoft' },
+  { value: 'D365 BC',           label: 'D365 BC',         sub: 'Business Central',          icon: '📊', badge: '#5B5FEF', badgeLetter: 'B',  group: 'Microsoft' },
+  { value: 'D365+Salesforce',   label: 'D365 + SF',       sub: 'Integration',               icon: '🔗', badge: '#00BCD4', badgeLetter: '+',  group: 'Microsoft' },
+  { value: 'Salesforce Sales',  label: 'SF Sales',        sub: 'Sales Cloud',               icon: '☁️', badge: '#29B6F6', badgeLetter: 'S',  group: 'Salesforce' },
+  { value: 'Salesforce Service',label: 'SF Service',      sub: 'Service Cloud',             icon: '🎯', badge: '#EF5350', badgeLetter: 'Sv', group: 'Salesforce' },
+  { value: 'Salesforce CPQ',    label: 'SF CPQ',          sub: 'Configure Price Quote',     icon: '💰', badge: '#FF7043', badgeLetter: 'Q',  group: 'Salesforce' },
+  { value: 'SAP',               label: 'SAP',             sub: 'ERP / S4HANA / R3',         icon: '⚙️', badge: '#E53935', badgeLetter: 'S',  group: 'Enterprise ERP' },
+  { value: 'Oracle ERP',        label: 'Oracle ERP',      sub: 'Fusion / NetSuite / HCM',   icon: '🔴', badge: '#C62828', badgeLetter: 'O',  group: 'Enterprise ERP' },
+  { value: 'Workday',           label: 'Workday',         sub: 'HCM / Payroll / Finance',   icon: '💼', badge: '#F04B23', badgeLetter: 'W',  group: 'Enterprise ERP' },
+  { value: 'Guidewire',         label: 'Guidewire',       sub: 'Policy / Claims / Billing', icon: '🏗️', badge: '#1B7F8E', badgeLetter: 'G',  group: 'Enterprise ERP' },
+  { value: 'ServiceNow',        label: 'ServiceNow',      sub: 'ITSM / HRSD / ITOM',        icon: '🛎️', badge: '#43A047', badgeLetter: 'N',  group: 'Enterprise ERP' },
+  { value: 'Web App',           label: 'Web App',         sub: 'General Web Application',   icon: '🌐', badge: '#26C6DA', badgeLetter: 'W',  group: 'Web / Mobile' },
+  { value: 'Mobile App',        label: 'Mobile App',      sub: 'iOS / Android',             icon: '📱', badge: '#7E57C2', badgeLetter: 'M',  group: 'Web / Mobile' },
 ];
 
 // Category gradient badges
@@ -5572,7 +5649,7 @@ function renderPlatformCards() {
       item.className = 'platform-card platform-list-item';
       item.dataset.value = p.value;
       item.innerHTML = `
-        <span class="pc-badge" style="background:${grad}">${p.icon}</span>
+        <span class="pc-badge" style="background:${p.badge}">${p.badgeLetter}</span>
         <span class="pc-name">${p.label}</span>
         <span class="pc-check">✓</span>
       `;
