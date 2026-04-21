@@ -5032,8 +5032,10 @@ async function createADOTestCase(org, project, _pat, tc, areaPath, iterPath) {
   const ops = [
     { op:'add', path:'/fields/System.Title',                       value: tc.title },
     { op:'add', path:'/fields/System.AssignedTo',
-      // Use override user from dropdown if selected, else use AI-generated role
-      value: (document.getElementById('adoAssignedToSelect')?.value || tc.assignedTo) },
+      // Use override user from dropdown or manual input, else use AI-generated role
+      value: (document.getElementById('adoAssignedToSelect')?.value
+           || window.__manualAssignedTo
+           || tc.assignedTo) },
     { op:'add', path:'/fields/System.State',                       value: 'Design' },
     { op:'add', path:'/fields/Microsoft.VSTS.Common.Priority',     value: tc.priority },
     { op:'add', path:'/fields/Microsoft.VSTS.TCM.Steps',           value: buildStepsXML(tc.steps) },
@@ -5374,50 +5376,123 @@ async function loadADOUsers(org, project) {
   if (!sel) return;
 
   if (badge) badge.style.display = 'inline';
+  if (countEl) countEl.style.display = 'none';
   window.__adoUsersList = [];
+  sel.innerHTML = '<option value="">⏳ Loading users…</option>';
 
+  const usersMap = {};
+
+  // ── Strategy 1: Teams API (needs Project and Team: Read scope) ──
   try {
-    // Step 1: Get all teams in the project
     const teamsUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/teams?api-version=7.1&$top=100`;
     const teamsData = await adoRequest('GET', teamsUrl, null);
     const teams = teamsData.value || [];
 
-    // Step 2: Get members from all teams (deduplicated)
-    const usersMap = {};
     await Promise.all(teams.map(async team => {
       try {
         const membersUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/teams/${encodeURIComponent(team.id)}/members?api-version=7.1`;
         const membersData = await adoRequest('GET', membersUrl, null);
         (membersData.value || []).forEach(m => {
           const identity = m.identity || m;
-          const email    = identity.uniqueName || identity.mailAddress || '';
-          const name     = identity.displayName || identity.providerDisplayName || email;
-          if (email && !usersMap[email]) {
+          const email = identity.uniqueName || identity.mailAddress || '';
+          const name  = identity.displayName || identity.providerDisplayName || email;
+          if (email && email.includes('@') && !usersMap[email]) {
             usersMap[email] = { email, name };
           }
         });
-      } catch(e) { /* some teams may be inaccessible */ }
+      } catch(e) {}
     }));
+  } catch(e) {}
 
-    const users = Object.values(usersMap).sort((a,b) => a.name.localeCompare(b.name));
-    window.__adoUsersList = users;
+  // ── Strategy 2: WIQL — get distinct AssignedTo from existing work items ──
+  // Works with Work Items: Read scope (always in standard PAT)
+  if (Object.keys(usersMap).length === 0) {
+    try {
+      const wiqlUrl  = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=7.1`;
+      const wiqlBody = { query: `SELECT [System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = '${project}' AND [System.AssignedTo] <> '' ORDER BY [System.AssignedTo]` };
+      const wiqlData = await adoRequest('POST', wiqlUrl, null, wiqlBody);
+      const workItems = wiqlData.workItems || [];
 
-    // Populate dropdown
-    sel.innerHTML = '<option value="">— Use AI-generated roles (default) —</option>';
+      // Get IDs (up to 200) and batch fetch to get AssignedTo field
+      const ids = [...new Set(workItems.slice(0, 200).map(w => w.id))];
+      if (ids.length > 0) {
+        const batchUrl  = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitemsbatch?api-version=7.1`;
+        const batchBody = { ids, fields: ['System.AssignedTo'] };
+        const batchData = await adoRequest('POST', batchUrl, null, batchBody);
+        (batchData.value || []).forEach(wi => {
+          const assignedTo = wi.fields?.['System.AssignedTo'];
+          if (assignedTo) {
+            // assignedTo is either a string "Name <email>" or object {displayName, uniqueName}
+            if (typeof assignedTo === 'object') {
+              const email = assignedTo.uniqueName || assignedTo.id || '';
+              const name  = assignedTo.displayName || email;
+              if (email && !usersMap[email]) usersMap[email] = { email, name };
+            } else if (typeof assignedTo === 'string' && assignedTo.includes('<')) {
+              const match = assignedTo.match(/^(.+?)s*<(.+?)>$/);
+              if (match) usersMap[match[2]] = { email: match[2], name: match[1].trim() };
+            }
+          }
+        });
+      }
+    } catch(e) {}
+  }
+
+  // ── Strategy 3: Work Item fields — get allowed identity values ──
+  if (Object.keys(usersMap).length === 0) {
+    try {
+      const fieldUrl  = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/fields/System.AssignedTo?$expand=allowedValues&api-version=7.1`;
+      const fieldData = await adoRequest('GET', fieldUrl, null);
+      (fieldData.allowedValues || []).forEach(v => {
+        if (v && typeof v === 'string') usersMap[v] = { email: v, name: v };
+      });
+    } catch(e) {}
+  }
+
+  // ── Populate dropdown ──────────────────────────────────────────
+  const users = Object.values(usersMap)
+    .filter(u => u.email && u.name)
+    .sort((a,b) => a.name.localeCompare(b.name));
+
+  window.__adoUsersList = users;
+  sel.innerHTML = '<option value="">— Use AI-generated roles (default) —</option>';
+
+  if (users.length > 0) {
     users.forEach(u => {
       const opt = document.createElement('option');
-      opt.value       = u.email;
-      opt.textContent = `${u.name} (${u.email})`;
+      opt.value       = u.uniqueName || u.email;
+      opt.textContent = u.name === u.email ? u.name : `${u.name}`;
       sel.appendChild(opt);
     });
-
     if (badge)   badge.style.display = 'none';
     if (countEl) { countEl.textContent = `${users.length} users`; countEl.style.display = 'inline'; }
-
-  } catch(e) {
+  } else {
+    // All strategies failed — show manual input fallback
     if (badge) badge.style.display = 'none';
-    // Silent fail — Assigned To will use AI-generated roles
-    sel.innerHTML = '<option value="">— Use AI-generated roles (default) —</option>';
+    sel.innerHTML = '<option value="">— Enter name manually below —</option>';
+    // Add manual input under the select
+    let manualRow = document.getElementById('adoAssignedManualRow');
+    if (!manualRow) {
+      manualRow = document.createElement('div');
+      manualRow.id = 'adoAssignedManualRow';
+      manualRow.style.cssText = 'margin-top:8px';
+      manualRow.innerHTML = `
+        <input type="text" id="adoAssignedManualInput" placeholder="Type display name or email (e.g. John Smith)"
+          autocomplete="off"
+          style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                 padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s"
+          onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+          oninput="window.__manualAssignedTo=this.value"/>
+        <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
+          ⚠️ Could not load users automatically — add <strong>Project and Team: Read</strong> scope to your PAT for automatic loading.
+        </span>`;
+      sel.parentNode.insertBefore(manualRow, sel.nextSibling);
+    } else {
+      manualRow.style.display = 'block';
+    }
+  }
+
+  // Guard for old catch block below — needs closing
+  if (false) {
   }
 }
 
