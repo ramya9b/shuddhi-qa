@@ -3924,6 +3924,116 @@ header::after { display: none !important; }
     grid-template-columns: unset !important;
   }
 
+
+  /* ── Platform list — nav-item style (compact single line) ─── */
+  .sb-platform-section #platformGrid {
+    display: block !important;
+    grid-template-columns: unset !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .pc-group-label {
+    font-size: 8.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--text3);
+    padding: 8px 10px 3px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .platform-list-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 6px 10px !important;
+    border-radius: 7px !important;
+    cursor: pointer !important;
+    transition: all .13s !important;
+    border: none !important;
+    background: transparent !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .platform-list-item:hover {
+    background: var(--surface2) !important;
+    color: var(--text) !important;
+  }
+  .platform-list-item.selected {
+    background: rgba(91,95,239,.08) !important;
+    color: var(--indigo, #5B5FEF) !important;
+  }
+  .platform-list-item .pc-icon {
+    font-size: 13px !important;
+    width: 16px !important;
+    height: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+  /* pc-badge overrides pc-icon for sidebar list items */
+  .platform-list-item .pc-text {
+    flex: 1;
+    min-width: 0;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+  .platform-list-item .pc-name {
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    color: var(--text2) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    line-height: 1 !important;
+  }
+  .platform-list-item.selected .pc-name { color: var(--indigo, #5B5FEF) !important; font-weight: 700 !important; }
+  .platform-list-item .pc-sub { display: none !important; }
+  .platform-list-item .pc-check {
+    font-size: 10px;
+    color: var(--indigo, #5B5FEF);
+    opacity: 0;
+    flex-shrink: 0;
+    font-weight: 700;
+    margin-left: auto;
+    transition: opacity .13s;
+  }
+  .platform-list-item.selected .pc-check { opacity: 1; }
+
+  /* Platform cards in old form view — keep original card style */
+  #platformGrid:not(.sb-platform-section #platformGrid) .platform-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+
+  /* ── Platform gradient badge icon ─────────────────────────── */
+  .platform-list-item .pc-badge {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 7px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15) !important;
+    transition: transform .15s, box-shadow .15s !important;
+  }
+  .platform-list-item:hover .pc-badge {
+    transform: scale(1.08) !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.2) !important;
+  }
+  .platform-list-item.selected .pc-badge {
+    box-shadow: 0 3px 12px rgba(91,95,239,.4) !important;
+    transform: scale(1.05) !important;
+  }
+
 </style>
 </head>
 <body>
@@ -5268,6 +5378,14 @@ const PLATFORMS = [
   { value: 'Mobile App',        label: 'Mobile App',      sub: 'iOS / Android',             icon: '📱', color: '#1D9E75', group: 'Web / Mobile' },
 ];
 
+// Category gradient badges
+const GROUP_GRADIENTS = {
+  'Microsoft':     'linear-gradient(135deg, #0078D4, #2899F5)',
+  'Salesforce':    'linear-gradient(135deg, #00A1E0, #0176D3)',
+  'Enterprise ERP':'linear-gradient(135deg, #7B5EA7, #C74634)',
+  'Web / Mobile':  'linear-gradient(135deg, #1D9E75, #0891B2)'
+};
+
 // Platform groups in display order
 const PLATFORM_GROUPS = ['Microsoft', 'Salesforce', 'Enterprise ERP', 'Web / Mobile'];
 
@@ -5290,13 +5408,14 @@ function renderPlatformCards() {
     groupLabel.textContent = groupName;
     grid.appendChild(groupLabel);
 
-    // Platform items (single column list)
+    // Platform items — gradient badge icon
+    const grad = GROUP_GRADIENTS[groupName] || 'linear-gradient(135deg,#5B5FEF,#8B5CF6)';
     groupPlatforms.forEach(p => {
       const item = document.createElement('div');
       item.className = 'platform-card platform-list-item';
       item.dataset.value = p.value;
       item.innerHTML = `
-        <span class="pc-icon" style="color:${p.color}">${p.icon}</span>
+        <span class="pc-badge" style="background:${grad}">${p.icon}</span>
         <div class="pc-text">
           <span class="pc-name">${p.label}</span>
           <span class="pc-sub">${p.sub}</span>
