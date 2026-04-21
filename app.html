@@ -4737,7 +4737,7 @@ async function loadADOTestPlans() {
 }
 
 // ── Create a new Test Plan ────────────────────────────────────
-async function adoCreateTestPlan(org, project, pat, planName, areaPath) {
+async function adoCreateTestPlan(org, project, _pat, planName, areaPath) {
   const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/testplan/plans?api-version=7.1-preview.1`;
   const body = {
     name: planName,
@@ -4749,7 +4749,7 @@ async function adoCreateTestPlan(org, project, pat, planName, areaPath) {
 }
 
 // ── Create a Test Suite under a plan ─────────────────────────
-async function adoCreateTestSuite(org, project, pat, planId, parentSuiteId, suiteName) {
+async function adoCreateTestSuite(org, project, _pat, planId, parentSuiteId, suiteName) {
   const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/testplan/plans/${planId}/suites?api-version=7.1-preview.1`;
   const body = {
     suiteType: 'staticTestSuite',
@@ -4761,7 +4761,7 @@ async function adoCreateTestSuite(org, project, pat, planId, parentSuiteId, suit
 }
 
 // ── Add test case work items to a suite ──────────────────────
-async function adoAddTCsToSuite(org, project, pat, planId, suiteId, tcIds) {
+async function adoAddTCsToSuite(org, project, _pat, planId, suiteId, tcIds) {
   if (!tcIds.length) return;
   const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/testplan/plans/${planId}/suites/${suiteId}/TestCase?api-version=7.1-preview.3`;
   const body = tcIds.map(id => ({ workItem: { id } }));
@@ -4833,7 +4833,7 @@ async function pushToADOFull() {
     let planId, rootId;
     if (planSel === '__new__') {
       setProgress(5, 'Creating Test Plan…');
-      const r = await adoCreateTestPlan(org, project, pat, newPlan, areaPath);
+      const r = await adoCreateTestPlan(org, project, null, newPlan, areaPath);
       planId = r.planId; rootId = r.rootSuiteId;
       addResult('✅', `Test Plan created: <strong>${newPlan}</strong> (ID: ${planId})`);
     } else {
@@ -4853,7 +4853,7 @@ async function pushToADOFull() {
 
     // ── 2. Create parent Test Suite ────────────────────────
     setProgress(12, 'Creating Test Suite…');
-    const parentSuiteId = await adoCreateTestSuite(org, project, pat, planId, rootId, suiteName);
+    const parentSuiteId = await adoCreateTestSuite(org, project, null, planId, rootId, suiteName);
     addResult('✅', `Test Suite created: <strong>${suiteName}</strong> (ID: ${parentSuiteId})`);
 
     // ── 3. Group test cases by section (if enabled) ────────
@@ -4904,7 +4904,7 @@ async function pushToADOFull() {
       let suiteId = parentSuiteId;
       if (grouped && Object.keys(sectionGroups).length > 1) {
         setProgress(15 + Math.round((done/totalTCs)*75), `Creating child suite: ${secName}…`);
-        suiteId = await adoCreateTestSuite(org, project, pat, planId, parentSuiteId, secName);
+        suiteId = await adoCreateTestSuite(org, project, null, planId, parentSuiteId, secName);
         addResult('ℹ️', `Child suite: <strong>${secName}</strong> (ID: ${suiteId})`);
       }
 
@@ -4915,7 +4915,7 @@ async function pushToADOFull() {
         const pct = 15 + Math.round((done/totalTCs)*75);
         setProgress(pct, `(${done}/${totalTCs}) Creating: ${tc.title.substring(0,55)}…`);
         try {
-          const tcId = await createADOTestCase(org, project, pat, tc, areaPath, iterPath);
+          const tcId = await createADOTestCase(org, project, null, tc, areaPath, iterPath);
           createdIds.push(tcId);
           successCount++;
           addResult('✅', `<strong>#${tcId}</strong> — ${tc.title.substring(0,65)}`);
@@ -4930,7 +4930,7 @@ async function pushToADOFull() {
       if (createdIds.length) {
         setProgress(90 + Math.round((done/totalTCs)*8), `Adding ${createdIds.length} TCs to suite…`);
         try {
-          await adoAddTCsToSuite(org, project, pat, planId, suiteId, createdIds);
+          await adoAddTCsToSuite(org, project, null, planId, suiteId, createdIds);
         } catch(e) {
           addResult('⚠️', `TCs created but suite-link failed: ${e.message}`);
         }
