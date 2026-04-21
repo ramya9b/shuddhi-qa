@@ -4392,6 +4392,12 @@ header::after { display: none !important; }
     pointer-events: none;
   }
 
+  /* Edge Cases tab — orange */
+  .atab-edge-style:hover        { color: #B45309 !important; background: rgba(249,115,22,.05) !important; }
+  .atab-edge-style.active       { color: #B45309 !important; border-bottom-color: #F97316 !important; background: rgba(249,115,22,.06) !important; }
+  .atab-edge-style.active .atab-count { background: #F97316 !important; }
+  /* Edge Cases type badge */
+  .tg-type-edge { background: rgba(249,115,22,.1) !important; color: #C2410C !important; border: 1px solid rgba(249,115,22,.2) !important; }
 </style>
 </head>
 <body>
@@ -5222,6 +5228,12 @@ header::after { display: none !important; }
           <span class="atab-icon">✕</span>
           <span class="atab-label">Negative</span>
           <span class="atab-count" id="atab-count-negative"></span>
+        </button>
+
+        <button class="artifact-tab atab-edge-style" id="atab-edge" onclick="switchArtifactTab('edge',this)">
+          <span class="atab-icon">◎</span>
+          <span class="atab-label">Edge Cases</span>
+          <span class="atab-count" id="atab-count-edge"></span>
         </button>
 
         <button class="artifact-tab atab-smoke-style" id="atab-smoke" onclick="switchArtifactTab('smoke',this)">
@@ -9725,7 +9737,9 @@ function syncFormatOnTabClick(tabKey) {
   const map = {
     all: 'full', e2e: 'e2e', field: 'field',
     integration: 'integration', negative: 'negative',
-    smoke: 'smoke', testdata: 'testdata', metadata: 'metadata'
+    edge: 'negative', // edge cases generated with negative format
+    smoke: 'smoke', testdata: 'testdata', metadata: 'metadata',
+    functional: 'full'
   };
   if (map[tabKey]) fmt.value = map[tabKey];
 }
@@ -11258,25 +11272,76 @@ function bulkPushToADO() {
 // ═══════════════════════════════════════════════════════════════════
 
 // Detect TC type from section heading
+// ══════════════════════════════════════════════════════════════════
+// SMART TC CLASSIFIER — TYPE_REGISTRY with section + title signals
+// ══════════════════════════════════════════════════════════════════
+const TYPE_REGISTRY = [
+  { type:'Negative',    cls:'tg-type-negative',
+    sectionKeys:['negative','invalid','error handling','5.'],
+    titleKeys:['invalid','unauthorized','wrong','expired','fail','error','reject',
+               'deny','exceed','missing','not found','forbidden','blocked','incorrect',
+               'null input','empty field','duplicate','conflict','locked','disabled','breach'] },
+  { type:'Edge Cases',  cls:'tg-type-edge',
+    sectionKeys:['edge','boundary','limit','corner','extreme'],
+    titleKeys:['boundary','max ','min ','maximum','minimum','limit','zero records',
+               'overflow','underflow','threshold','just above','just below','exactly ',
+               'special char','unicode','very long','large dataset','concurrent','0 '] },
+  { type:'E2E',         cls:'tg-type-e2e',
+    sectionKeys:['end-to-end','e2e','end to end','2.','complete flow','full flow','user journey'],
+    titleKeys:['end-to-end','full flow','complete flow','entire process','journey',
+               'lifecycle','happy path','golden path','approval flow','multi-step',
+               'process flow','from creation','from start','from login'] },
+  { type:'Field Valid.', cls:'tg-type-field',
+    sectionKeys:['field valid','field-valid','3.','form validation','input validation'],
+    titleKeys:['field ','required field','mandatory','format validation','regex',
+               'max length','min length','data type','dropdown','picklist','date format',
+               'email format','phone number','postal','currency format','decimal places',
+               'alphanumeric','input mask','character limit'] },
+  { type:'Integration',  cls:'tg-type-integration',
+    sectionKeys:['integration','4.','api test','system-to-system','cross-module','data sync'],
+    titleKeys:['integration','api call','sync ','webhook','middleware','cross-system',
+               'cross-module','third-party','external system','payload','inbound',
+               'outbound','message queue','event trigger','data exchange','rest api',
+               'soap ','erp integration','d365+sf','salesforce sync','power automate'] },
+  { type:'Smoke',        cls:'tg-type-smoke',
+    sectionKeys:['smoke','sanity','critical path'],
+    titleKeys:['smoke test','sanity','critical access','page loads','navigation works',
+               'health check','basic login','landing page'] },
+  { type:'Test Data',    cls:'tg-type-smoke',
+    sectionKeys:['test data','data requirement','6.'],
+    titleKeys:['test data','data set','prerequisite data','seed data','master data setup'] },
+  { type:'Metadata',     cls:'tg-type-field',
+    sectionKeys:['metadata','test case metadata','7.'],
+    titleKeys:['tc id','precondition','automation feasibility','risk score','failure impact'] },
+  { type:'Functional',   cls:'tg-type-positive',
+    sectionKeys:['functional','positive','scenario','1.','summary'],
+    titleKeys:['verify','validate','confirm','ensure','create','read','update','delete',
+               'view','display','submit','save','search','filter','sort','generate',
+               'export','import','upload','download','assign','approve','navigate','open'] }
+];
+
 function getTCType(sectionTitle) {
-  const t = (sectionTitle||'').toLowerCase();
-  // Order matters — check most specific first
-  if (t.includes('negative'))                                           return { type:'Negative',    cls:'tg-type-negative' };
-  if (t.includes('smoke') || t.includes('sanity'))                      return { type:'Smoke',        cls:'tg-type-smoke' };
-  if (t.includes('end-to-end') || t.includes('e2e'))                    return { type:'E2E',          cls:'tg-type-e2e' };
-  if (t.includes('field valid') || t.includes('field-valid'))           return { type:'Field Valid.', cls:'tg-type-field' };
-  if (t.includes('integration'))                                        return { type:'Integration',  cls:'tg-type-integration' };
-  if (t.includes('test data') || t.includes('data requirement'))        return { type:'Test Data',    cls:'tg-type-smoke' };
-  if (t.includes('metadata') || t.includes('test case metadata'))       return { type:'Metadata',     cls:'tg-type-field' };
-  if (t.includes('functional') || t.includes('positive') || t.includes('scenario')) return { type:'Functional', cls:'tg-type-positive' };
-  // Numbered section fallback
-  if (t.match(/2|2./) && !t.includes('negative'))               return { type:'E2E',          cls:'tg-type-e2e' };
-  if (t.match(/3|3./))                                           return { type:'Field Valid.', cls:'tg-type-field' };
-  if (t.match(/4|4./))                                           return { type:'Integration',  cls:'tg-type-integration' };
-  if (t.match(/5|5./))                                           return { type:'Negative',     cls:'tg-type-negative' };
-  if (t.match(/6|6./))                                           return { type:'Test Data',    cls:'tg-type-smoke' };
-  if (t.match(/7|7./))                                           return { type:'Metadata',     cls:'tg-type-field' };
-  return                                                                  { type:'Functional',   cls:'tg-type-positive' };
+  const s = (sectionTitle||'').toLowerCase();
+  for (const reg of TYPE_REGISTRY) {
+    if (reg.sectionKeys.some(k => s.includes(k))) {
+      return { type: reg.type, cls: reg.cls };
+    }
+  }
+  return { type:'Functional', cls:'tg-type-positive' };
+}
+
+function classifyTCByTitle(title, fallbackType, fallbackCls) {
+  const t = (title||'').toLowerCase();
+  if (['Test Data','Metadata'].includes(fallbackType)) return { type:fallbackType, cls:fallbackCls };
+
+  let best = { type:fallbackType, cls:fallbackCls, score:0 };
+  for (const reg of TYPE_REGISTRY) {
+    if (['Test Data','Metadata'].includes(reg.type)) continue;
+    const score = reg.titleKeys.reduce((a,kw) => a + (t.includes(kw)?1:0), 0);
+    if (score > best.score) best = { type:reg.type, cls:reg.cls, score };
+  }
+  // Only override if title gives strong signal (≥2 keywords)
+  return best.score >= 2 ? { type:best.type, cls:best.cls } : { type:fallbackType, cls:fallbackCls };
 }
 
 // Infer priority from TC title text
@@ -11357,7 +11422,9 @@ function renderTestGenView() {
 
     const stepsRaw = cells[1] || '';
     const expected = cells[2] || '';
-    const priInfo  = inferPriority(tcTitle || rawTitle);
+    const priInfo   = inferPriority(tcTitle || rawTitle);
+    // Refine type using TC title for ambiguous sections
+    const refinedType = classifyTCByTitle(tcTitle || rawTitle, currentType.type, currentType.cls);
 
     tgAllTCs.push({
       id:       tcId,
@@ -11365,8 +11432,8 @@ function renderTestGenView() {
       stepsRaw: stepsRaw,
       expected: expected,
       section:  currentSection,
-      type:     currentType.type,
-      typeCls:  currentType.cls,
+      type:     refinedType.type,
+      typeCls:  refinedType.cls,
       priority: priInfo.pri,
       priCls:   priInfo.cls,
     });
@@ -11791,6 +11858,7 @@ function switchArtifactTab(tabKey, btn) {
       field:       'Field Valid.',
       integration: 'Integration',
       negative:    'Negative',
+      edge:        'Edge Cases',
       smoke:       'Smoke',
       testdata:    'Test Data',
       metadata:    'Metadata'
@@ -11845,6 +11913,7 @@ function updateArtifactTabCounts() {
     field:       tgAllTCs.filter(t => t.type === 'Field Valid.').length,
     integration: tgAllTCs.filter(t => t.type === 'Integration').length,
     negative:    tgAllTCs.filter(t => t.type === 'Negative').length,
+    edge:        tgAllTCs.filter(t => t.type === 'Edge Cases').length,
     smoke:       tgAllTCs.filter(t => t.type === 'Smoke').length,
     testdata:    tgAllTCs.filter(t => t.type === 'Test Data').length,
     metadata:    tgAllTCs.filter(t => t.type === 'Metadata').length,
