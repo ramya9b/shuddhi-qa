@@ -5814,10 +5814,10 @@ const PLATFORMS = [
   { value: 'Salesforce Service',label: 'SF Service',       sub: 'Service Cloud',             badge: '#00A1E0', logoUrl: 'https://cdn.simpleicons.org/salesforce/white',        group: 'Salesforce' },
   { value: 'Salesforce CPQ',    label: 'SF CPQ',           sub: 'Configure Price Quote',     badge: '#00A1E0', logoUrl: 'https://cdn.simpleicons.org/salesforce/white',        group: 'Salesforce' },
   { value: 'SAP',               label: 'SAP',              sub: 'ERP / S4HANA / R3',         badge: '#0070F2', logoUrl: 'https://cdn.simpleicons.org/sap/white',              group: 'Enterprise ERP' },
-  { value: 'Oracle ERP',        label: 'Oracle ERP',       sub: 'Fusion / NetSuite / HCM',   badge: '#C74634', logoUrl: 'https://cdn.simpleicons.org/oracle/white',           group: 'Enterprise ERP' },
-  { value: 'Workday',           label: 'Workday',          sub: 'HCM / Payroll / Finance',   badge: '#F04B23', logoUrl: 'https://cdn.simpleicons.org/workday/white',          group: 'Enterprise ERP' },
-  { value: 'Guidewire',         label: 'Guidewire',        sub: 'Policy / Claims / Billing', badge: '#1B7F8E', logoUrl: 'https://cdn.simpleicons.org/guidewire/white',        group: 'Enterprise ERP' },
-  { value: 'ServiceNow',        label: 'ServiceNow',       sub: 'ITSM / HRSD / ITOM',        badge: '#62D84E', logoUrl: 'https://cdn.simpleicons.org/servicenow/white',       group: 'Enterprise ERP' },
+  { value: 'Oracle ERP',        label: 'Oracle ERP',       sub: 'Fusion / NetSuite / HCM',   badge: '#C74634', logoUrl: '', badgeLetter: 'O',           group: 'Enterprise ERP' },
+  { value: 'Workday',           label: 'Workday',          sub: 'HCM / Payroll / Finance',   badge: '#F04B23', logoUrl: '', badgeLetter: 'W',          group: 'Enterprise ERP' },
+  { value: 'Guidewire',         label: 'Guidewire',        sub: 'Policy / Claims / Billing', badge: '#1B7F8E', logoUrl: '', badgeLetter: 'G',        group: 'Enterprise ERP' },
+  { value: 'ServiceNow',        label: 'ServiceNow',       sub: 'ITSM / HRSD / ITOM',        badge: '#62D84E', logoUrl: 'https://cdn.simpleicons.org/servicenow/white', badgeLetter: 'N',       group: 'Enterprise ERP' },
   { value: 'Web App',           label: 'Web App',          sub: 'General Web Application',   badge: '#26C6DA', logoUrl: 'https://cdn.simpleicons.org/googlechrome/white',     group: 'Web / Mobile' },
   { value: 'Mobile App',        label: 'Mobile App',       sub: 'iOS / Android',             badge: '#7E57C2', logoUrl: 'https://cdn.simpleicons.org/android/white',         group: 'Web / Mobile' },
 ];
@@ -11701,8 +11701,11 @@ function buildTGTabsAndTable(el) {
   renderTGTable();
 }
 
-// ── Render the TC table ───────────────────────────────────────────
+// ── Render the TC table (re-entrancy guarded) ─────────────────────
+let _tgRenderInProgress = false;
 function renderTGTable() {
+  if (_tgRenderInProgress) return;
+  _tgRenderInProgress = true;
   const wrap = document.getElementById('tgSectionsWrap');
   if (!wrap) return;
 
@@ -11824,9 +11827,12 @@ function renderTGTable() {
       </div>`;
   }
 
-  // Pagination
+  // Update outer tab counts
+  updateArtifactTabCounts();
+  // Pagination (hidden in grouped view, kept for single-filter view)
   buildTGPagination(filtered.length, totalPages);
   updateBulkBar();
+  _tgRenderInProgress = false;
 }
 
 function buildTGPagination(total, totalPages) {
@@ -12077,18 +12083,10 @@ function updateArtifactTabCounts() {
   });
 }
 
-// Hook into finalizeOutput to update counts
-const _origFinalizeArtifact = typeof finalizeOutput === 'function' ? finalizeOutput : null;
-// Call updateArtifactTabCounts after TestGen view renders
-const _origRenderTGTable = renderTGTable;
-function renderTGTable() {
-  _origRenderTGTable();
-  updateArtifactTabCounts();
-}
+// updateArtifactTabCounts is called directly inside renderTGTable (no wrapper needed)
 </script>
 
-COLLAPSEESCRIPT
-echo "✅ Collapse JS appended"<script>
+<script>
 // ── Sidebar collapse/expand ──────────────────────────────────────
 const SIDEBAR_STATE_KEY = 'shuddhi-sidebar-collapsed';
 
