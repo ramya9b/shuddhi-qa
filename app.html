@@ -11260,12 +11260,23 @@ function bulkPushToADO() {
 // Detect TC type from section heading
 function getTCType(sectionTitle) {
   const t = (sectionTitle||'').toLowerCase();
-  if (t.includes('negative'))        return { type:'Negative',    cls:'tg-type-negative' };
-  if (t.includes('end-to-end')||t.includes('e2e')||t.includes('2.')) return { type:'E2E', cls:'tg-type-e2e' };
-  if (t.includes('field')||t.includes('3.')) return { type:'Field Valid.', cls:'tg-type-field' };
-  if (t.includes('integration')||t.includes('4.')) return { type:'Integration', cls:'tg-type-integration' };
-  if (t.includes('smoke'))           return { type:'Smoke',        cls:'tg-type-smoke' };
-  return                               { type:'Functional',   cls:'tg-type-positive' };
+  // Order matters — check most specific first
+  if (t.includes('negative'))                                           return { type:'Negative',    cls:'tg-type-negative' };
+  if (t.includes('smoke') || t.includes('sanity'))                      return { type:'Smoke',        cls:'tg-type-smoke' };
+  if (t.includes('end-to-end') || t.includes('e2e'))                    return { type:'E2E',          cls:'tg-type-e2e' };
+  if (t.includes('field valid') || t.includes('field-valid'))           return { type:'Field Valid.', cls:'tg-type-field' };
+  if (t.includes('integration'))                                        return { type:'Integration',  cls:'tg-type-integration' };
+  if (t.includes('test data') || t.includes('data requirement'))        return { type:'Test Data',    cls:'tg-type-smoke' };
+  if (t.includes('metadata') || t.includes('test case metadata'))       return { type:'Metadata',     cls:'tg-type-field' };
+  if (t.includes('functional') || t.includes('positive') || t.includes('scenario')) return { type:'Functional', cls:'tg-type-positive' };
+  // Numbered section fallback
+  if (t.match(/2|2./) && !t.includes('negative'))               return { type:'E2E',          cls:'tg-type-e2e' };
+  if (t.match(/3|3./))                                           return { type:'Field Valid.', cls:'tg-type-field' };
+  if (t.match(/4|4./))                                           return { type:'Integration',  cls:'tg-type-integration' };
+  if (t.match(/5|5./))                                           return { type:'Negative',     cls:'tg-type-negative' };
+  if (t.match(/6|6./))                                           return { type:'Test Data',    cls:'tg-type-smoke' };
+  if (t.match(/7|7./))                                           return { type:'Metadata',     cls:'tg-type-field' };
+  return                                                                  { type:'Functional',   cls:'tg-type-positive' };
 }
 
 // Infer priority from TC title text
@@ -11506,7 +11517,7 @@ function renderTGTable() {
 
   const q   = (document.getElementById('tgSearch')?.value||'').toLowerCase();
   const filtered = tgAllTCs.filter(tc => {
-    const matchFilter = tgFilter==='all' || tc.type===tgFilter;
+    const matchFilter = !tgFilter || tgFilter==='all' || tc.type === tgFilter;
     const matchSearch = !q || tc.id.toLowerCase().includes(q) || tc.title.toLowerCase().includes(q) || tc.expected.toLowerCase().includes(q);
     return matchFilter && matchSearch;
   });
@@ -11745,15 +11756,16 @@ function switchArtifactTab(tabKey, btn) {
     // Map artifact tab keys to tgAllTCs type values
     const typeMap = {
       all:         null,
-      e2e:         ['E2E'],
-      field:       ['Field Valid.'],
-      integration: ['Integration'],
-      negative:    ['Negative'],
-      smoke:       ['Smoke'],
-      testdata:    [],          // Test Data is a section, not a TC type
-      metadata:    []           // Metadata is a section, not a TC type
+      functional:  'Functional',
+      e2e:         'E2E',
+      field:       'Field Valid.',
+      integration: 'Integration',
+      negative:    'Negative',
+      smoke:       'Smoke',
+      testdata:    'Test Data',
+      metadata:    'Metadata'
     };
-    tgFilter = tabKey === 'all' ? 'all' : (typeMap[tabKey]?.[0] || 'all');
+    tgFilter = tabKey === 'all' ? 'all' : (typeMap[tabKey] || 'all');
     tgPage = 1;
     renderTGTable();
     // Also sync the tgTabs if visible
@@ -11798,13 +11810,14 @@ function updateArtifactTabCounts() {
 
   const counts = {
     all:         tgAllTCs.length,
+    functional:  tgAllTCs.filter(t => t.type === 'Functional').length,
     e2e:         tgAllTCs.filter(t => t.type === 'E2E').length,
     field:       tgAllTCs.filter(t => t.type === 'Field Valid.').length,
     integration: tgAllTCs.filter(t => t.type === 'Integration').length,
     negative:    tgAllTCs.filter(t => t.type === 'Negative').length,
     smoke:       tgAllTCs.filter(t => t.type === 'Smoke').length,
-    testdata:    0,   // section-based, count from sections
-    metadata:    tgAllTCs.length > 0 ? 1 : 0,  // 1 metadata section
+    testdata:    tgAllTCs.filter(t => t.type === 'Test Data').length,
+    metadata:    tgAllTCs.filter(t => t.type === 'Metadata').length,
   };
 
   Object.entries(counts).forEach(([key, count]) => {
