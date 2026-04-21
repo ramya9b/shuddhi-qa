@@ -3838,6 +3838,92 @@ header::after { display: none !important; }
     .atab-label { font-size: 11px !important; }
   }
 
+
+  /* ── Platform grouped list in sidebar ──────────────────────── */
+  .pc-group-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--text3);
+    padding: 10px 4px 4px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .pc-group-label:first-child { padding-top: 2px; }
+
+  .platform-list-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    padding: 7px 8px !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+    transition: all .14s;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 1px;
+  }
+  .platform-list-item:hover {
+    background: var(--surface2) !important;
+    border-color: var(--border) !important;
+  }
+  .platform-list-item.selected {
+    background: rgba(91,95,239,.08) !important;
+    border-color: rgba(91,95,239,.25) !important;
+  }
+  .platform-list-item .pc-icon {
+    font-size: 16px !important;
+    width: 22px !important;
+    height: 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+  .platform-list-item .pc-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .platform-list-item .pc-name {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--text) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block !important;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .platform-list-item .pc-sub {
+    font-size: 9.5px !important;
+    color: var(--text3) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block !important;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .platform-list-item .pc-check {
+    font-size: 11px;
+    color: var(--indigo, #5B5FEF);
+    opacity: 0;
+    flex-shrink: 0;
+    font-weight: 700;
+    transition: opacity .14s;
+  }
+  .platform-list-item.selected .pc-check { opacity: 1; }
+
+  /* Hide old grid CSS for sidebar since we're using list now */
+  .sb-platform-section #platformGrid {
+    display: block !important;
+    grid-template-columns: unset !important;
+  }
+
 </style>
 </head>
 <body>
@@ -3854,7 +3940,7 @@ header::after { display: none !important; }
 
   <nav class="sb-nav">
     <div class="sb-item" onclick="location.href='/'">
-      <span class="sb-icon">⊞</span><span>Overview</span>
+      <span class="sb-icon">🏠</span><span>Home</span>
     </div>
 
     <div class="sb-group-label">Test Management</div>
@@ -3862,8 +3948,8 @@ header::after { display: none !important; }
       <span class="sb-icon">✦</span><span>Generate Test Cases</span>
       <span class="sb-badge">v2.0</span>
     </div>
-    <div class="sb-item">
-      <span class="sb-icon">⚠</span><span>Defects</span>
+    <div class="sb-item" onclick="window.open('https://bugforgeai.vercel.app/','_blank')" title="Open BugForge AI">
+      <span class="sb-icon">🐛</span><span>BugForge AI ↗</span>
     </div>
 
 <div class="sb-group-label">Platform &amp; Module</div>
@@ -4573,7 +4659,7 @@ header::after { display: none !important; }
         <div class="form-actions-row">
           <button class="gen-btn" id="genBtn" onclick="generate()">
             <div class="spinner"></div>
-            <span class="btn-text">⚡ Generate Test Scenarios</span>
+            <span class="btn-text">⚡ Generate Test Cases</span>
           </button>
           <button class="reset-btn" id="stopBtn" onclick="stopGeneration()" style="display:none;border-color:var(--error);color:var(--error)">
             ⏹ Stop
@@ -4588,7 +4674,7 @@ header::after { display: none !important; }
       <div class="sticky-gen-bar">
         <button class="gen-btn" style="margin:0" onclick="generate()">
           <div class="spinner"></div>
-          <span class="btn-text">⚡ Generate Test Scenarios</span>
+          <span class="btn-text">⚡ Generate Test Cases</span>
         </button>
       </div>
     </div>
@@ -5166,36 +5252,60 @@ let startTime = 0;
 
 // ── Platform data ───────────────────────────────────────────────
 const PLATFORMS = [
-  { value: 'D365 F&O',         label: 'D365 F&O',      sub: 'Finance & Operations', icon: '🏢', color: '#0078D4' },
-  { value: 'D365 CRM',         label: 'D365 CRM',       sub: 'CRM / Customer Engagement', icon: '🤝', color: '#0078D4' },
-  { value: 'D365 BC',          label: 'D365 BC',        sub: 'Business Central', icon: '📊', color: '#0078D4' },
-  { value: 'Salesforce Sales', label: 'SF Sales',       sub: 'Sales Cloud', icon: '☁️', color: '#00A1E0' },
-  { value: 'Salesforce Service',label: 'SF Service',    sub: 'Service Cloud', icon: '🎯', color: '#00A1E0' },
-  { value: 'Salesforce CPQ',   label: 'SF CPQ',         sub: 'Configure Price Quote', icon: '💰', color: '#00A1E0' },
-  { value: 'D365+Salesforce',  label: 'D365 + SF',      sub: 'Integration', icon: '🔗', color: '#7B5EA7' },
-  { value: 'SAP',              label: 'SAP',             sub: 'ERP / S4HANA / R3', icon: '⚙️', color: '#0E6B9E' },
-  { value: 'ServiceNow',       label: 'ServiceNow',     sub: 'ITSM / HRSD / ITOM', icon: '🛎️', color: '#62D84E' },
-  { value: 'Web App',          label: 'Web App',         sub: 'General Web Application', icon: '🌐', color: '#1D9E75' },
-  { value: 'Mobile App',       label: 'Mobile App',     sub: 'iOS / Android', icon: '📱', color: '#1D9E75' },
-  { value: 'Workday',          label: 'Workday',         sub: 'HCM / Payroll / Finance', icon: '💼', color: '#F04B23' },
-  { value: 'Oracle ERP',       label: 'Oracle ERP',      sub: 'Fusion / NetSuite / HCM', icon: '🔴', color: '#C74634' },
-  { value: 'Guidewire',        label: 'Guidewire',       sub: 'Policy / Claims / Billing', icon: '🏗️', color: '#1B7F8E' },
+  { value: 'D365 F&O',          label: 'D365 F&O',       sub: 'Finance & Operations',     icon: '🏢', color: '#0078D4', group: 'Microsoft' },
+  { value: 'D365 CRM',          label: 'D365 CRM',        sub: 'CRM / Customer Engagement', icon: '🤝', color: '#0078D4', group: 'Microsoft' },
+  { value: 'D365 BC',           label: 'D365 BC',         sub: 'Business Central',          icon: '📊', color: '#0078D4', group: 'Microsoft' },
+  { value: 'D365+Salesforce',   label: 'D365 + SF',       sub: 'Integration',               icon: '🔗', color: '#7B5EA7', group: 'Microsoft' },
+  { value: 'Salesforce Sales',  label: 'SF Sales',        sub: 'Sales Cloud',               icon: '☁️', color: '#00A1E0', group: 'Salesforce' },
+  { value: 'Salesforce Service',label: 'SF Service',      sub: 'Service Cloud',             icon: '🎯', color: '#00A1E0', group: 'Salesforce' },
+  { value: 'Salesforce CPQ',    label: 'SF CPQ',          sub: 'Configure Price Quote',     icon: '💰', color: '#00A1E0', group: 'Salesforce' },
+  { value: 'SAP',               label: 'SAP',             sub: 'ERP / S4HANA / R3',         icon: '⚙️', color: '#0E6B9E', group: 'Enterprise ERP' },
+  { value: 'Oracle ERP',        label: 'Oracle ERP',      sub: 'Fusion / NetSuite / HCM',   icon: '🔴', color: '#C74634', group: 'Enterprise ERP' },
+  { value: 'Workday',           label: 'Workday',         sub: 'HCM / Payroll / Finance',   icon: '💼', color: '#F04B23', group: 'Enterprise ERP' },
+  { value: 'Guidewire',         label: 'Guidewire',       sub: 'Policy / Claims / Billing', icon: '🏗️', color: '#1B7F8E', group: 'Enterprise ERP' },
+  { value: 'ServiceNow',        label: 'ServiceNow',      sub: 'ITSM / HRSD / ITOM',        icon: '🛎️', color: '#62D84E', group: 'Enterprise ERP' },
+  { value: 'Web App',           label: 'Web App',         sub: 'General Web Application',   icon: '🌐', color: '#1D9E75', group: 'Web / Mobile' },
+  { value: 'Mobile App',        label: 'Mobile App',      sub: 'iOS / Android',             icon: '📱', color: '#1D9E75', group: 'Web / Mobile' },
 ];
 
-// ── Render platform cards on page load ───────────────────────────
+// Platform groups in display order
+const PLATFORM_GROUPS = ['Microsoft', 'Salesforce', 'Enterprise ERP', 'Web / Mobile'];
+
+// ── Render platform cards — grouped by category ─────────────────
 function renderPlatformCards() {
   const grid = document.getElementById('platformGrid');
   if (!grid) return;
   grid.innerHTML = '';
-  PLATFORMS.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'platform-card';
-    card.dataset.value = p.value;
-    card.innerHTML = `<span class="pc-icon">${p.icon}</span>
-      <span class="pc-name" style="font-weight:600">${p.label}</span>
-      <span class="pc-name" style="opacity:.7;font-size:10px">${p.sub}</span>`;
-    card.onclick = () => selectPlatform(p.value);
-    grid.appendChild(card);
+
+  // Override grid with column layout
+  grid.style.display = 'block';
+
+  PLATFORM_GROUPS.forEach(groupName => {
+    const groupPlatforms = PLATFORMS.filter(p => p.group === groupName);
+    if (!groupPlatforms.length) return;
+
+    // Group header
+    const groupLabel = document.createElement('div');
+    groupLabel.className = 'pc-group-label';
+    groupLabel.textContent = groupName;
+    grid.appendChild(groupLabel);
+
+    // Platform items (single column list)
+    groupPlatforms.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'platform-card platform-list-item';
+      item.dataset.value = p.value;
+      item.innerHTML = `
+        <span class="pc-icon" style="color:${p.color}">${p.icon}</span>
+        <div class="pc-text">
+          <span class="pc-name">${p.label}</span>
+          <span class="pc-sub">${p.sub}</span>
+        </div>
+        <span class="pc-check">✓</span>
+      `;
+      item.onclick = () => selectPlatform(p.value);
+      grid.appendChild(item);
+    });
   });
 }
 
