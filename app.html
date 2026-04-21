@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Shuddhi QA — Test Case Generator for D365, Salesforce & Web Apps</title>
+<title>Shuddhi QA v2.0 — AI-Powered Test Intelligence for Enterprise Platforms</title>
 <meta name="description" content="AI-powered QA test case generator for Microsoft Dynamics 365, Salesforce, General Web Apps and Mobile. Generate, edit and export test suites to Azure DevOps or Jira in seconds."/>
 <meta name="keywords" content="QA test case generator, D365 testing, Salesforce QA, Azure DevOps test plans, Jira Zephyr, test automation"/>
 <meta property="og:title" content="Shuddhi QA — AI Test Case Generator"/>
@@ -1701,6 +1701,663 @@
     box-shadow: 0 0 0 3px var(--d365-dim);
   }
 
+
+  /* Platform cards */
+  .platform-card {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    padding: 10px 6px; border-radius: 10px;
+    border: 1.5px solid var(--border2); background: var(--surface);
+    cursor: pointer; transition: all .15s; text-align: center;
+    font-size: 11.5px; color: var(--text2); user-select: none; line-height: 1.3;
+  }
+  .platform-card:hover { border-color: var(--d365); color: var(--text); background: var(--bg2); }
+  .platform-card.selected { border-color: var(--d365); background: rgba(0,120,212,.07); color: var(--d365); font-weight: 600; }
+  .platform-card .pc-icon { font-size: 20px; line-height: 1; }
+  .platform-card .pc-name { font-size: 11px; }
+
+  /* Module chips */
+  .module-chip {
+    padding: 5px 12px; border-radius: 20px; font-size: 12px;
+    border: 1.5px solid var(--border2); background: var(--surface);
+    color: var(--text2); cursor: pointer; transition: all .12s;
+    white-space: nowrap; user-select: none;
+  }
+  .module-chip:hover { border-color: var(--d365); color: var(--text); }
+  .module-chip.selected { border-color: var(--d365); background: rgba(0,120,212,.08); color: var(--d365); font-weight: 600; }
+  .module-chip.hidden { display: none; }
+
+  /* Module scroll area */
+  #moduleGrid::-webkit-scrollbar { width: 4px; }
+  #moduleGrid::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+
+  /* Section 7 — Test Case Metadata table */
+  .output-content table.metadata-table th {
+    background: rgba(123,94,167,.12) !important;
+    color: var(--text) !important;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    padding: 8px 10px !important;
+  }
+  .output-content table.metadata-table td {
+    font-size: 12.5px !important;
+    vertical-align: top;
+    padding: 8px 10px !important;
+    line-height: 1.5;
+  }
+  .exec-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+  }
+  .exec-smoke        { background: #E6F1FB; color: #185FA5; }
+  .exec-regression   { background: #FAEEDA; color: #854F0B; }
+  .exec-e2e          { background: #EAF3DE; color: #3B6D11; }
+  .exec-integration  { background: #EEEDFE; color: #534AB7; }
+  .exec-uat          { background: #E1F5EE; color: #0F6E56; }
+  .exec-negative     { background: #FCEBEB; color: #A32D2D; }
+  .auto-yes { color: #1D9E75; font-weight: 600; }
+  .auto-no  { color: #E24B4A; font-weight: 600; }
+
+
+  /* P3: Dark / Light Theme */
+  [data-theme="dark"] {
+    --bg:      #0f1117;
+    --bg2:     #1a1d27;
+    --surface: #1e2130;
+    --text:    #e8eaf0;
+    --text2:   #9ba3b8;
+    --text3:   #5a6080;
+    --border:  rgba(255,255,255,.08);
+    --border2: rgba(255,255,255,.14);
+    --d365:    #4da6ff;
+    --d365-dim: rgba(77,166,255,.12);
+    --d365-light: #7cc0ff;
+    --success: #4caf6e;
+    --error:   #f06b6b;
+  }
+  [data-theme="light"] {
+    --bg:      #f5f7fc;
+    --bg2:     #eef1f8;
+    --surface: #ffffff;
+    --text:    #1a1d2e;
+    --text2:   #4a5068;
+    --text3:   #8a92a8;
+    --border:  rgba(0,0,0,.08);
+    --border2: rgba(0,0,0,.14);
+    --d365:    #0078D4;
+    --d365-dim: rgba(0,120,212,.08);
+    --d365-light: #1a8fe0;
+    --success: #1a7a40;
+    --error:   #d0321e;
+  }
+
+
+  /* Filter bar buttons */
+  .filter-btn {
+    font-size:11.5px; padding:4px 10px; border-radius:20px;
+    border:1px solid var(--border2); background:var(--surface);
+    color:var(--text2); cursor:pointer; transition:all .12s;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .filter-btn:hover { border-color:var(--d365); color:var(--text); }
+  .filter-btn.active { border-color:var(--d365); background:var(--d365-dim); color:var(--d365); font-weight:600; }
+
+  /* Section collapse toggle */
+  .section-toggle {
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+    user-select:none; width:100%;
+  }
+  .section-toggle .toggle-icon {
+    font-size:13px; transition:transform .2s; display:inline-block;
+    color:var(--text3); flex-shrink:0;
+  }
+  .section-toggle.collapsed .toggle-icon { transform:rotate(-90deg); }
+  .section-body { transition:none; }
+  .section-body.collapsed { display:none; }
+
+  /* Print styles */
+  @media print {
+    .sidebar, .header, header, .api-bar, .export-row, .edit-mode-bar,
+    .filter-btn, #filterBar, .meta-bar, #metaBar, .settings-modal,
+    .ado-modal, .ado-overlay, #stopBtn, #resetBtn, #genBtn,
+    .mobile-nav, .toast, .session-history, .output-placeholder,
+    .section-toggle .toggle-icon { display:none !important; }
+    body { background:#fff !important; }
+    .output-panel { box-shadow:none !important; border:none !important; padding:0 !important; }
+    .output-content { padding:0 !important; max-height:none !important; overflow:visible !important; }
+    .output-content table { page-break-inside:avoid; font-size:10px; }
+    .output-content h2 { page-break-before:always; font-size:14px; }
+    .output-content h2:first-child { page-break-before:avoid; }
+    @page { margin:15mm; }
+  }
+
+
+/* ════════════════════════════════════════════════════════════════
+   PREMIUM MULTI-COLOR GLOSSY THEME — Shuddhi QA
+   Color palette: Blue-Indigo-Violet-Pink harmonized system
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Rich multi-color palette */
+  --grad-full:   linear-gradient(135deg, #0078D4 0%, #6B4FD8 40%, #C026A8 75%, #E8368A 100%);
+  --grad-header: linear-gradient(135deg, #0A5FD6 0%, #5A3FCE 50%, #B01FA0 100%);
+  --grad-teal:   linear-gradient(135deg, #0891B2 0%, #0E6E9A 50%, #1D4ED8 100%);
+  --grad-warm:   linear-gradient(135deg, #7C3AED 0%, #C026A8 60%, #E8368A 100%);
+  --grad-cool:   linear-gradient(135deg, #0078D4 0%, #3B82F6 60%, #6366F1 100%);
+  --grad-glow:   linear-gradient(135deg, rgba(99,102,241,.15) 0%, rgba(192,38,168,.1) 100%);
+
+  /* Glass backgrounds */
+  --glass-bg:     rgba(255,255,255,0.65);
+  --glass-border: rgba(255,255,255,0.55);
+  --glass-shadow: 0 8px 32px rgba(99,102,241,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  --glass-hover:  0 16px 48px rgba(99,102,241,0.2), 0 4px 16px rgba(0,0,0,0.08);
+
+  /* Indigo brand */
+  --indigo:      #6366F1;
+  --violet:      #7C3AED;
+  --pink:        #C026A8;
+  --sky:         #0EA5E9;
+}
+
+[data-theme="dark"] {
+  --glass-bg:     rgba(20,22,40,0.7);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(99,102,241,0.15);
+  --glass-hover:  0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(99,102,241,0.2);
+}
+
+/* ── Body background — premium mesh ─────────────────────────────── */
+body {
+  background: #f0f2ff !important;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 0% 0%,   rgba(99,102,241,0.08)  0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 0%,  rgba(192,38,168,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 55% at 50% 100%, rgba(0,120,212,0.07)  0%, transparent 55%) !important;
+}
+[data-theme="dark"] body {
+  background: #0d0f1e !important;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 0% 0%,   rgba(99,102,241,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 0%,  rgba(192,38,168,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 55% at 50% 100%, rgba(0,120,212,0.1)  0%, transparent 55%) !important;
+}
+
+/* ── HEADER — Glassmorphism + gradient text ──────────────────────── */
+header {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.4) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--glass-shadow) !important;
+  padding: 20px 28px !important;
+  margin-bottom: 28px !important;
+  border-bottom: none !important;
+  transition: box-shadow .3s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+header:hover {
+  box-shadow: var(--glass-hover) !important;
+}
+
+/* Glossy shine sweep on hover */
+header::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0; left: -100%; width: 60%; height: 100% !important;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%) !important;
+  transition: left .6s ease !important;
+  pointer-events: none !important;
+}
+header:hover::before { left: 150% !important; }
+
+/* Remove old gradient border-bottom */
+header::after { display: none !important; }
+
+/* Gradient title text */
+.header-text h1 {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  background: var(--grad-header) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  letter-spacing: -0.8px !important;
+  line-height: 1.15 !important;
+  filter: drop-shadow(0 1px 8px rgba(99,102,241,0.25)) !important;
+}
+/* Fix: override d365-color / sf-color since gradient text replaces them */
+.header-text h1 .d365-color,
+.header-text h1 .sf-color {
+  background: inherit !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+
+.header-text p {
+  font-size: 12px !important;
+  background: linear-gradient(90deg, #6366F1, #C026A8) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 500 !important;
+  letter-spacing: .3px !important;
+}
+
+/* Logo glossy glow */
+.logo-shuddhi {
+  background: linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #EC4899 100%) !important;
+  box-shadow: 0 4px 20px rgba(245,158,11,0.5), inset 0 1px 0 rgba(255,255,255,0.25) !important;
+  border-radius: 14px !important;
+  width: 52px !important; height: 52px !important;
+  font-size: 30px !important;
+}
+
+/* Badge */
+.badge {
+  background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(192,38,168,0.08)) !important;
+  border: 1px solid rgba(99,102,241,0.35) !important;
+  color: var(--indigo) !important;
+}
+
+/* ── PANEL CARDS — glass + gradient accent ───────────────────────── */
+.form-panel,
+.history-panel,
+.bulk-panel {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.3) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--glass-shadow) !important;
+  transition: box-shadow .25s ease, transform .25s ease !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.form-panel:hover,
+.history-panel:hover,
+.bulk-panel:hover {
+  box-shadow: var(--glass-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Gradient top-border accent */
+.form-panel::before,
+.history-panel::before,
+.bulk-panel::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0; left: 0; right: 0; height: 3px !important;
+  background: var(--grad-full) !important;
+  border-radius: 18px 18px 0 0 !important;
+}
+
+/* ── PANEL HEADERS ────────────────────────────────────────────────── */
+.panel-header {
+  background: linear-gradient(90deg, rgba(99,102,241,0.1) 0%, rgba(192,38,168,0.06) 60%, transparent 100%) !important;
+  border-bottom: 1px solid rgba(99,102,241,0.15) !important;
+  padding: 16px 20px !important;
+}
+
+.panel-header span {
+  background: var(--grad-cool) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-size: 14px !important;
+  letter-spacing: .2px !important;
+}
+
+.panel-icon {
+  background: var(--grad-full) !important;
+  box-shadow: 0 3px 12px rgba(99,102,241,0.4) !important;
+  border-radius: 9px !important;
+  width: 32px !important; height: 32px !important;
+}
+
+/* History header */
+.history-header {
+  background: linear-gradient(90deg, rgba(14,165,233,0.1) 0%, rgba(99,102,241,0.06) 60%, transparent 100%) !important;
+  border-bottom: 1px solid rgba(14,165,233,0.15) !important;
+  padding: 14px 20px !important;
+}
+
+.history-header-left span {
+  background: var(--grad-teal) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Bulk header */
+.bulk-header {
+  background: linear-gradient(90deg, rgba(124,58,237,0.1) 0%, rgba(192,38,168,0.06) 60%, transparent 100%) !important;
+  border-bottom: 1px solid rgba(124,58,237,0.15) !important;
+  padding: 14px 20px !important;
+}
+
+.bulk-header-left span {
+  background: var(--grad-warm) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* ── GENERATE BUTTON — premium gradient + glow ───────────────────── */
+.gen-btn {
+  background: var(--grad-full) !important;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: .3px !important;
+  transition: all .25s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.gen-btn::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0; left: -100%; width: 60%; height: 100% !important;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%) !important;
+  transition: left .5s ease !important;
+}
+
+.gen-btn:hover:not(:disabled) {
+  box-shadow: 0 8px 32px rgba(99,102,241,0.55), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.gen-btn:hover:not(:disabled)::before { left: 150% !important; }
+
+/* ── HISTORY ITEMS — glossy cards ───────────────────────────────── */
+.history-item {
+  background: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(99,102,241,0.12) !important;
+  border-radius: 10px !important;
+  transition: all .2s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.history-item:hover {
+  background: linear-gradient(90deg, rgba(99,102,241,0.08), rgba(192,38,168,0.05)) !important;
+  border-color: rgba(99,102,241,0.35) !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.12) !important;
+}
+
+.history-item::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0; top: 0; bottom: 0; width: 3px !important;
+  background: var(--grad-warm) !important;
+  opacity: 0; transition: opacity .2s !important;
+}
+
+.history-item:hover::before { opacity: 1 !important; }
+
+.history-count {
+  background: var(--grad-cool) !important;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.35) !important;
+}
+
+/* ── API BAR — subtle glass ──────────────────────────────────────── */
+.api-bar {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.08) !important;
+}
+
+.api-bar::before {
+  background: var(--grad-full) !important;
+  border-radius: 14px 0 0 14px !important;
+}
+
+/* ── FORM FIELDS — refined glass ────────────────────────────────── */
+.field select,
+.field input,
+.field textarea {
+  background: rgba(255,255,255,0.7) !important;
+  border: 1px solid rgba(99,102,241,0.2) !important;
+  border-radius: 10px !important;
+  transition: border-color .2s, box-shadow .2s, background .2s !important;
+}
+
+.field select:focus,
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--indigo) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+  background: rgba(255,255,255,0.9) !important;
+}
+
+.field label {
+  color: var(--indigo) !important;
+}
+
+.field label::before {
+  background: var(--grad-warm) !important;
+  border-radius: 3px !important;
+}
+
+/* ── PLATFORM CARDS — premium glass ─────────────────────────────── */
+.platform-card {
+  background: rgba(255,255,255,0.6) !important;
+  border: 1px solid rgba(99,102,241,0.15) !important;
+  border-radius: 12px !important;
+  transition: all .2s ease !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.platform-card:hover {
+  border-color: var(--indigo) !important;
+  background: rgba(99,102,241,0.06) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(99,102,241,0.18) !important;
+}
+
+.platform-card.selected {
+  background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(192,38,168,0.07)) !important;
+  border-color: var(--indigo) !important;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.4) !important;
+}
+
+/* ── MODULE CHIPS — colorful ────────────────────────────────────── */
+.module-chip {
+  background: rgba(255,255,255,0.6) !important;
+  border: 1px solid rgba(99,102,241,0.18) !important;
+  border-radius: 20px !important;
+  transition: all .15s ease !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.module-chip:hover {
+  border-color: var(--indigo) !important;
+  background: rgba(99,102,241,0.07) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.15) !important;
+}
+
+.module-chip.selected {
+  background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(192,38,168,0.08)) !important;
+  border-color: var(--indigo) !important;
+  color: var(--indigo) !important;
+  box-shadow: 0 2px 10px rgba(99,102,241,0.2) !important;
+}
+
+/* ── OUTPUT PANEL ───────────────────────────────────────────────── */
+.output-panel {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--glass-shadow) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.output-panel::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0; left: 0; right: 0; height: 3px !important;
+  background: var(--grad-full) !important;
+  border-radius: 18px 18px 0 0 !important;
+}
+
+.output-header {
+  background: linear-gradient(90deg, rgba(99,102,241,0.08) 0%, rgba(14,165,233,0.05) 60%, transparent 100%) !important;
+  border-bottom: 1px solid rgba(99,102,241,0.12) !important;
+}
+
+/* ── EXPORT BUTTONS ─────────────────────────────────────────────── */
+.exp-btn {
+  border-radius: 8px !important;
+  transition: all .18s ease !important;
+}
+
+.exp-btn:not(:disabled):hover {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(192,38,168,0.06)) !important;
+  border-color: var(--indigo) !important;
+  color: var(--indigo) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.15) !important;
+}
+
+.ado-btn:not(:disabled) {
+  border-color: rgba(0,120,212,0.5) !important;
+  background: linear-gradient(135deg, rgba(0,120,212,0.08), rgba(99,102,241,0.06)) !important;
+  color: var(--d365) !important;
+}
+
+.ado-btn:not(:disabled):hover {
+  background: linear-gradient(135deg, rgba(0,120,212,0.15), rgba(99,102,241,0.1)) !important;
+  box-shadow: 0 4px 16px rgba(0,120,212,0.25) !important;
+}
+
+/* ── SAMPLE CHIPS ───────────────────────────────────────────────── */
+.chip {
+  background: rgba(255,255,255,0.65) !important;
+  border: 1px solid rgba(99,102,241,0.2) !important;
+  border-radius: 20px !important;
+  transition: all .18s ease !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.chip:hover {
+  background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(192,38,168,0.07)) !important;
+  border-color: var(--indigo) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(99,102,241,0.2) !important;
+  color: var(--indigo) !important;
+}
+
+/* ── META BAR ───────────────────────────────────────────────────── */
+.meta-bar {
+  background: linear-gradient(90deg, rgba(99,102,241,0.06), rgba(192,38,168,0.04)) !important;
+  border-top: 1px solid rgba(99,102,241,0.12) !important;
+}
+
+.token-badge {
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(192,38,168,0.1)) !important;
+  border: 1px solid rgba(99,102,241,0.3) !important;
+  color: var(--indigo) !important;
+}
+
+/* ── FILTER BAR ─────────────────────────────────────────────────── */
+#filterBar {
+  background: linear-gradient(90deg, rgba(99,102,241,0.04), rgba(14,165,233,0.03)) !important;
+  border-bottom: 1px solid rgba(99,102,241,0.1) !important;
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(192,38,168,0.1)) !important;
+  border-color: var(--indigo) !important;
+  color: var(--indigo) !important;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.2) !important;
+}
+
+/* ── TOAST NOTIFICATION ─────────────────────────────────────────── */
+.toast {
+  background: linear-gradient(135deg, rgba(99,102,241,0.95), rgba(124,58,237,0.95)) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  box-shadow: 0 8px 32px rgba(99,102,241,0.4) !important;
+  border-radius: 12px !important;
+}
+
+/* ── PRIORITY BUTTONS ────────────────────────────────────────────── */
+.priority-btn {
+  border-radius: 9px !important;
+  transition: all .2s ease !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+/* ── UPLOAD ZONE ─────────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed rgba(99,102,241,0.3) !important;
+  border-radius: 16px !important;
+  background: rgba(99,102,241,0.03) !important;
+  transition: all .2s ease !important;
+}
+
+.upload-zone:hover {
+  border-color: var(--indigo) !important;
+  background: rgba(99,102,241,0.06) !important;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.08) !important;
+}
+
+/* ── FORM DIVIDER ────────────────────────────────────────────────── */
+.form-divider span {
+  background: linear-gradient(135deg, var(--indigo), var(--pink)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 600 !important;
+}
+
+.form-divider::before, .form-divider::after {
+  background: linear-gradient(90deg, transparent, rgba(99,102,241,0.3), transparent) !important;
+}
+
+/* ── DARK MODE overrides ──────────────────────────────────────────── */
+[data-theme="dark"] .form-panel,
+[data-theme="dark"] .history-panel,
+[data-theme="dark"] .bulk-panel,
+[data-theme="dark"] .output-panel,
+[data-theme="dark"] header {
+  background: rgba(15,17,35,0.75) !important;
+  border-color: rgba(99,102,241,0.2) !important;
+}
+
+[data-theme="dark"] .field select,
+[data-theme="dark"] .field input,
+[data-theme="dark"] .field textarea {
+  background: rgba(15,17,35,0.6) !important;
+  border-color: rgba(99,102,241,0.2) !important;
+}
+
+[data-theme="dark"] .platform-card,
+[data-theme="dark"] .module-chip,
+[data-theme="dark"] .chip,
+[data-theme="dark"] .history-item {
+  background: rgba(20,22,45,0.6) !important;
+}
+
+[data-theme="dark"] .history-item:hover {
+  background: linear-gradient(90deg, rgba(99,102,241,0.12), rgba(192,38,168,0.08)) !important;
+}
+
 </style>
 </head>
 <body>
@@ -1715,18 +2372,16 @@
     </div>
     <div class="header-text">
       <h1><span class="d365-color">Shuddhi</span> <span class="sf-color">QA</span></h1>
-      <p>D365 &nbsp;<span class="sep"></span>&nbsp; Salesforce &nbsp;<span class="sep"></span>&nbsp; Web Apps &nbsp;<span class="sep"></span>&nbsp; Mobile &nbsp;<span class="sep"></span>&nbsp; Powered by Claude AI</p>
+      <p style="font-size:12px;color:var(--text2);letter-spacing:.2px;margin-top:2px">AI-Powered Test Intelligence for Enterprise Platforms</p>
     </div>
-    <div class="badge">v1.4 · Shuddhi QA</div>
+    <div class="badge">v2.0 · Shuddhi QA</div>
     <a href="/" title="Back to home page"
        style="font-size:12px;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1px solid var(--border2);transition:all .15s;white-space:nowrap"
        onmouseover="this.style.borderColor='var(--d365)';this.style.color='var(--text)'"
        onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
       ← Home
     </a>
-    <button class="settings-btn" id="settingsBtn" onclick="openSettings()" title="Settings — API Keys & Connection">
-      ⚙️ Settings
-    </button>
+
     <!-- Mobile hamburger -->
     <button class="hamburger-btn" id="hamburgerBtn" onclick="openMobileNav()" aria-label="Open menu" aria-expanded="false">
       ☰
@@ -1752,7 +2407,7 @@
     </a>
     <div class="mobile-nav-divider"></div>
     <div class="mobile-nav-link" style="cursor:default;opacity:.6;font-size:11px;font-family:'JetBrains Mono',monospace;padding:8px 14px">
-      v1.4 · Shuddhi QA
+      v2.0 · Shuddhi QA
     </div>
   </nav>
 
@@ -1787,6 +2442,11 @@
     <div id="adoPATMissingBadge"  style="display:none" aria-hidden="true"></div>
 
     <!-- ⚙️ Settings button — always visible -->
+    <button id="themeToggleBtn" onclick="toggleTheme()"
+            title="Toggle dark/light theme"
+            style="background:none;border:1px solid var(--border2);cursor:pointer;
+                   font-size:15px;padding:6px 10px;border-radius:8px;
+                   transition:all .15s;display:flex;align-items:center">🌙</button>
     <button id="settingsIconBtn" onclick="openSettings()"
             title="Settings — API Keys & Connection"
             style="margin-left:auto;background:none;border:1px solid var(--border2);cursor:pointer;
@@ -1818,6 +2478,7 @@
     <div class="settings-tabs">
       <button class="settings-tab active" id="stab-claude" onclick="switchSettingsTab('claude')">🤖 Claude AI</button>
       <button class="settings-tab" id="stab-ado"    onclick="switchSettingsTab('ado')">🔷 Azure DevOps</button>
+      <button class="settings-tab" id="stab-jira"  onclick="switchSettingsTab('jira')">🟦 Jira</button>
       <button class="settings-tab" id="stab-about"  onclick="switchSettingsTab('about')">ℹ️ About</button>
     </div>
 
@@ -2015,6 +2676,100 @@
       <div style="display:none" id="settingsOrgLoadingBadgeDup"></div>
     </div>
 
+    
+    <!-- ── Panel: Jira ── -->
+    <div class="settings-panel" id="spanel-jira" style="display:none">
+      <div class="settings-section">
+        <div class="settings-section-title">Jira Integration</div>
+        <div class="settings-section-desc">Connect to Jira to auto-fetch ticket requirements (summary, description, acceptance criteria) directly into the business flow field.</div>
+      </div>
+
+      <!-- Status card -->
+      <div class="settings-status-card" id="jiraStatusCard">
+        <div class="settings-status-row">
+          <div class="settings-status-icon" id="jiraStatusIcon">⏳</div>
+          <div style="flex:1">
+            <div class="settings-status-label" id="jiraStatusLabel">Checking Jira configuration…</div>
+            <div class="settings-status-sub"   id="jiraStatusSub"></div>
+          </div>
+          <button class="settings-test-btn" id="jiraTestBtn" onclick="testJiraConnection()" style="display:none">Test Connection</button>
+        </div>
+      </div>
+
+      <!-- Manual config (when not set via Vercel) -->
+      <div id="jiraManualSection">
+        <div class="settings-field-label">Jira Base URL</div>
+        <input type="text" id="settingsJiraUrl" placeholder="https://yourcompany.atlassian.net" autocomplete="off"
+          style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                 padding:10px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;
+                 outline:none;margin-bottom:10px;transition:border-color .15s"
+          onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+          oninput="saveJiraSettings()"/>
+
+        <div class="settings-field-label">Atlassian Account Email</div>
+        <input type="email" id="settingsJiraEmail" placeholder="you@company.com" autocomplete="off"
+          style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                 padding:10px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;
+                 outline:none;margin-bottom:10px;transition:border-color .15s"
+          onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+          oninput="saveJiraSettings()"/>
+
+        <div class="settings-field-label">Jira API Token <a href="https://id.atlassian.com/manage/api-tokens" target="_blank" rel="noopener" style="font-size:10px;color:var(--d365);text-decoration:none;margin-left:6px">→ Get token</a></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="password" id="settingsJiraToken" placeholder="ATATT3xFfGF0..." autocomplete="off"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                   padding:10px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;
+                   outline:none;transition:border-color .15s"
+            onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+            oninput="saveJiraSettings()"/>
+          <button class="settings-test-btn" onclick="testJiraConnection()">Test</button>
+        </div>
+
+        <div class="settings-hint">
+          💡 These settings are saved locally in your browser (localStorage).<br>
+          For production: add <code>JIRA_BASE_URL</code>, <code>JIRA_EMAIL</code>, <code>JIRA_API_TOKEN</code>
+          as Vercel Environment Variables — credentials stay server-side.
+        </div>
+      </div>
+
+      <!-- Vercel section (when configured via env) -->
+      <div id="jiraVercelSection" style="display:none">
+        <div class="settings-field-label">Vercel Environment Variables</div>
+        <div class="settings-env-row">
+          <span class="settings-env-name">JIRA_BASE_URL</span>
+          <span class="settings-env-val">https://•••.atlassian.net</span>
+          <div class="conn-badge ok">Configured ✓</div>
+        </div>
+        <div class="settings-env-row" style="margin-top:8px">
+          <span class="settings-env-name">JIRA_EMAIL</span>
+          <span class="settings-env-val">•••@company.com</span>
+          <div class="conn-badge ok">Configured ✓</div>
+        </div>
+        <div class="settings-env-row" style="margin-top:8px">
+          <span class="settings-env-name">JIRA_API_TOKEN</span>
+          <span class="settings-env-val">ATATT3x••••••••</span>
+          <div class="conn-badge ok">Configured ✓</div>
+        </div>
+        <div class="settings-hint">🔒 Jira credentials are stored server-side in Vercel. The browser never sees them.</div>
+      </div>
+
+      <!-- Test result -->
+      <div class="settings-test-result" id="jiraTestResult" style="display:none"></div>
+
+      <!-- Setup guide -->
+      <details class="settings-guide">
+        <summary>How to set up Jira integration →</summary>
+        <ol class="settings-steps">
+          <li>Go to <strong>id.atlassian.com/manage/api-tokens</strong> → Create API Token</li>
+          <li>Copy the token (starts with ATATT3x…)</li>
+          <li>Enter your Jira Base URL, email, and token above</li>
+          <li>Click <strong>Test</strong> to verify the connection</li>
+          <li>Once connected, use the <strong>Jira Ticket ID</strong> field in the main form</li>
+          <li>For production: add the 3 variables to Vercel Environment Variables</li>
+        </ol>
+      </details>
+    </div>
+
     <!-- ── Panel: About ── -->
     <div class="settings-panel" id="spanel-about" style="display:none">
       <div class="settings-about-grid">
@@ -2026,7 +2781,7 @@
         <div class="settings-about-card">
           <div class="settings-about-icon">📦</div>
           <div class="settings-about-label">Version</div>
-          <div class="settings-about-val">v1.4</div>
+          <div class="settings-about-val">v2.0</div>
         </div>
         <div class="settings-about-card">
           <div class="settings-about-icon">🌐</div>
@@ -2132,7 +2887,7 @@
                ondragover="event.preventDefault(); this.classList.add('drag-over')"
                ondragleave="this.classList.remove('drag-over')"
                ondrop="handleDrop(event)">
-            <input type="file" id="reqFile" accept=".pdf,.doc,.docx,.txt" onchange="handleFileSelect(event)" />
+            <input type="file" id="reqFile" accept=".pdf,.doc,.docx,.txt,.json,.yaml,.yml,.png,.jpg,.jpeg" onchange="handleFileSelect(event)" />
             <div class="upload-icon">📎</div>
             <div class="upload-label"><span>Click to upload</span> or drag & drop</div>
             <div class="upload-hint">PDF · DOCX · TXT — Max 10MB</div>
@@ -2166,27 +2921,99 @@
 
         <div class="form-divider"><span>— OR ENTER MANUALLY —</span></div>
 
+        <!-- Platform Selector — visual cards -->
         <div class="field">
           <label>Platform</label>
-          <select id="platform" onchange="updateModules()">
-            <option value="">Select Platform</option>
-            <option value="D365 F&O">Microsoft D365 Finance & Operations</option>
-            <option value="D365 CRM">Microsoft D365 CRM / CE</option>
-            <option value="D365 BC">Microsoft D365 Business Central</option>
-            <option value="Salesforce Sales">Salesforce Sales Cloud</option>
-            <option value="Salesforce Service">Salesforce Service Cloud</option>
-            <option value="Salesforce CPQ">Salesforce CPQ</option>
-            <option value="D365+Salesforce">D365 + Salesforce (Integration)</option>
-            <option value="Web App">🌐 General Web Application</option>
-            <option value="Mobile App">📱 Mobile Application</option>
-          </select>
+          <!-- Hidden select kept for JS/form compatibility -->
+          <input type="hidden" id="platform"/>
+          <div id="platformGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px;margin-top:4px"></div>
+          <div id="platformNone" style="font-size:12px;color:var(--text3);margin-top:6px;display:none">
+            Select a platform above to load modules
+          </div>
         </div>
 
-        <div class="field">
-          <label>Module</label>
-          <select id="module">
-            <option value="">Select Platform First</option>
-          </select>
+        <!-- Module Selector — cascading dropdown + search + Other -->
+        <div class="field" id="moduleField" style="display:none">
+          <label style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+            <span>Module</span>
+            <span id="moduleCount" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3)"></span>
+          </label>
+
+          <!-- Search filter -->
+          <div style="position:relative;margin-bottom:6px">
+            <input type="text" id="moduleSearch" placeholder="Search modules…" autocomplete="off"
+              style="width:100%;padding:8px 12px 8px 32px;background:var(--surface);
+                     border:1.5px solid var(--border2);border-radius:8px;color:var(--text);
+                     font-size:13px;outline:none;transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+              oninput="filterModules(this.value)"/>
+            <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:.4"
+              viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+
+          <!-- Module chip grid -->
+          <div id="moduleGrid" style="display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto;
+                padding:2px;scrollbar-width:thin"></div>
+
+          <!-- Other option -->
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+            <button type="button" id="moduleOtherBtn" onclick="toggleModuleOther()"
+              style="font-size:12px;padding:5px 12px;border-radius:8px;border:1.5px dashed var(--border2);
+                     background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap"
+              onmouseover="this.style.borderColor='var(--d365)';this.style.color='var(--text)'"
+              onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
+              + Other / Custom module
+            </button>
+            <span id="selectedModuleName" style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;
+                  display:none;background:var(--surface);padding:4px 10px;border-radius:6px;
+                  border:1px solid var(--border2)"></span>
+          </div>
+
+          <!-- Custom module text input (hidden until Other clicked) -->
+          <div id="moduleCustomRow" style="display:none;margin-top:8px">
+            <input type="text" id="moduleCustomInput" placeholder="Enter custom module name…"
+              style="width:100%;background:var(--surface);border:1.5px solid var(--d365);border-radius:8px;
+                     padding:9px 12px;color:var(--text);font-size:13px;outline:none"
+              oninput="setCustomModule(this.value)"/>
+            <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
+              Type a module name not in the list above
+            </span>
+          </div>
+
+          <!-- Hidden select for form compatibility -->
+          <select id="module" style="display:none" aria-hidden="true"></select>
+        </div>
+
+        <!-- Jira Ticket ID Quick Fetch -->
+        <div class="field" id="jiraFetchField">
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>Jira Ticket ID <span style="font-size:10px;color:var(--text3);font-weight:400">(optional — auto-fills flow below)</span></span>
+            <span id="jiraConfigBadge" style="display:none;font-size:10px;padding:1px 7px;border-radius:10px;
+                  background:rgba(0,120,212,.1);color:var(--d365);font-family:'JetBrains Mono',monospace;border:1px solid rgba(0,120,212,.2)">JIRA ✓ configured</span>
+          </label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="jiraTicketId" placeholder="e.g. PROJ-1234 or ERP-567" autocomplete="off"
+              style="flex:1;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                     padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s;
+                     font-family:'JetBrains Mono',monospace"
+              onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();fetchJiraTicket();}"/>
+            <button onclick="fetchJiraTicket()" id="jiraFetchBtn"
+              style="padding:9px 16px;border-radius:8px;border:1.5px solid var(--d365);
+                     background:var(--d365-dim);color:var(--d365);font-size:12.5px;font-weight:600;
+                     cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0">
+              <span id="jiraFetchLabel">Fetch →</span>
+            </button>
+          </div>
+          <div id="jiraFetchStatus" style="display:none;font-size:12px;margin-top:5px;padding:6px 10px;
+               border-radius:6px;font-family:'JetBrains Mono',monospace"></div>
+          <div id="jiraNotConfigured" style="font-size:11px;color:var(--text3);margin-top:4px">
+            Add <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">JIRA_BASE_URL</code>,
+            <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">JIRA_EMAIL</code> and
+            <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">JIRA_API_TOKEN</code>
+            to Vercel env vars to enable auto-fetch.
+          </div>
         </div>
 
         <div class="field">
@@ -2224,6 +3051,28 @@
           </select>
         </div>
 
+        <!-- Output Language Selector -->
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+            <span>Output Language</span>
+            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">Test cases will be generated in this language</span>
+          </label>
+          <select id="outputLanguage" style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer">
+            <option value="English">🇬🇧 English (default)</option>
+            <option value="Telugu">🇮🇳 Telugu (తెలుగు)</option>
+            <option value="Hindi">🇮🇳 Hindi (हिंदी)</option>
+            <option value="Kannada">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+            <option value="Tamil">🇮🇳 Tamil (தமிழ்)</option>
+            <option value="Marathi">🇮🇳 Marathi (मराठी)</option>
+            <option value="Arabic">🇸🇦 Arabic (العربية)</option>
+            <option value="French">🇫🇷 French (Français)</option>
+            <option value="German">🇩🇪 German (Deutsch)</option>
+            <option value="Spanish">🇪🇸 Spanish (Español)</option>
+            <option value="Japanese">🇯🇵 Japanese (日本語)</option>
+            <option value="Chinese">🇨🇳 Chinese (中文)</option>
+          </select>
+        </div>
+
         <button class="gen-btn" id="genBtn" onclick="generate()">
           <div class="spinner"></div>
           <span class="btn-text">⚡ Generate Test Scenarios</span>
@@ -2255,8 +3104,14 @@
           <button class="exp-btn" id="copyXlsBtn" onclick="copyForExcel()" disabled>📋 Copy→Excel</button>
           <button class="exp-btn edit-toggle-btn" id="editBtn" onclick="toggleEditMode()" disabled>✏️ Edit</button>
           <button class="exp-btn jira-btn" id="jiraBtn" onclick="downloadJiraCSV()" disabled>🟦 Jira</button>
+          <button class="exp-btn" id="testRailBtn" onclick="downloadTestRailCSV()" disabled>🧪 TestRail</button>
+          <button class="exp-btn" id="gherkinBtn" onclick="downloadGherkin()" disabled>🥒 Gherkin</button>
+          <button class="exp-btn" id="playwrightBtn" onclick="downloadPlaywright()" disabled>🎭 Playwright</button>
+          <button class="exp-btn" id="postmanBtn" onclick="downloadPostman()" disabled>📮 Postman</button>
           <button class="exp-btn" id="pdfBtn" onclick="exportPDF()" disabled>📑 PDF</button>
           <button class="exp-btn" id="xlsBtn" onclick="exportExcel()" disabled>📊 Excel</button>
+          <button class="exp-btn" id="coverageBtn" onclick="downloadCoverageMatrix()" disabled>🗺️ Coverage</button>
+          <button class="exp-btn" id="exportAllBtn" onclick="exportAllFormats()" disabled title="Download ZIP with all formats">📦 Export All</button>
           <button class="exp-btn ado-btn" id="adoBtn" onclick="openADOModal()" disabled>🔷 ADO</button>
         </div>
       </div>
@@ -2285,6 +3140,9 @@
           <div class="chip" onclick="fillSample('crm')">Lead to Opportunity CRM</div>
           <div class="chip" onclick="fillSample('sf')">CPQ Quote to Order SF</div>
           <div class="chip" onclick="fillSample('int')">D365 ↔ Salesforce Sync</div>
+          <div class="chip" onclick="fillSample('wd')">Payroll Run Workday</div>
+          <div class="chip" onclick="fillSample('oe')">AP Invoice Oracle ERP</div>
+          <div class="chip" onclick="fillSample('gw')">FNOL Claims Guidewire</div>
           <div class="chip" onclick="fillSample('web')">🌐 Web App User Flow</div>
         </div>
       </div>
@@ -2292,15 +3150,33 @@
       <!-- Error -->
       <div class="error-msg" id="errorMsg"></div>
 
+      <!-- Priority / Section Filter Bar (shown after generation) -->
+      <div id="filterBar" style="display:none;padding:8px 16px 0;display:none;flex-wrap:wrap;align-items:center;gap:6px;border-bottom:0.5px solid var(--border)">
+        <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-right:4px">FILTER:</span>
+        <button class="filter-btn active" data-filter="all"    onclick="applyOutputFilter('all')"         >All</button>
+        <button class="filter-btn"        data-filter="e2e"    onclick="applyOutputFilter('e2e')"         >E2E</button>
+        <button class="filter-btn"        data-filter="field"  onclick="applyOutputFilter('field')"       >Field Validation</button>
+        <button class="filter-btn"        data-filter="int"    onclick="applyOutputFilter('int')"         >Integration</button>
+        <button class="filter-btn"        data-filter="neg"    onclick="applyOutputFilter('neg')"         >Negative</button>
+        <button class="filter-btn"        data-filter="meta"   onclick="applyOutputFilter('meta')"        >Metadata</button>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="filter-btn" onclick="collapseAllSections()"                                      >⊟ Collapse All</button>
+          <button class="filter-btn" onclick="expandAllSections()"                                        >⊞ Expand All</button>
+          <button class="filter-btn" onclick="window.print()" title="Print test cases">🖨️ Print</button>
+          <button class="filter-btn" id="shareLinkBtn" onclick="copyShareLink()" title="Copy shareable link">🔗 Share</button>
+        </div>
+      </div>
+
       <!-- Output -->
       <div class="output-content" id="outputContent"></div>
 
       <!-- Meta Bar -->
       <div class="meta-bar" id="metaBar">
-        <div class="meta-item">⏱ <strong id="genTime">-</strong> seconds</div>
-        <div class="meta-item">📦 Platform: <strong id="metaPlatform">-</strong></div>
-        <div class="meta-item">📁 Module: <strong id="metaModule">-</strong></div>
-        <div class="meta-item">🌐 Lang: <strong id="metaLang">-</strong></div>
+        <div class="meta-item">⏱ <strong id="genTime">-</strong>s</div>
+        <div class="meta-item">📦 <strong id="metaPlatform">-</strong></div>
+        <div class="meta-item">📁 <strong id="metaModule">-</strong></div>
+        <div class="meta-item">🧪 <strong id="tcCount" style="color:var(--d365)">-</strong> TCs</div>
+        <div class="meta-item">🌐 <strong id="metaLang">-</strong></div>
         <div class="token-badge" id="tokenBadge">✓ Complete</div>
       </div>
     </div>
@@ -2512,8 +3388,18 @@
               <input type="text" id="adoArea" placeholder="MyProject\\AP Module" />
             </div>
             <div class="ado-field">
-              <label>Iteration Path <span class="ado-optional">(optional)</span></label>
+              <label style="display:flex;align-items:center;justify-content:space-between">
+                Iteration Path <span class="ado-optional">(optional)</span>
+                <button onclick="loadCurrentSprint()" id="loadSprintBtn"
+                  style="font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--border2);
+                         background:var(--surface2);color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap"
+                  onmouseover="this.style.borderColor='var(--d365)';this.style.color='var(--d365)'"
+                  onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
+                  ⚡ Load Sprint
+                </button>
+              </label>
               <input type="text" id="adoIteration" placeholder="MyProject\\Sprint 1" />
+              <span id="sprintLoadStatus" style="display:none;font-size:11px;color:var(--text2);margin-top:3px;font-family:'JetBrains Mono',monospace"></span>
             </div>
           </div>
 
@@ -2606,11 +3492,19 @@ const modules = {
   "Salesforce Service": ["Case Management","Knowledge Base","Omni-Channel Routing","Entitlements & SLAs","Service Console","Live Agent","Field Service Lightning"],
   "Salesforce CPQ": ["Product Catalog","Price Rules","Quote Generation","Approval Workflows","Order Management","Contract Management","Amendments & Renewals"],
   "D365+Salesforce": ["Lead Sync (SF→D365)","Customer Master Sync","Invoice/Order Sync","Payment Status Sync","Case Escalation","Custom Integration Flow"],
+  "SAP": ["FI – Financial Accounting","CO – Controlling","MM – Materials Management","SD – Sales & Distribution","PP – Production Planning","HR – Human Resources","PM – Plant Maintenance","QM – Quality Management","WM – Warehouse Management","PS – Project System","BI/BW – Reporting & Analytics","ABAP Customisation"],
+  "ServiceNow": ["Incident Management","Problem Management","Change Management","Service Request Management","CMDB / Asset Management","Knowledge Management","SLA & Escalation","Approval Workflows","Integration Hub","Service Portal","HR Service Delivery","IT Operations Management"],
   "Web App": ["User Authentication & Authorisation","User Registration & Onboarding","Dashboard & Analytics","Search & Filtering","Forms & Data Entry","File Upload & Management","Notifications & Alerts","Payment & Checkout","API Integration","Admin Panel","Settings & Profile","Reports & Exports","Role-Based Access Control","Audit Logs","Password Reset & 2FA"],
-  "Mobile App": ["Login & Biometric Auth","Push Notifications","Offline Mode","Camera & Media Access","GPS & Location","In-App Purchases","Deep Linking","Background Sync","App Updates & Migration","Device Permissions","UI Responsiveness","Network Handling","Session Management","Crash Recovery"]
+  "Mobile App": ["Login & Biometric Auth","Push Notifications","Offline Mode","Camera & Media Access","GPS & Location","In-App Purchases","Deep Linking","Background Sync","App Updates & Migration","Device Permissions","UI Responsiveness","Network Handling","Session Management","Crash Recovery"],
+  "Workday": ["Core HCM","Payroll","Recruiting & Talent Acquisition","Absence & Leave Management","Benefits Administration","Compensation Management","Performance & Goals","Learning Management","Expense Management","Procurement","Financial Management","Reporting & Analytics"],
+  "Oracle ERP": ["Oracle Fusion Financials","Oracle SCM Cloud","Oracle HCM Cloud","Oracle Procurement","Oracle Project Management","Oracle Manufacturing","NetSuite ERP","Oracle CX Sales","Oracle Field Service","Revenue Management","Asset Management","Enterprise Planning"],
+  "Guidewire": ["PolicyCenter – Underwriting","PolicyCenter – Policy Lifecycle","ClaimCenter – FNOL","ClaimCenter – Claims Adjudication","ClaimCenter – Payments","BillingCenter – Invoicing","BillingCenter – Collections","Digital Portals","Integration Framework","Business Intelligence","Contact Manager","ProductModel Configuration"]
 };
 
 const samples = {
+  wd: { platform:"Workday", module:"Payroll", flow:"HR Manager triggers payroll run for all active employees in the US pay group. System calculates gross pay based on time entries, salary, and overtime. Tax withholdings are computed per federal and state rules. Deductions are applied (health, 401k, garnishments). Net pay is calculated. Manager reviews payroll results and approves. System generates payslips and initiates ACH bank transfers. GL entries are posted to Oracle Financials.", roles:"HR Manager, Payroll Specialist, Finance Controller, Employee", integrations:"Oracle Financials GL, ADP for ACH, Workday Time Tracking, Benefits module" },
+  oe: { platform:"Oracle ERP", module:"Oracle Fusion Financials", flow:"AP Accountant receives supplier invoice via email. Invoice is scanned and auto-matched against PO in Oracle Procurement. Three-way match is performed (PO, Receipt, Invoice). Discrepancies trigger an exception workflow routed to the Purchasing Manager. Approved invoice is posted to AP subledger. Payment run is scheduled and bank payment file is generated. GL journal entries are automatically created and period close tasks updated.", roles:"AP Accountant, Purchasing Manager, Finance Director, Supplier", integrations:"Oracle Procurement, Oracle Cash Management, Bank connectivity (SWIFT), Oracle GL" },
+  gw: { platform:"Guidewire", module:"ClaimCenter – FNOL", flow:"Insured reports a motor claim via the online portal. FNOL details are captured (policy number, incident date, description, photos). ClaimCenter validates the policy is active and coverage applies. Claim is assigned to an adjuster based on claim type and territory. Initial reserve is set. Adjuster contacts insured and arranges vehicle inspection. Damage assessment is recorded and repair shop is approved. Payment is issued via BillingCenter integration.", roles:"Insured, Claims Adjuster, Supervisor, Repair Shop", integrations:"PolicyCenter for coverage validation, BillingCenter for payments, Document Management, External Valuation service" },
   fo: { platform:"D365 F&O", module:"Accounts Payable", flow:"Vendor submits an invoice through the vendor portal. AP Clerk reviews the invoice and performs 3-way match with Purchase Order and Goods Receipt. If amount exceeds ₹50,000, Finance Manager approval is required via Power Automate workflow. After approval, payment is scheduled and vendor is notified via email. Payment journal is posted in General Ledger.", roles:"Vendor, AP Clerk, Finance Manager, GL Accountant", integrations:"Power Automate, Microsoft Outlook, Azure Service Bus" },
   crm: { platform:"D365 CRM", module:"Opportunity Management", flow:"Sales Rep creates a Lead from a web form submission. Lead is qualified and converted to an Opportunity. Sales Manager assigns the opportunity to a team. Opportunity moves through stages: Qualify → Develop → Propose → Close. If deal value > $100K, VP approval is needed. Won opportunity triggers customer onboarding flow.", roles:"Sales Rep, Sales Manager, VP Sales, Customer", integrations:"Power Automate, Outlook, D365 F&O for customer creation" },
   sf: { platform:"Salesforce CPQ", module:"Quote Generation", flow:"Sales Rep adds products to an opportunity and initiates a CPQ quote. System applies configured price rules and discounts. If discount exceeds 20%, Sales Director must approve. Approved quote is sent to customer as PDF. Customer accepts quote which triggers order creation and contracts module.", roles:"Sales Rep, Sales Director, Finance, Customer", integrations:"Salesforce Contracts, DocuSign, ERP order sync" },
@@ -2623,11 +3517,168 @@ let priority = 'High';
 let rawMarkdown = '';
 let startTime = 0;
 
+// ── Platform data ───────────────────────────────────────────────
+const PLATFORMS = [
+  { value: 'D365 F&O',         label: 'D365 F&O',      sub: 'Finance & Operations', icon: '🏢', color: '#0078D4' },
+  { value: 'D365 CRM',         label: 'D365 CRM',       sub: 'CRM / Customer Engagement', icon: '🤝', color: '#0078D4' },
+  { value: 'D365 BC',          label: 'D365 BC',        sub: 'Business Central', icon: '📊', color: '#0078D4' },
+  { value: 'Salesforce Sales', label: 'SF Sales',       sub: 'Sales Cloud', icon: '☁️', color: '#00A1E0' },
+  { value: 'Salesforce Service',label: 'SF Service',    sub: 'Service Cloud', icon: '🎯', color: '#00A1E0' },
+  { value: 'Salesforce CPQ',   label: 'SF CPQ',         sub: 'Configure Price Quote', icon: '💰', color: '#00A1E0' },
+  { value: 'D365+Salesforce',  label: 'D365 + SF',      sub: 'Integration', icon: '🔗', color: '#7B5EA7' },
+  { value: 'SAP',              label: 'SAP',             sub: 'ERP / S4HANA / R3', icon: '⚙️', color: '#0E6B9E' },
+  { value: 'ServiceNow',       label: 'ServiceNow',     sub: 'ITSM / HRSD / ITOM', icon: '🛎️', color: '#62D84E' },
+  { value: 'Web App',          label: 'Web App',         sub: 'General Web Application', icon: '🌐', color: '#1D9E75' },
+  { value: 'Mobile App',       label: 'Mobile App',     sub: 'iOS / Android', icon: '📱', color: '#1D9E75' },
+  { value: 'Workday',          label: 'Workday',         sub: 'HCM / Payroll / Finance', icon: '💼', color: '#F04B23' },
+  { value: 'Oracle ERP',       label: 'Oracle ERP',      sub: 'Fusion / NetSuite / HCM', icon: '🔴', color: '#C74634' },
+  { value: 'Guidewire',        label: 'Guidewire',       sub: 'Policy / Claims / Billing', icon: '🏗️', color: '#1B7F8E' },
+];
+
+// ── Render platform cards on page load ───────────────────────────
+function renderPlatformCards() {
+  const grid = document.getElementById('platformGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  PLATFORMS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'platform-card';
+    card.dataset.value = p.value;
+    card.innerHTML = `<span class="pc-icon">${p.icon}</span>
+      <span class="pc-name" style="font-weight:600">${p.label}</span>
+      <span class="pc-name" style="opacity:.7;font-size:10px">${p.sub}</span>`;
+    card.onclick = () => selectPlatform(p.value);
+    grid.appendChild(card);
+  });
+}
+
+// ── Select platform ───────────────────────────────────────────────
+function selectPlatform(value) {
+  // Update hidden input (for form reads)
+  document.getElementById('platform').value = value;
+
+  // Update card highlight
+  document.querySelectorAll('.platform-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === value);
+  });
+
+  // Show module field
+  const moduleField = document.getElementById('moduleField');
+  if (moduleField) moduleField.style.display = value ? 'block' : 'none';
+
+  // Clear previous selection
+  document.getElementById('module').value = '';
+  const nameEl = document.getElementById('selectedModuleName');
+  if (nameEl) { nameEl.style.display = 'none'; nameEl.textContent = ''; }
+  const customRow = document.getElementById('moduleCustomRow');
+  if (customRow) customRow.style.display = 'none';
+  const customInput = document.getElementById('moduleCustomInput');
+  if (customInput) customInput.value = '';
+  const searchInput = document.getElementById('moduleSearch');
+  if (searchInput) searchInput.value = '';
+
+  // Render module chips
+  renderModuleChips(value);
+}
+
+// ── Render module chips ───────────────────────────────────────────
+function renderModuleChips(platform) {
+  const grid   = document.getElementById('moduleGrid');
+  const countEl = document.getElementById('moduleCount');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  const list = modules[platform] || [];
+  list.forEach(m => {
+    const chip = document.createElement('div');
+    chip.className = 'module-chip';
+    chip.dataset.module = m;
+    chip.textContent = m;
+    chip.onclick = () => selectModule(m, chip);
+    grid.appendChild(chip);
+  });
+
+  if (countEl) countEl.textContent = list.length + ' modules';
+
+  // Auto-select if only 1 module
+  if (list.length === 1) {
+    const chips = grid.querySelectorAll('.module-chip');
+    if (chips[0]) selectModule(list[0], chips[0]);
+  }
+}
+
+// ── Select a module chip ──────────────────────────────────────────
+function selectModule(value, chipEl) {
+  // Update hidden select
+  document.getElementById('module').value = value;
+
+  // Highlight selected chip
+  document.querySelectorAll('.module-chip').forEach(c => c.classList.remove('selected'));
+  if (chipEl) chipEl.classList.add('selected');
+
+  // Show badge
+  const nameEl = document.getElementById('selectedModuleName');
+  if (nameEl) { nameEl.textContent = '✓ ' + value; nameEl.style.display = 'inline-block'; }
+
+  // Hide custom input if it was open
+  const customRow = document.getElementById('moduleCustomRow');
+  if (customRow) customRow.style.display = 'none';
+  const otherBtn = document.getElementById('moduleOtherBtn');
+  if (otherBtn) { otherBtn.textContent = '+ Other / Custom module'; }
+}
+
+// ── Toggle custom module input ────────────────────────────────────
+function toggleModuleOther() {
+  const row    = document.getElementById('moduleCustomRow');
+  const input  = document.getElementById('moduleCustomInput');
+  const btn    = document.getElementById('moduleOtherBtn');
+  const isOpen = row.style.display === 'block';
+
+  if (isOpen) {
+    row.style.display = 'none';
+    btn.textContent = '+ Other / Custom module';
+    if (!document.getElementById('module').value) {
+      const nameEl = document.getElementById('selectedModuleName');
+      if (nameEl) { nameEl.style.display = 'none'; nameEl.textContent = ''; }
+    }
+  } else {
+    row.style.display = 'block';
+    btn.textContent = '✕ Cancel custom';
+    // Clear chip selection
+    document.querySelectorAll('.module-chip').forEach(c => c.classList.remove('selected'));
+    setTimeout(() => input && input.focus(), 100);
+  }
+}
+
+// ── Set custom module value ───────────────────────────────────────
+function setCustomModule(value) {
+  document.getElementById('module').value = value;
+  const nameEl = document.getElementById('selectedModuleName');
+  if (nameEl) {
+    if (value) { nameEl.textContent = '✎ ' + value; nameEl.style.display = 'inline-block'; }
+    else        { nameEl.style.display = 'none'; }
+  }
+}
+
+// ── Filter module chips by search ────────────────────────────────
+function filterModules(query) {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.module-chip').forEach(chip => {
+    const match = !q || chip.dataset.module.toLowerCase().includes(q);
+    chip.classList.toggle('hidden', !match);
+  });
+  const countEl = document.getElementById('moduleCount');
+  if (countEl) {
+    const visible = document.querySelectorAll('.module-chip:not(.hidden)').length;
+    const total   = document.querySelectorAll('.module-chip').length;
+    countEl.textContent = q ? `${visible} of ${total} modules` : `${total} modules`;
+  }
+}
+
+// ── Legacy updateModules — kept for compatibility ─────────────────
 function updateModules() {
   const p = document.getElementById('platform').value;
-  const sel = document.getElementById('module');
-  sel.innerHTML = '<option value="">' + (['Web App','Mobile App'].includes(document.getElementById('platform').value) ? 'Select Feature / Module' : 'Select Module') + '</option>';
-  if (modules[p]) modules[p].forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o); });
+  if (p) selectPlatform(p);
 }
 
 function setPriority(p, el) {
@@ -2638,11 +3689,16 @@ function setPriority(p, el) {
 
 function fillSample(key) {
   const s = samples[key];
-  document.getElementById('platform').value = s.platform;
-  updateModules();
-  document.getElementById('module').value = s.module;
+  selectPlatform(s.platform);
+  // After chips render, select the right module
+  setTimeout(() => {
+    const chip = [...document.querySelectorAll('.module-chip')]
+      .find(c => c.dataset.module === s.module);
+    if (chip) selectModule(s.module, chip);
+    else { document.getElementById('module').value = s.module; }
+  }, 50);
   document.getElementById('flowDesc').value = s.flow;
-  document.getElementById('roles').value = s.roles;
+  document.getElementById('roles').value    = s.roles;
   document.getElementById('integrations').value = s.integrations;
 }
 
@@ -2658,11 +3714,26 @@ function resetForm() {
   clearFile();
 
   // ── Form fields ──
+  // Reset platform cards
   document.getElementById('platform').value = '';
-  document.getElementById('module').innerHTML = '<option value="">Select Platform First</option>';
+  document.querySelectorAll('.platform-card').forEach(c => c.classList.remove('selected'));
+  const mf = document.getElementById('moduleField');
+  if (mf) mf.style.display = 'none';
+  const mg = document.getElementById('moduleGrid');
+  if (mg) mg.innerHTML = '';
+  const mn = document.getElementById('selectedModuleName');
+  if (mn) { mn.style.display='none'; mn.textContent=''; }
+  const ms = document.getElementById('moduleSearch');
+  if (ms) ms.value = '';
+  const mc = document.getElementById('moduleCustomRow');
+  if (mc) mc.style.display = 'none';
+  const mci = document.getElementById('moduleCustomInput');
+  if (mci) mci.value = '';
+  document.getElementById('module').value = '';
   document.getElementById('roles').value = '';
   document.getElementById('integrations').value = '';
-  document.getElementById('outputFormat').value = 'full';
+  document.getElementById('outputFormat').value  = 'full';
+  if (document.getElementById('outputLanguage')) document.getElementById('outputLanguage').value = 'English';
 
   // ── Priority back to High ──
   priority = 'High';
@@ -2672,19 +3743,17 @@ function resetForm() {
   // ── Output panel ──
   rawMarkdown = '';
   document.getElementById('outputContent').className = 'output-content';
+  const _fb = document.getElementById('filterBar');
+  if (_fb) _fb.style.display = 'none';
   document.getElementById('outputContent').innerHTML = '';
   document.getElementById('placeholder').style.display = '';
   document.getElementById('metaBar').className = 'meta-bar';
   document.getElementById('errorMsg').className = 'error-msg';
 
   // ── Export buttons ──
-  document.getElementById('copyBtn').disabled = true;
-  document.getElementById('copyXlsBtn').disabled = true;
-  document.getElementById('pdfBtn').disabled = true;
-  document.getElementById('xlsBtn').disabled = true;
-  document.getElementById('adoBtn').disabled = true;
-  document.getElementById('editBtn').disabled = true;
-  document.getElementById('jiraBtn').disabled = true;
+  ['copyBtn','copyXlsBtn','pdfBtn','xlsBtn','adoBtn','editBtn','jiraBtn','testRailBtn','gherkinBtn','playwrightBtn','postmanBtn','coverageBtn','exportAllBtn'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.disabled = true;
+  });
 
   // ── Edit mode off ──
   isEditMode = false;
@@ -2949,6 +4018,7 @@ function showLanguageBadge(langResult) {
   badge.className = `lang-badge visible${isEnglish ? '' : ' non-english'}`;
 }
 
+// Detect Workday / Oracle / Guidewire / SAP / ServiceNow from text
 function detectPlatformFromText(text) {
   const lower = text.toLowerCase();
   let d365Score = 0;
@@ -2996,20 +4066,125 @@ function applyDetectedPlatform(d365Score, sfScore) {
     badgeText  = `☁️ Detected: Salesforce (score: ${sfScore} vs D365: ${d365Score})`;
   } else if (d365Score > 0 && sfScore > 0) {
     platform  = 'D365+Salesforce';
-    badgeClass = 'both';
-    badgeText  = `🔀 Detected: Integration (D365: ${d365Score} / SF: ${sfScore}) — check manually`;
+function detectSpecialPlatform(lower) {
+  const WD  = ['workday','worker profile','supervisory org','pay group','compensation grade','hcm payroll','workday studio'];
+  const OE  = ['oracle fusion','oracle cloud','netsuite','oracle hcm','oracle scm','suiteflow','suitescript','oracle financials'];
+  const GW  = ['guidewire','policycenter','claimcenter','billingcenter','fnol','gosu code','pcf page'];
+  const SAP = ['sap s/4','sap r/3','transaction code','me21n','miro','fb50','idoc','bapi','sap hana','abap'];
+  const SN  = ['servicenow','service-now','incident management','change_request','cmdb_ci','snow platform','flow designer'];
+  const score = (kws) => kws.reduce((s,k) => s + (lower.includes(k)?2:0), 0);
+  const scores = {Workday:score(WD), 'Oracle ERP':score(OE), Guidewire:score(GW), SAP:score(SAP), ServiceNow:score(SN)};
+  const best = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];
+  return best[1] >= 2 ? best[0] : null;
+}
+
+
+  } else if (detectSpecialPlatform(lower) === 'Workday') {
+    platform = 'Workday'; badgeClass = 'd365'; badgeText = '💼 Detected: Workday';
+  } else if (detectSpecialPlatform(lower) === 'Oracle ERP') {
+    platform = 'Oracle ERP'; badgeClass = 'd365'; badgeText = '🔴 Detected: Oracle ERP';
+  } else if (detectSpecialPlatform(lower) === 'Guidewire') {
+    platform = 'Guidewire'; badgeClass = 'sf'; badgeText = '🏗️ Detected: Guidewire';
+  } else if (detectSpecialPlatform(lower) === 'SAP') {
+    platform = 'SAP'; badgeClass = 'd365'; badgeText = '⚙️ Detected: SAP';
+  } else if (detectSpecialPlatform(lower) === 'ServiceNow') {
+    platform = 'ServiceNow'; badgeClass = 'sf'; badgeText = '🛎️ Detected: ServiceNow';
   } else {
     badge.className = 'detect-badge';
     return;
   }
 
   detectedPlatform = platform;
+  if (platform) { selectPlatform(platform); }
   badge.className  = `detect-badge visible ${badgeClass}`;
   badge.textContent = badgeText;
 
   document.getElementById('platform').value = platform;
   updateModules();
   showToast(`Platform auto-detected: ${platform}`);
+}
+
+
+// ── Swagger / OpenAPI parser ──────────────────────────────────────
+async function parseSwagger(file) {
+  setParseProgress('Parsing Swagger / OpenAPI spec...');
+  const text = await new Promise((res, rej) => {
+    const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej;
+    r.readAsText(file);
+  });
+  try {
+    let spec;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'json') {
+      spec = JSON.parse(text);
+    } else {
+      // Basic YAML → object (simple key:value, no complex YAML)
+      showToast('YAML detected — converting to JSON...', 'ℹ️');
+      spec = { info: { title: 'API Spec', description: text.substring(0, 500) }, paths: {} };
+    }
+    // Extract meaningful info for test generation
+    const title   = spec.info?.title || 'API';
+    const version = spec.info?.version || '1.0';
+    const paths   = spec.paths || {};
+    const pathKeys = Object.keys(paths);
+
+    let summary = `API Specification: ${title} (v${version})\n\n`;
+    summary += `Total Endpoints: ${pathKeys.length}\n\n`;
+
+    pathKeys.slice(0, 30).forEach(path => {
+      const methods = Object.keys(paths[path]).filter(m =>
+        ['get','post','put','patch','delete','options'].includes(m.toLowerCase()));
+      methods.forEach(method => {
+        const op = paths[path][method];
+        const summary_line = op.summary || op.description || '';
+        const params = (op.parameters || []).map(p => `${p.name}(${p.in})`).join(', ');
+        const responses = Object.keys(op.responses || {}).join(', ');
+        summary += `${method.toUpperCase()} ${path}\n`;
+        if (summary_line) summary += `  Description: ${summary_line}\n`;
+        if (params) summary += `  Parameters: ${params}\n`;
+        if (responses) summary += `  Responses: ${responses}\n`;
+        summary += '\n';
+      });
+    });
+
+    if (pathKeys.length > 30) summary += `... and ${pathKeys.length - 30} more endpoints\n`;
+
+    // Auto-select Web App platform
+    if (!document.getElementById('platform').value) selectPlatform('Web App');
+
+    document.getElementById('flowDesc').value =
+      `Test all API endpoints from the uploaded Swagger spec.\n\n${summary}`;
+
+    showToast(`Swagger parsed — ${pathKeys.length} endpoints found`, '✅');
+    return summary;
+  } catch(e) {
+    showToast('Could not parse Swagger/OpenAPI file — check format', '⚠️');
+    return text.substring(0, 3000);
+  }
+}
+
+// ── Image / Screenshot processor (P2) ────────────────────────────
+async function processImageFile(file) {
+  setParseProgress('Reading screenshot / image...');
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  window.__uploadedImageBase64 = base64;
+  window.__uploadedImageType   = file.type || 'image/png';
+
+  // Show file card
+  showFileCard(file);
+  const card = document.getElementById('fileLoaded');
+  card.className = 'file-loaded visible';
+  document.getElementById('fileIcon').textContent = '🖼️';
+
+  extractedDocText = '[IMAGE_UPLOADED] Screenshot or UI mockup provided for UI flow-based test generation.';
+  setParseProgress('', false);
+  showToast('Screenshot loaded — describe the flow or click Generate', '🖼️');
+  if (!document.getElementById('platform').value) selectPlatform('Web App');
 }
 
 async function parsePDF(file) {
@@ -3060,7 +4235,7 @@ function showFileCard(file) {
   card.className = 'file-loaded visible';
 
   const ext = file.name.split('.').pop().toLowerCase();
-  const icons = { pdf: '📕', doc: '📘', docx: '📘', txt: '📄' };
+  const icons = { pdf: '📕', doc: '📘', docx: '📘', txt: '📄', json: '🔌', yaml: '🔌', yml: '🔌', png: '🖼️', jpg: '🖼️', jpeg: '🖼️' };
   document.getElementById('fileIcon').textContent = icons[ext] || '📄';
   document.getElementById('fileName').textContent = file.name;
   document.getElementById('fileMeta').textContent =
@@ -3097,6 +4272,8 @@ async function processFile(file) {
     if (ext === 'pdf') text = await parsePDF(file);
     else if (ext === 'docx' || ext === 'doc') text = await parseDocx(file);
     else if (ext === 'txt') text = await parseTxt(file);
+    else if (ext === 'json' || ext === 'yaml' || ext === 'yml') text = await parseSwagger(file);
+    else if (['png','jpg','jpeg','gif','webp'].includes(ext)) { await processImageFile(file); return; }
     else { showToast('Unsupported file type', '⚠️'); clearFile(); return; }
 
     extractedDocText = text.trim();
@@ -3216,10 +4393,11 @@ async function generate() {
 
   const isWebOrMobile = ['Web App','Mobile App'].includes(platform);
 
+  const outputLang = document.getElementById('outputLanguage')?.value || 'English';
   const systemPrompt = isWebOrMobile
     ? `You are a senior QA Engineer with 12+ years of experience testing web and mobile applications. You specialise in functional, integration, API, and UI/UX testing across modern tech stacks (React, Angular, Vue, Node.js, REST/GraphQL APIs, iOS, Android). You create production-ready test artifacts that development teams can immediately use in Jira, Azure DevOps, or any test management tool.
 
-CRITICAL LANGUAGE RULE: You MUST generate ALL output exclusively in English regardless of the language of the input. Never output test case content in any language other than English.
+CRITICAL LANGUAGE RULE: Generate ALL test case output in ${outputLang}. All column values (Title, Step Action, Step Expected Result, Assigned To, State), section headings, and test data must be written in ${outputLang}. The input document may be in any language — fully understand it and produce output exclusively in ${outputLang}.
 
 When given a feature or user flow description, generate a complete structured QA test artifact in clean Markdown.
 
@@ -3237,6 +4415,20 @@ FORMATTING RULES:
 - NEVER use backtick code spans inside table cells
 - NEVER use bold in Step Action cells
 - Keep cell content concise — separate multiple steps with semicolons
+
+Before generating test cases, perform a Requirement Gap Analysis.
+
+## 0. Requirement Gap Analysis
+Analyse the provided feature description and identify:
+- **Missing requirements**: What's unspecified but needed (e.g. error states, edge cases, permission levels, data validation rules)
+- **Ambiguous requirements**: Statements open to multiple interpretations
+- **Risks**: Technical or UX risks affecting test coverage
+- **Assumptions made**: What you assumed to proceed
+- **Clarifying questions**: 3–5 questions a QA engineer should ask the product team
+
+Keep it concise — max 10 items total.
+
+---
 
 Generate these sections:
 
@@ -3258,10 +4450,36 @@ Invalid inputs, unauthorised access, expired sessions, broken flows, network fai
 ## 6. Test Data Requirements
 Table: Data Type | Sample Valid Value | Sample Invalid Value | Notes
 
-Use realistic URLs, HTTP status codes, error messages, and field names. Format for direct import into Azure DevOps or Jira Zephyr.`
-    : `You are a senior QA Automation Engineer and ERP specialist with 15+ years of experience in Microsoft Dynamics 365 (F&O, CRM, Business Central) and Salesforce (Sales Cloud, Service Cloud, CPQ). You specialize in creating comprehensive, production-ready QA test artifacts for enterprise ERP implementations.
+Use realistic URLs, HTTP status codes, error messages, and field names. Format for direct import into Azure DevOps or Jira Zephyr.
 
-CRITICAL LANGUAGE RULE: You MUST generate ALL output exclusively in English, regardless of the language of the input document or business flow description. If the requirement document is written in Hindi, Telugu, Tamil, French, Arabic, German, or any other language, you must fully understand it and generate the test cases entirely in English. Never output test case content in any language other than English.
+## 7. Test Case Metadata
+For EVERY test case generated in sections 2–5, produce ONE row in this table.
+CRITICAL: The TC ID in this table MUST exactly match the TC ID in the Title column above (e.g. "TC001").
+
+| TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact |
+|---|---|---|---|---|---|---|
+
+Column definitions:
+- TC ID: Match exactly to Title (e.g. "TC001")
+- Preconditions: What must be true BEFORE the test runs (e.g. "User account exists; Browser: Chrome latest; Test environment: UAT")
+- Execution Type: ONE of — Smoke | Regression | E2E | Integration | UAT | Negative
+- Risk Score: P0 (release blocker) | P1 (must-run) | P2 (regression) | P3 (nice-to-have). Base on: business impact × likelihood of failure
+- Automation Feasibility: YES or NO + 1-line reason (e.g. "YES — stable UI selector, repeatable flow" or "NO — requires manual visual inspection")
+- Tool & Layer: Best tool + layer for automation (e.g. "Playwright / UI" or "REST Assured / API" or "Postman / API" or "N/A")
+- Failure Impact: Business + system consequence if test fails (e.g. "Users cannot log in — complete application outage. Revenue impact: immediate.")
+
+Generate one row per test case. Never leave Preconditions blank — at minimum write "Test environment active; Valid test data available".
+NEVER use backticks inside table cells.`
+    : `You are a senior QA Automation Engineer and enterprise platform specialist with 15+ years of experience across Microsoft Dynamics 365 (F&O, CRM, Business Central), Salesforce (Sales, Service, CPQ), Workday (HCM/Payroll), Oracle ERP Cloud (Fusion/NetSuite), SAP (S/4HANA, R3), Guidewire (PolicyCenter, ClaimCenter, BillingCenter), and ServiceNow. You specialize in creating comprehensive, production-ready QA test artifacts for enterprise platform implementations.
+
+PLATFORM-SPECIFIC EXPERTISE:
+- Workday: Use real field names (Worker, Position, Compensation Grade, Business Process, Supervisory Organisation). Reference Workday navigation (Workday > Human Capital Management > Payroll > Pay Group). Include business process framework validations (routing conditions, auto-approvals, error handling). Reference integration patterns (EIBs, Studio integrations, Workday APIs).
+- Oracle ERP Cloud / Fusion: Use Oracle module navigation (Navigator > Payables > Invoices > Manage Invoices). Reference subledger accounting, period close processes, approval hierarchies, and BPM workflow steps. For NetSuite: use NetSuite terminology (Transaction Types, Saved Searches, SuiteFlow, SuiteScript).
+- Guidewire: Use Guidewire-specific terms (Account, Policy, Job, Coverage, Claim, Activity, Document, Note). Reference PCF pages, business rules, validation rules, and Gosu code logic. For ClaimCenter: FNOL, reserves, exposures, checks, recoveries. For PolicyCenter: submission, quote, bind, issue, renew, cancel. For BillingCenter: invoice, charges, T-accounts, disbursements.
+- SAP: Use transaction codes (ME21N for PO, MIRO for invoice verification, FB50 for GL posting). Reference authorization objects, BAPI calls, and IDoc processing. Include table-level validations where relevant (EKKO, BSEG, VBAK).
+- ServiceNow: Use table names (incident, change_request, cmdb_ci), reference SLA stages, assignment groups, catalog items, and Flow Designer steps.
+
+CRITICAL LANGUAGE RULE: Generate ALL test case output in ${outputLang}. All column values (Title, Step Action, Step Expected Result, Assigned To, State), section headings, descriptions, and test data must be written in ${outputLang}. The input document may be in any language — fully understand it and produce the complete test artifact exclusively in ${outputLang}. For right-to-left languages (Arabic), use RTL text naturally.
 
 When given a business process description, generate a complete structured QA test artifact in clean Markdown.
 
@@ -3280,6 +4498,20 @@ FORMATTING RULES FOR TABLE CELLS:
 - NEVER use bold (**text**) inside Step Action cells — plain text only
 - You MAY use bold in Step Expected Result cells for status values (e.g. **Passed**, **Active**)
 - Keep cell content concise — long steps should use semicolons as separators, not line breaks
+
+Before generating test cases, perform a Requirement Gap Analysis.
+
+## 0. Requirement Gap Analysis
+Analyse the provided business flow and identify:
+- **Missing requirements**: What's not specified but needed for testing (e.g. error handling, timeout behaviour, concurrent user scenarios)
+- **Ambiguous requirements**: Statements that could be interpreted multiple ways
+- **Risks**: Technical or business risks that could affect testing
+- **Assumptions made**: What you assumed to proceed with test generation
+- **Clarifying questions**: 3–5 questions a QA engineer should ask the BA/PO
+
+Format as a brief bullet list under each heading. Keep it concise — max 10 items total.
+
+---
 
 Generate the following sections:
 
@@ -3305,14 +4537,33 @@ Cover error scenarios, permission failures, missing data, duplicate records.
 ## 6. Test Data Requirements
 A table: Data Type | Sample Valid Value | Sample Invalid Value | Notes
 
-Be very specific to the ERP platform mentioned. Use actual field names, form names, and navigation paths from D365 or Salesforce. Format output so it can be directly imported into Azure DevOps Test Plans or Jira Zephyr.`;
+Be very specific to the ERP platform mentioned. Use actual field names, form names, and navigation paths from D365 or Salesforce. Format output so it can be directly imported into Azure DevOps Test Plans or Jira Zephyr.
+
+## 7. Test Case Metadata
+For EVERY test case generated in sections 2–5, produce ONE row in this table.
+CRITICAL: The TC ID in this table MUST exactly match the TC ID in the Title column above (e.g. "TC001").
+
+| TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact |
+|---|---|---|---|---|---|---|
+
+Column definitions:
+- TC ID: Match exactly to Title column TC ID (e.g. "TC001")
+- Preconditions: System and data prerequisites before this test can run. Be ERP-specific (e.g. "D365 F&O UAT environment active; Vendor record exists (VENDOR-001); Purchase Order posted (PO-2024-001); User assigned AP Clerk role")
+- Execution Type: ONE of — Smoke | Regression | E2E | Integration | UAT | Negative
+- Risk Score: P0 (release blocker — data loss, security, financial) | P1 (must-run — core business flow) | P2 (regression — existing functionality) | P3 (nice-to-have — edge case)
+- Automation Feasibility: YES or NO + 1-line reason (e.g. "YES — D365 UI is stable, Playwright can handle F&O navigation" or "NO — requires physical approval in workflow, cannot be automated")
+- Tool & Layer: Best tool for this test case (e.g. "Playwright/TypeScript / UI" or "REST Assured / API" or "Provar / Salesforce UI" or "D365 RSAT / UI" or "N/A — Manual only")
+- Failure Impact: Business consequence if this test fails (e.g. "AP invoices cannot be processed — blocks entire accounts payable cycle. Financial close delayed. Compliance risk if invoices unpaid past due date.")
+
+Generate one row per test case. Never skip a test case. For Preconditions, always list: environment, master data dependencies, user role/permissions, and any prerequisite transactions.
+NEVER use backticks inside table cells.`;
 
   const formatInstructions = {
     full: "Generate all 6 sections of the complete test artifact.",
-    scenarios: "Generate ONLY Section 2 (End-to-End Test Cases) with a brief test summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State",
-    fields: "Generate ONLY Section 3 (Field Validation Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State",
-    integration: "Generate ONLY Section 4 (Integration Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State",
-    negative: "Generate ONLY Section 5 (Negative Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State"
+    scenarios: "Generate ONLY Section 2 (End-to-End Test Cases) with a brief test summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact",
+    fields: "Generate ONLY Section 3 (Field Validation Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact",
+    integration: "Generate ONLY Section 4 (Integration Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact",
+    negative: "Generate ONLY Section 5 (Negative Test Cases) with a brief summary. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. Then add Section 7 (Test Case Metadata) table: TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact"
   };
 
   const userPrompt = `Generate a QA test artifact for the following business process:
@@ -3446,10 +4697,70 @@ function renderOutput() {
   postProcessTables();
 }
 
+// Post-process the rendered output — apply metadata table styling
+function applyMetadataStyling(container) {
+  if (!container) return;
+
+  // Find all tables — detect Section 7 (metadata) by header
+  const tables = container.querySelectorAll('table');
+  tables.forEach(table => {
+    const headers = [...table.querySelectorAll('th')].map(th => th.textContent.trim());
+    const isMetadata = headers.includes('TC ID') && headers.includes('Preconditions');
+    if (!isMetadata) return;
+
+    table.classList.add('metadata-table');
+
+    // Style each data row's cells
+    table.querySelectorAll('tbody tr').forEach(row => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length < 6) return;
+
+      // Col 2: Execution Type → badge
+      const execCell = cells[2];
+      if (execCell) {
+        const val = execCell.textContent.trim().toLowerCase();
+        const cls = val.startsWith('smoke') ? 'exec-smoke'
+          : val.startsWith('regression') ? 'exec-regression'
+          : val.startsWith('e2e') || val.startsWith('end') ? 'exec-e2e'
+          : val.startsWith('integration') ? 'exec-integration'
+          : val.startsWith('uat') ? 'exec-uat'
+          : val.startsWith('negative') ? 'exec-negative' : '';
+        if (cls) execCell.innerHTML = `<span class="exec-badge ${cls}">${execCell.textContent.trim()}</span>`;
+      }
+
+      // Col 3: Automation Feasibility → YES/NO colour
+      const autoCell = cells[3];
+      if (autoCell) {
+        const raw = autoCell.textContent.trim();
+        const isYes = raw.toUpperCase().startsWith('YES');
+        const isNo  = raw.toUpperCase().startsWith('NO');
+        if (isYes || isNo) {
+          const cls = isYes ? 'auto-yes' : 'auto-no';
+          const label = isYes ? 'YES' : 'NO';
+          const detail = raw.substring(isYes ? 3 : 2).replace(/^[s-—]+/, '');
+          autoCell.innerHTML = `<span class="${cls}">${label}</span>${detail ? ' — ' + detail : ''}`;
+        }
+      }
+
+      // Col 5: Failure Impact → subtle warning colour
+      const impactCell = cells[5];
+      if (impactCell) {
+        impactCell.style.color = 'var(--text)';
+        impactCell.style.borderLeft = '2px solid rgba(220,60,60,.25)';
+        impactCell.style.paddingLeft = '10px';
+      }
+    });
+  });
+}
+
 function finalizeOutput(elapsed, platform, module) {
+  // Show filter bar
+  const fb = document.getElementById('filterBar');
+  if (fb) { fb.style.display = 'flex'; }
   const el = document.getElementById('outputContent');
   el.innerHTML = marked.parse(rawMarkdown);
-  el.className  = 'output-content visible'; // ensure panel is shown
+  el.className  = 'output-content visible';
+  applyMetadataStyling(el); // ensure panel is shown
   postProcessTables();
 
   // Hide placeholder, show output
@@ -3458,6 +4769,10 @@ function finalizeOutput(elapsed, platform, module) {
 
   document.getElementById('statusDot').className = 'status-dot active';
 
+  // Count test cases from parsed markdown
+  const _tcs = parseTestCasesFromMarkdown();
+  const _tcCountEl = document.getElementById('tcCount');
+  if (_tcCountEl) _tcCountEl.textContent = _tcs.length || '?';
   document.getElementById('metaBar').className = 'meta-bar visible';
   document.getElementById('genTime').textContent = elapsed;
   document.getElementById('metaPlatform').textContent = platform;
@@ -3891,6 +5206,45 @@ function exportExcel() {
   }
 
   const platform = document.getElementById('platform').value;
+  // ── Sheet 5: Test Case Metadata (P0 additions) ────────────────
+  const metaRows = [['TC ID','Preconditions','Execution Type','Automation Feasibility','Tool & Layer','Failure Impact']];
+  const META_HEADERS = ['TC ID','Preconditions','Execution Type','Automation Feasibility','Tool & Layer','Failure Impact'];
+
+  // Parse Section 7 metadata table from markdown
+  const metaLines = rawMarkdown.split('\n');
+  let inMetaTable = false;
+  metaLines.forEach(line => {
+    if (line.includes('Test Case Metadata') || (line.includes('TC ID') && line.includes('Preconditions'))) {
+      inMetaTable = true; return;
+    }
+    if (inMetaTable && line.startsWith('|') && !line.match(/^\|[-\s|]+\|$/)) {
+      const cells = line.split('|').map(c => cleanCell(c)).filter(c => c !== '');
+      if (cells[0] === 'TC ID') return; // header row
+      if (cells.length >= 2) metaRows.push(cells);
+    } else if (inMetaTable && line.startsWith('## ') && !line.includes('Test Case Metadata')) {
+      inMetaTable = false;
+    }
+  });
+
+  if (metaRows.length > 1) {
+    const wsMeta = XLSX.utils.aoa_to_sheet(metaRows);
+    wsMeta['!cols'] = [
+      { wch: 10 }, { wch: 55 }, { wch: 16 }, { wch: 35 }, { wch: 30 }, { wch: 60 }
+    ];
+    // Style header row
+    metaRows[0].forEach((_, ci) => {
+      const cell = XLSX.utils.encode_cell({ r: 0, c: ci });
+      if (wsMeta[cell]) {
+        wsMeta[cell].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '7B5EA7' } },
+          alignment: { wrapText: true }
+        };
+      }
+    });
+    XLSX.utils.book_append_sheet(wb, wsMeta, 'Metadata');
+  }
+
   XLSX.writeFile(wb, `test-cases-${platform.replace(/\s+/g,'-')}-${Date.now()}.xlsx`);
   showToast('Excel exported with test case format!');
 }
@@ -3971,7 +5325,7 @@ function loadHistory(id) {
   document.getElementById('genTime').textContent = '—';
   document.getElementById('tokenBadge').textContent = '↩ Loaded';
 
-  ['copyBtn','copyXlsBtn','pdfBtn','xlsBtn','adoBtn','editBtn','jiraBtn'].forEach(id => {
+  ['copyBtn','copyXlsBtn','pdfBtn','xlsBtn','adoBtn','editBtn','jiraBtn','testRailBtn','gherkinBtn','playwrightBtn','postmanBtn'].forEach(id => {
     document.getElementById(id).disabled = false;
   });
   document.getElementById('resetBtn').className = 'reset-btn visible';
@@ -3996,7 +5350,10 @@ function toggleHistory() {
 }
 
 // Init history on load
-document.addEventListener('DOMContentLoaded', renderHistory);
+document.addEventListener('DOMContentLoaded', () => {
+  renderHistory();
+  renderPlatformCards();
+});
 renderHistory();
 
 // ── Check Vercel env var configuration on load ────────────────
@@ -5911,5 +7268,1211 @@ async function settingsLoadProjects() {
 
 
 </script>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="ado-overlay" id="shortcutsOverlay" onclick="closeShortcuts()" style="display:none"></div>
+  <div id="shortcutsModal" style="display:none;position:fixed;top:50%;left:50%;
+       transform:translate(-50%,-50%);z-index:10002;width:min(520px,94vw);
+       background:var(--surface);border:1.5px solid var(--border2);border-radius:18px;
+       box-shadow:0 24px 80px rgba(0,0,0,.4);padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:18px 24px 14px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:16px;font-weight:700">⌨️ Keyboard Shortcuts</div>
+        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px">Press ? anytime to show this</div>
+      </div>
+      <button onclick="closeShortcuts()" style="background:none;border:none;cursor:pointer;
+              color:var(--text3);font-size:20px;padding:4px 8px;border-radius:6px">✕</button>
+    </div>
+    <div style="padding:16px 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">⚡ Generate</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + Enter</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">⏹ Stop generation</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Esc (during gen)</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">📋 Copy Markdown</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + Shift + C</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">🖨️ Print output</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + P</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">✏️ Toggle edit mode</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + E</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">🔄 Reset form</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + Shift + R</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">⊟ Collapse all</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + ↑</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">⊞ Expand all</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + ↓</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">🌙 Toggle theme</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + Shift + T</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">? Shortcuts help</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">?</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">← Home</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + H</kbd>
+        </div><div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px">
+          <span style="color:var(--text2)">🔷 Open ADO modal</span>
+          <kbd style="font-family:'JetBrains Mono',monospace;font-size:11px;
+                      background:var(--bg2);border:1px solid var(--border2);
+                      border-radius:5px;padding:2px 7px;color:var(--text)">Ctrl + Shift + A</kbd>
+        </div>
+    </div>
+  </div>
 </body>
 </html>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// P1: TestRail CSV Export
+// ═══════════════════════════════════════════════════════════════
+function downloadTestRailCSV() {
+  const testCases = parseTestCasesFromMarkdown();
+  if (!testCases.length) { showToast('No test cases to export', '⚠️'); return; }
+  const platform = document.getElementById('platform').value || 'QA';
+  const module   = document.getElementById('module').value   || 'General';
+
+  const headers = ['Title','Section','Type','Priority','Estimate','References','Custom Steps Separated'];
+  const rows = [];
+  testCases.forEach(tc => {
+    const prioMap = { 2: 'High', 3: 'Medium', 4: 'Low' };
+    const stepsFormatted = tc.steps.map((s,i) =>
+      `Step ${i+1}\n${s.action}\n\nExpected:\n${s.expected || ''}`
+    ).join('\n\n---\n\n');
+    rows.push([
+      tc.title,
+      `${platform} - ${module}`,
+      'Functional',
+      prioMap[tc.priority] || 'Medium',
+      '',
+      '',
+      stepsFormatted
+    ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  });
+
+  const csv = [headers.map(h=>`"${h}"`).join(','), ...rows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `TestRail-${platform.replace(/\s+/g,'-')}-${Date.now()}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('TestRail CSV downloaded ✅', '🧪');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// P1: Gherkin / BDD .feature Export
+// ═══════════════════════════════════════════════════════════════
+function downloadGherkin() {
+  const testCases = parseTestCasesFromMarkdown();
+  if (!testCases.length) { showToast('No test cases to export', '⚠️'); return; }
+  const platform = document.getElementById('platform').value || 'QA';
+  const module   = document.getElementById('module').value   || 'General';
+
+  let feature = `Feature: ${module} — ${platform}\n`;
+  feature += `  As a QA Engineer\n`;
+  feature += `  I want to verify ${module} functionality\n`;
+  feature += `  So that business requirements are met\n\n`;
+
+  testCases.forEach(tc => {
+    const title = tc.title.replace(/^TC\d+\s*[-–]\s*/i, '').trim();
+    feature += `  Scenario: ${title}\n`;
+
+    // Map steps to Given/When/Then
+    const steps = tc.steps;
+    steps.forEach((step, i) => {
+      const action = step.action.replace(/^\d+\.\s*/, '').trim();
+      const expected = step.expected ? step.expected.trim() : '';
+      let keyword;
+      if      (i === 0)                    keyword = 'Given';
+      else if (i === steps.length - 1)     keyword = 'Then';
+      else if (action.match(/^(click|select|enter|input|fill|submit|navigate|go|open)/i)) keyword = 'When';
+      else                                 keyword = 'And';
+
+      feature += `    ${keyword} ${action}\n`;
+      if (expected && i === steps.length - 1) {
+        feature += `    And the system shows "${expected.substring(0, 80)}"\n`;
+      }
+    });
+    feature += '\n';
+  });
+
+  const blob = new Blob([feature], {type:'text/plain;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${platform.replace(/\s+/g,'-')}-${module.replace(/\s+/g,'-')}.feature`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('Gherkin .feature file downloaded ✅', '🥒');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// P1: Playwright TypeScript Script Generation
+// ═══════════════════════════════════════════════════════════════
+function downloadPlaywright() {
+  const testCases = parseTestCasesFromMarkdown();
+  if (!testCases.length) { showToast('No test cases to export', '⚠️'); return; }
+  const platform = document.getElementById('platform').value || 'QA';
+  const module   = document.getElementById('module').value   || 'General';
+  const safeName = s => s.replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+
+  let script = `import { test, expect, Page } from '@playwright/test';\n\n`;
+  script += `/**\n * Auto-generated Playwright test suite\n`;
+  script += ` * Platform: ${platform} | Module: ${module}\n`;
+  script += ` * Generated: ${new Date().toISOString().slice(0,10)} by Shuddhi QA\n`;
+  script += ` * \n * IMPORTANT: Review and update selectors before running.\n */\n\n`;
+  script += `test.describe('${module} — ${platform}', () => {\n\n`;
+  script += `  test.beforeEach(async ({ page }) => {\n`;
+  script += `    // TODO: Add login / navigation to starting page\n`;
+  script += `    // await page.goto(process.env.BASE_URL || 'https://your-app.com');\n`;
+  script += `    // await page.fill('[data-testid="username"]', process.env.TEST_USER || '');\n`;
+  script += `    // await page.fill('[data-testid="password"]', process.env.TEST_PASS || '');\n`;
+  script += `    // await page.click('[data-testid="login-btn"]');\n`;
+  script += `  });\n\n`;
+
+  testCases.slice(0, 15).forEach(tc => {
+    const tcTitle = tc.title.replace(/^TC\d+\s*[-–]\s*/i, '').trim();
+    const fnName  = safeName(tcTitle.substring(0, 50));
+    script += `  test('${tc.title}', async ({ page }) => {\n`;
+    tc.steps.forEach((step, i) => {
+      const action = step.action.replace(/^\d+\.\s*/, '').trim();
+      const expected = step.expected ? step.expected.trim() : '';
+      script += `    // Step ${i+1}: ${action}\n`;
+      // Generate smart Playwright action based on keywords
+      if (action.match(/navigate|go to|open|visit/i))
+        script += `    await page.goto('/* TODO: URL */'); // ${action}\n`;
+      else if (action.match(/click/i))
+        script += `    await page.click('/* TODO: selector */'); // ${action}\n`;
+      else if (action.match(/enter|type|fill|input/i))
+        script += `    await page.fill('/* TODO: selector */', '/* TODO: value */'); // ${action}\n`;
+      else if (action.match(/select|choose|pick/i))
+        script += `    await page.selectOption('/* TODO: selector */', '/* TODO: value */'); // ${action}\n`;
+      else if (action.match(/submit|save|confirm/i))
+        script += `    await page.click('/* TODO: submit selector */'); // ${action}\n`;
+      else if (action.match(/verify|check|confirm|assert|should/i))
+        script += `    // Assertion: ${action}\n`;
+      else
+        script += `    // TODO: Implement — ${action}\n`;
+
+      if (expected) {
+        const shortExpected = expected.substring(0, 100);
+        if (expected.match(/redirect|navigate|url/i))
+          script += `    await expect(page).toHaveURL(/* TODO: expected URL */);\n`;
+        else if (expected.match(/visible|shown|display|appear/i))
+          script += `    await expect(page.locator('/* TODO: selector */')).toBeVisible();\n`;
+        else if (expected.match(/error|invalid|fail/i))
+          script += `    await expect(page.locator('/* TODO: error selector */')).toBeVisible();\n`;
+        else if (expected.match(/success|created|saved|confirm/i))
+          script += `    await expect(page.locator('/* TODO: success selector */')).toBeVisible();\n`;
+        else
+          script += `    // Expected: ${shortExpected}\n`;
+      }
+    });
+    script += `  });\n\n`;
+  });
+
+  if (testCases.length > 15) {
+    script += `  // ... ${testCases.length - 15} more test cases not shown\n`;
+    script += `  // Regenerate with fewer test cases or split into multiple files\n\n`;
+  }
+  script += `});\n`;
+
+  const blob = new Blob([script], {type:'text/plain;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${safeName(platform)}_${safeName(module)}.spec.ts`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('Playwright .spec.ts downloaded ✅', '🎭');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// P1: Postman Collection Export
+// ═══════════════════════════════════════════════════════════════
+function downloadPostman() {
+  const testCases = parseTestCasesFromMarkdown();
+  if (!testCases.length) { showToast('No test cases to export', '⚠️'); return; }
+  const platform = document.getElementById('platform').value || 'QA';
+  const module   = document.getElementById('module').value   || 'General';
+
+  // Extract API test cases (those with HTTP methods / endpoints in steps)
+  const apiPattern = /\b(GET|POST|PUT|PATCH|DELETE)\b|https?:\/\/|\/api\//i;
+  const apiCases = testCases.filter(tc =>
+    tc.steps.some(s => apiPattern.test(s.action) || apiPattern.test(tc.title))
+  );
+  const casesToUse = apiCases.length > 0 ? apiCases : testCases;
+
+  const collection = {
+    info: {
+      name: `${platform} — ${module} API Tests`,
+      description: `Auto-generated by Shuddhi QA on ${new Date().toISOString().slice(0,10)}`,
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
+    },
+    variable: [
+      { key: 'BASE_URL', value: 'https://your-api.com', type: 'string' },
+      { key: 'AUTH_TOKEN', value: '', type: 'string' }
+    ],
+    item: casesToUse.map(tc => {
+      const title = tc.title.replace(/^TC\d+\s*[-–]\s*/i, '').trim();
+      // Try to extract endpoint from steps
+      const allText = tc.steps.map(s => s.action + ' ' + s.expected).join(' ');
+      const urlMatch = allText.match(/https?:\/\/[^\s]+/) || allText.match(/\/api\/[^\s]+/) || allText.match(/\/[a-z][a-zA-Z/]{3,}/);
+      const methodMatch = allText.match(/\b(GET|POST|PUT|PATCH|DELETE)\b/i);
+      const method = (methodMatch ? methodMatch[1].toUpperCase() : 'GET');
+      const url = urlMatch ? urlMatch[0].replace(/[,;.]$/, '') : '{{BASE_URL}}/api/endpoint';
+
+      return {
+        name: tc.title,
+        request: {
+          method,
+          header: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Authorization', value: 'Bearer {{AUTH_TOKEN}}' }
+          ],
+          url: { raw: url.startsWith('http') ? url : `{{BASE_URL}}${url}`, raw_as_string: url },
+          body: ['POST','PUT','PATCH'].includes(method) ? {
+            mode: 'raw',
+            raw: JSON.stringify({ "TODO": "Add request body based on: " + tc.steps[0]?.action }, null, 2),
+            options: { raw: { language: 'json' } }
+          } : undefined
+        },
+        event: [{
+          listen: 'test',
+          script: {
+            type: 'text/javascript',
+            exec: [
+              `// ${title}`,
+              `pm.test("Status code is 2xx", () => {`,
+              `  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);`,
+              `});`,
+              `pm.test("Response time < 3000ms", () => {`,
+              `  pm.expect(pm.response.responseTime).to.be.below(3000);`,
+              `});`,
+              ...tc.steps
+                .filter(s => s.expected)
+                .slice(0, 2)
+                .map((s, i) => `// Expected ${i+1}: ${s.expected.substring(0,80)}`)
+            ]
+          }
+        }]
+      };
+    })
+  };
+
+  const json = JSON.stringify(collection, null, 2);
+  const blob = new Blob([json], {type:'application/json;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${platform.replace(/\s+/g,'-')}-${module.replace(/\s+/g,'-')}-postman.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast(`Postman collection downloaded (${casesToUse.length} requests) ✅`, '📮');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// P3: Coverage Matrix / Traceability (generates in output)
+// ═══════════════════════════════════════════════════════════════
+function downloadCoverageMatrix() {
+  if (!rawMarkdown) { showToast('Generate test cases first', '⚠️'); return; }
+  const testCases = parseTestCasesFromMarkdown();
+  const platform  = document.getElementById('platform').value || 'QA';
+  const module    = document.getElementById('module').value   || 'General';
+
+  // Parse sections from markdown
+  const sections = { 'E2E':[], 'Field Validation':[], 'Integration':[], 'Negative':[] };
+  let currentSection = null;
+  rawMarkdown.split('\n').forEach(line => {
+    if (line.includes('End-to-End')) currentSection = 'E2E';
+    else if (line.includes('Field Validation')) currentSection = 'Field Validation';
+    else if (line.includes('Integration')) currentSection = 'Integration';
+    else if (line.includes('Negative')) currentSection = 'Negative';
+    else if (line.startsWith('## ')) currentSection = null;
+    if (currentSection && line.startsWith('| TC') || (currentSection && line.startsWith('|') && !line.match(/^\\|[-\\s|]+\\|$/))) {
+      const cells = line.split('|').map(c => c.trim()).filter(Boolean);
+      if (cells[0] && cells[0].match(/^TC\d+/)) {
+        sections[currentSection]?.push(cells[0]);
+      }
+    }
+  });
+
+  // Build matrix CSV
+  const sectionNames = Object.keys(sections);
+  const headers = ['TC ID', 'Title', 'Assigned To', 'Priority', ...sectionNames, 'Coverage'];
+  const rows = testCases.map(tc => {
+    const tcId = tc.title.match(/^(TC\d+)/)?.[1] || '';
+    const secCoverage = sectionNames.map(s => sections[s].includes(tcId) ? '✓' : '');
+    const covered = secCoverage.filter(Boolean).length;
+    return [tcId, tc.title, tc.assignedTo, tc.priority===2?'High':tc.priority===3?'Medium':'Low', ...secCoverage, `${covered}/${sectionNames.length}`];
+  });
+
+  const csv = [
+    headers.map(h=>`"${h}"`).join(','),
+    ...rows.map(row => row.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))
+  ].join('\n');
+
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `CoverageMatrix-${platform.replace(/\s+/g,'-')}-${Date.now()}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('Coverage matrix CSV downloaded ✅', '📊');
+}
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// P3: Dark / Light Theme Toggle
+// ═══════════════════════════════════════════════════════════════
+(function initTheme() {
+  const saved = localStorage.getItem('shuddhi-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+})();
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next    = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('shuddhi-theme', next);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+}
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 2: Section Collapse / Expand
+// ═══════════════════════════════════════════════════════════════
+function initSectionCollapse(container) {
+  if (!container) return;
+  const headings = container.querySelectorAll('h2');
+  headings.forEach(h2 => {
+    if (h2.dataset.collapsible) return; // already processed
+    h2.dataset.collapsible = '1';
+
+    // Collect all siblings until next h2
+    const siblings = [];
+    let el = h2.nextElementSibling;
+    while (el && el.tagName !== 'H2') {
+      siblings.push(el); el = el.nextElementSibling;
+    }
+    if (!siblings.length) return;
+
+    // Wrap siblings in a section-body div
+    const body = document.createElement('div');
+    body.className = 'section-body';
+    h2.parentNode.insertBefore(body, siblings[0]);
+    siblings.forEach(s => body.appendChild(s));
+
+    // Make heading a toggle
+    const origText = h2.innerHTML;
+    h2.innerHTML = '';
+    h2.style.cursor = 'pointer';
+    h2.style.userSelect = 'none';
+
+    const toggle = document.createElement('span');
+    toggle.className = 'section-toggle';
+    toggle.innerHTML = `<span class="toggle-icon">▼</span>${origText}`;
+    h2.appendChild(toggle);
+
+    h2.addEventListener('click', () => {
+      const isCollapsed = toggle.classList.toggle('collapsed');
+      body.classList.toggle('collapsed', isCollapsed);
+    });
+  });
+}
+
+function collapseAllSections() {
+  const container = document.getElementById('outputContent');
+  if (!container) return;
+  container.querySelectorAll('.section-toggle').forEach(t => t.classList.add('collapsed'));
+  container.querySelectorAll('.section-body').forEach(b => b.classList.add('collapsed'));
+}
+
+function expandAllSections() {
+  const container = document.getElementById('outputContent');
+  if (!container) return;
+  container.querySelectorAll('.section-toggle').forEach(t => t.classList.remove('collapsed'));
+  container.querySelectorAll('.section-body').forEach(b => b.classList.remove('collapsed'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 3: Priority / Section Filter
+// ═══════════════════════════════════════════════════════════════
+function applyOutputFilter(filter) {
+  // Update button states
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+
+  const container = document.getElementById('outputContent');
+  if (!container) return;
+
+  const sectionMap = {
+    all:   null,
+    e2e:   ['end-to-end','e2e','scenario'],
+    field: ['field validat','field val'],
+    int:   ['integration'],
+    neg:   ['negative'],
+    meta:  ['metadata','test case metadata']
+  };
+
+  const keywords = sectionMap[filter];
+
+  // Show/hide h2 sections and their bodies
+  const headings = container.querySelectorAll('h2');
+  headings.forEach(h2 => {
+    const text = h2.textContent.toLowerCase();
+    const body = h2.nextElementSibling?.classList.contains('section-body')
+      ? h2.nextElementSibling
+      : null;
+
+    // Section 0 (Gap Analysis) and Section 1 (Test Summary) always visible
+    const isAlwaysVisible = text.includes('gap analysis') || text.includes('test summary') || text.match(/^#+\s*\d*\.*\s*test summary/i);
+
+    if (!keywords || isAlwaysVisible) {
+      h2.style.display = '';
+      if (body) body.style.display = '';
+    } else {
+      const match = keywords.some(k => text.includes(k));
+      h2.style.display = match ? '' : 'none';
+      if (body) body.style.display = match ? '' : 'none';
+    }
+  });
+
+  // Also show/hide non-h2 content (gap analysis paragraphs, summary table)
+  if (filter !== 'all') {
+    // Find all direct children that are not h2 and not section-body
+    const children = [...container.children];
+    let inSection = false;
+    let sectionVisible = false;
+    children.forEach(el => {
+      if (el.tagName === 'H2') {
+        inSection = true;
+        sectionVisible = el.style.display !== 'none';
+        return;
+      }
+      if (el.classList.contains('section-body')) return; // handled above
+      if (!inSection) el.style.display = ''; // pre-section content (gap analysis)
+    });
+  } else {
+    container.querySelectorAll('h2, .section-body, p, table, ul, ol, hr').forEach(el => {
+      el.style.display = '';
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 5: Share / Copy Session Link
+// ═══════════════════════════════════════════════════════════════
+function copyShareLink() {
+  if (!rawMarkdown) { showToast('Generate test cases first', '⚠️'); return; }
+
+  const platform = document.getElementById('platform').value || '';
+  const module   = document.getElementById('module').value   || '';
+  const lang     = document.getElementById('outputLanguage')?.value || 'English';
+
+  try {
+    // Encode state as base64 (compressed via simple encoding)
+    const state = { platform, module, lang, md: rawMarkdown };
+    const json   = JSON.stringify(state);
+    const b64    = btoa(unescape(encodeURIComponent(json)));
+
+    // Use sessionStorage with UUID as key, put key in URL hash
+    const key = 'sq_' + Date.now().toString(36);
+    try {
+      sessionStorage.setItem(key, json);
+    } catch(e) { /* storage full — skip */ }
+
+    // Build share URL with encoded state in hash
+    // Limit to 8KB — truncate markdown if needed
+    const safeB64 = b64.length > 8000
+      ? btoa(unescape(encodeURIComponent(JSON.stringify({ platform, module, lang, md: rawMarkdown.substring(0, 4000) + '\n\n*[Output truncated for sharing]*' }))))
+      : b64;
+
+    const shareUrl = window.location.origin + window.location.pathname + '#share=' + safeB64;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast('Share link copied to clipboard ✅', '🔗');
+      const btn = document.getElementById('shareLinkBtn');
+      if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '🔗 Share', 2500); }
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = shareUrl; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('Share link copied ✅', '🔗');
+    });
+  } catch(e) {
+    showToast('Could not create share link — output may be too large', '⚠️');
+  }
+}
+
+// Restore shared session from URL hash on page load
+(function restoreSharedSession() {
+  try {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#share=')) return;
+    const b64  = hash.substring(7);
+    const json = decodeURIComponent(escape(atob(b64)));
+    const state = JSON.parse(json);
+
+    if (state.md && state.md.length > 10) {
+      // Restore
+      rawMarkdown = state.md;
+      if (state.platform) {
+        setTimeout(() => {
+          selectPlatform(state.platform);
+          if (state.module) {
+            setTimeout(() => {
+              document.getElementById('module').value = state.module;
+              const chip = [...document.querySelectorAll('.module-chip')].find(c => c.dataset.module === state.module);
+              if (chip) selectModule(state.module, chip);
+            }, 100);
+          }
+          if (state.lang && document.getElementById('outputLanguage')) {
+            document.getElementById('outputLanguage').value = state.lang;
+          }
+        }, 200);
+      }
+
+      // Render the shared output
+      setTimeout(() => {
+        const el = document.getElementById('outputContent');
+        el.innerHTML = marked.parse(rawMarkdown);
+        el.className = 'output-content visible';
+        document.getElementById('placeholder').style.display = 'none';
+        const fb = document.getElementById('filterBar');
+        if (fb) fb.style.display = 'flex';
+        applyMetadataStyling(el);
+        initSectionCollapse(el);
+
+        // Enable export buttons
+        ['copyBtn','copyXlsBtn','pdfBtn','xlsBtn','adoBtn','editBtn','jiraBtn',
+         'testRailBtn','gherkinBtn','playwrightBtn','postmanBtn','coverageBtn'].forEach(id => {
+          const btn = document.getElementById(id); if(btn) btn.disabled = false;
+        });
+
+        showToast('Shared session restored ✅', '🔗');
+        // Clean URL
+        history.replaceState(null, '', window.location.pathname);
+      }, 500);
+    }
+  } catch(e) { /* invalid share link — ignore */ }
+})();
+
+// ── Hook section collapse into finalizeOutput and streaming ──────
+const _origApplyMeta = applyMetadataStyling;
+function applyMetadataStyling(container) {
+  _origApplyMeta(container);
+  initSectionCollapse(container);
+}
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 1: Copy Single Test Case button
+// ═══════════════════════════════════════════════════════════════
+function addCopySingleButtons(container) {
+  if (!container) return;
+  const tables = container.querySelectorAll('table');
+  tables.forEach(table => {
+    const headers = [...table.querySelectorAll('th')].map(th => th.textContent.trim());
+    const isTCTable = headers.includes('Title') && headers.includes('Step Action');
+    if (!isTCTable) return;
+
+    // Add copy icon column header
+    const headerRow = table.querySelector('thead tr') || table.querySelector('tr');
+    if (headerRow && !headerRow.querySelector('.copy-col-hdr')) {
+      const th = document.createElement('th');
+      th.className = 'copy-col-hdr';
+      th.style.cssText = 'width:32px;text-align:center;padding:4px;';
+      th.textContent = '';
+      headerRow.appendChild(th);
+    }
+
+    // Add copy button to each TC row (first row of each TC — where Title is non-empty)
+    const rows = table.querySelectorAll('tbody tr');
+    let lastTitle = '';
+    let lastRowGroup = [];
+
+    const flushGroup = () => {
+      if (!lastTitle || !lastRowGroup.length) return;
+      const firstRow = lastRowGroup[0];
+      if (firstRow.querySelector('.copy-tc-btn')) return;
+
+      const td = document.createElement('td');
+      td.rowSpan = lastRowGroup.length;
+      td.style.cssText = 'text-align:center;vertical-align:top;padding:4px 2px;';
+
+      const btn = document.createElement('button');
+      btn.className = 'copy-tc-btn';
+      btn.title = 'Copy this test case';
+      btn.textContent = '📋';
+      btn.style.cssText = `background:none;border:1px solid var(--border2);border-radius:6px;
+        cursor:pointer;font-size:13px;padding:3px 6px;transition:all .12s;
+        opacity:.6;`;
+      btn.onmouseover = () => { btn.style.opacity='1'; btn.style.borderColor='var(--d365)'; };
+      btn.onmouseout  = () => { btn.style.opacity='.6'; btn.style.borderColor='var(--border2)'; };
+
+      const capturedTitle  = lastTitle;
+      const capturedRows   = [...lastRowGroup];
+      btn.onclick = (e) => { e.stopPropagation(); copySingleTC(capturedTitle, capturedRows); };
+
+      td.appendChild(btn);
+      firstRow.insertCell(0).replaceWith(td);
+      // Fix: append td as first child of first row
+      firstRow.insertBefore(td, firstRow.firstChild);
+
+      lastRowGroup = [];
+      lastTitle = '';
+    };
+
+    rows.forEach(row => {
+      const cells = [...row.querySelectorAll('td')];
+      const titleCell = cells[0];
+      if (!titleCell) return;
+      const titleText = titleCell.textContent.trim();
+      if (titleText && titleText.length > 2) {
+        flushGroup();
+        lastTitle = titleText;
+        lastRowGroup = [row];
+      } else if (lastTitle) {
+        lastRowGroup.push(row);
+      }
+    });
+    flushGroup();
+  });
+}
+
+function copySingleTC(title, rows) {
+  const lines = [`**${title}**\n`];
+  rows.forEach(row => {
+    const cells = [...row.querySelectorAll('td')].map(td => td.textContent.trim());
+    // cells: [copy-btn?, title, step action, step expected, assigned to, state]
+    // find step action (non-empty cell that looks like a step)
+    const action   = cells.find(c => c.match(/^\d+[\.\)]/)) || cells[1] || '';
+    const expected = cells[cells.length - 3] || '';
+    if (action) lines.push(`→ ${action}`);
+    if (expected) lines.push(`  ✓ ${expected}`);
+  });
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(`Copied: ${title.substring(0,40)}…`, '📋');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('Test case copied ✅', '📋');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 3: Keyboard Shortcuts Modal
+// ═══════════════════════════════════════════════════════════════
+function openShortcuts() {
+  document.getElementById('shortcutsModal').style.display   = 'block';
+  document.getElementById('shortcutsOverlay').style.display = 'block';
+}
+function closeShortcuts() {
+  document.getElementById('shortcutsModal').style.display   = 'none';
+  document.getElementById('shortcutsOverlay').style.display = 'none';
+}
+
+// ─ Keyboard handler ──────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  const inInput = ['input','textarea','select'].includes(tag);
+
+  // ? — shortcuts modal
+  if (e.key === '?' && !inInput && !e.ctrlKey && !e.metaKey) {
+    openShortcuts(); return;
+  }
+  // Ctrl+Shift+C — copy markdown
+  if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'C') {
+    e.preventDefault(); copyMarkdown(); return;
+  }
+  // Ctrl+Shift+R — reset form
+  if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'R') {
+    e.preventDefault(); resetForm(); return;
+  }
+  // Ctrl+E — edit mode
+  if ((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key === 'e') {
+    if (rawMarkdown) { e.preventDefault(); toggleEditMode(); }
+    return;
+  }
+  // Ctrl+↑ — collapse all
+  if ((e.ctrlKey||e.metaKey) && e.key === 'ArrowUp') {
+    e.preventDefault(); collapseAllSections(); return;
+  }
+  // Ctrl+↓ — expand all
+  if ((e.ctrlKey||e.metaKey) && e.key === 'ArrowDown') {
+    e.preventDefault(); expandAllSections(); return;
+  }
+  // Ctrl+Shift+T — theme toggle
+  if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'T') {
+    e.preventDefault(); toggleTheme(); return;
+  }
+  // Ctrl+H — home
+  if ((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key === 'h') {
+    e.preventDefault(); window.location.href = '/'; return;
+  }
+  // Ctrl+Shift+A — open ADO modal
+  if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'A') {
+    if (rawMarkdown) { e.preventDefault(); openADOModal(); }
+    return;
+  }
+  // Esc — close shortcuts modal
+  if (e.key === 'Escape') {
+    const sm = document.getElementById('shortcutsModal');
+    if (sm && sm.style.display !== 'none') { closeShortcuts(); return; }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 4: Bulk Export All Formats as ZIP
+// ═══════════════════════════════════════════════════════════════
+async function exportAllFormats() {
+  if (!rawMarkdown) { showToast('Generate test cases first', '⚠️'); return; }
+
+  const btn = document.getElementById('exportAllBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Packaging…'; }
+
+  try {
+    const platform = (document.getElementById('platform').value || 'QA').replace(/\s+/g,'-');
+    const module   = (document.getElementById('module').value   || 'General').replace(/\s+/g,'-');
+    const date     = new Date().toISOString().slice(0,10);
+    const stem     = `ShuddniQA-${platform}-${module}-${date}`;
+
+    // Load JSZip
+    await new Promise((res, rej) => {
+      if (window.JSZip) { res(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+
+    const zip = new JSZip();
+    const testCases = parseTestCasesFromMarkdown();
+
+    // 1. Markdown
+    zip.file(`${stem}.md`, rawMarkdown);
+
+    // 2. Gherkin
+    let feature = `Feature: ${module.replace(/-/g,' ')}\n  As a QA Engineer\n  I want to verify functionality\n  So that business requirements are met\n\n`;
+    testCases.forEach(tc => {
+      const title = tc.title.replace(/^TC\d+\s*[-–]\s*/i,'').trim();
+      feature += `  Scenario: ${title}\n`;
+      tc.steps.forEach((step, i) => {
+        const action = step.action.replace(/^\d+\.\s*/,'').trim();
+        const kw = i===0?'Given':i===tc.steps.length-1?'Then':'When';
+        feature += `    ${kw} ${action}\n`;
+        if (step.expected && i===tc.steps.length-1)
+          feature += `    And the result is "${step.expected.substring(0,60)}"\n`;
+      });
+      feature += '\n';
+    });
+    zip.file(`${stem}.feature`, feature);
+
+    // 3. Playwright
+    let pw = `import { test, expect } from '@playwright/test';\n\ntest.describe('${module.replace(/-/g,' ')}', () => {\n`;
+    testCases.slice(0,15).forEach(tc => {
+      pw += `  test('${tc.title}', async ({ page }) => {\n`;
+      tc.steps.forEach((step,i) => {
+        pw += `    // ${step.action.replace(/^\d+\.\s*/,'').trim()}\n`;
+        if (step.expected) pw += `    // Expected: ${step.expected.substring(0,80)}\n`;
+      });
+      pw += `  });\n\n`;
+    });
+    pw += `});\n`;
+    zip.file(`${stem}.spec.ts`, pw);
+
+    // 4. Postman collection
+    const postman = {
+      info: { name: `${platform} ${module}`, schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' },
+      variable: [{ key:'BASE_URL', value:'https://your-api.com', type:'string' }],
+      item: testCases.map(tc => ({
+        name: tc.title,
+        request: {
+          method: 'GET',
+          header: [{ key:'Authorization', value:'Bearer {{AUTH_TOKEN}}' }],
+          url: { raw: '{{BASE_URL}}/api/endpoint' }
+        },
+        event: [{ listen:'test', script:{ type:'text/javascript',
+          exec: [`pm.test("Status 2xx", () => pm.expect(pm.response.code).to.be.oneOf([200,201,204]));`] } }]
+      }))
+    };
+    zip.file(`${stem}-postman.json`, JSON.stringify(postman, null, 2));
+
+    // 5. TestRail CSV
+    const trHeaders = ['Title','Section','Type','Priority','Steps'];
+    const trRows = testCases.map(tc => {
+      const steps = tc.steps.map((s,i)=>`Step ${i+1}: ${s.action}`).join('\n');
+      return [tc.title, module.replace(/-/g,' '), 'Functional',
+        tc.priority===2?'High':tc.priority===3?'Medium':'Low', steps]
+        .map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');
+    });
+    zip.file(`${stem}-testrail.csv`, [trHeaders.map(h=>`"${h}"`).join(','), ...trRows].join('\n'));
+
+    // 6. Jira Zephyr CSV
+    const jiraHeaders = ['Name','Status','Priority','Step','Step Description','Step Expected Result'];
+    const jiraRows = [];
+    testCases.forEach(tc => {
+      tc.steps.forEach((step,i) => {
+        jiraRows.push([i===0?tc.title:'','Draft',i===0?'High':'',i+1,step.action,step.expected||'']
+          .map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+      });
+    });
+    zip.file(`${stem}-jira.csv`, [jiraHeaders.map(h=>`"${h}"`).join(','), ...jiraRows].join('\n'));
+
+    // Generate ZIP
+    const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${stem}-AllExports.zip`;
+    a.click(); URL.revokeObjectURL(a.href);
+
+    showToast(`Export All ZIP downloaded (6 formats) ✅`, '📦');
+  } catch(e) {
+    showToast('Export failed: ' + e.message, '❌');
+    console.error(e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📦 Export All'; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 5: Jira Ticket ID Fetch
+// ═══════════════════════════════════════════════════════════════
+async function fetchJiraTicket() {
+  const ticketId = document.getElementById('jiraTicketId')?.value.trim().toUpperCase();
+  const statusEl = document.getElementById('jiraFetchStatus');
+  const btnLbl   = document.getElementById('jiraFetchLabel');
+
+  if (!ticketId || !ticketId.match(/^[A-Z][A-Z0-9]+-\d+$/)) {
+    if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(220,60,60,.08)'; statusEl.style.color='var(--error)'; statusEl.textContent='⚠️ Enter a valid Jira ticket ID (e.g. PROJ-1234)'; }
+    return;
+  }
+
+  if (statusEl) { statusEl.style.display='block'; statusEl.style.background='rgba(0,120,212,.05)'; statusEl.style.color='var(--text2)'; statusEl.textContent=`⏳ Fetching ${ticketId}…`; }
+  if (btnLbl) btnLbl.textContent = '⏳';
+
+  try {
+    const res  = await fetch('/api/jira', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ ticketId })
+    });
+
+    if (res.status === 404 && (await res.json().catch(()=>({}))).error?.includes('not configured')) {
+      if (statusEl) { statusEl.style.color='var(--text3)'; statusEl.textContent='ℹ️ Add JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN to Vercel env vars to enable this feature.'; }
+      return;
+    }
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      if (statusEl) { statusEl.style.color='var(--error)'; statusEl.textContent=`❌ ${err.error || err.message || 'Fetch failed — check ticket ID and Jira config'}`; }
+      return;
+    }
+
+    const data = await res.json();
+    const { summary, description, acceptanceCriteria, type, priority, labels, status } = data;
+
+    // Auto-fill business flow
+    const flowEl = document.getElementById('flowDesc');
+    if (flowEl) {
+      let flow = `Jira Ticket: ${ticketId} — ${summary}\n\n`;
+      if (description)        flow += `Description:\n${description}\n\n`;
+      if (acceptanceCriteria) flow += `Acceptance Criteria:\n${acceptanceCriteria}\n\n`;
+      flow += `Type: ${type || 'Story'} | Priority: ${priority || 'Medium'} | Status: ${status || ''}`;
+      if (labels?.length)     flow += ` | Labels: ${labels.join(', ')}`;
+      flowEl.value = flow.trim();
+    }
+
+    // Auto-detect platform from labels/summary
+    const textForDetect = (summary + ' ' + (labels||[]).join(' ')).toLowerCase();
+    const detectedPlat = detectSpecialPlatform(textForDetect);
+    if (detectedPlat) {
+      selectPlatform(detectedPlat);
+      showToast(`Platform auto-detected: ${detectedPlat}`, '🎯');
+    }
+
+    if (statusEl) { statusEl.style.color='#1a7a40'; statusEl.style.background='rgba(0,135,90,.06)'; statusEl.textContent=`✅ Loaded: ${summary.substring(0,60)}…`; }
+    showToast(`${ticketId} loaded ✅`, '🟦');
+
+  } catch(e) {
+    if (statusEl) { statusEl.style.color='var(--error)'; statusEl.textContent='❌ Network error: ' + e.message; }
+  } finally {
+    if (btnLbl) btnLbl.textContent = 'Fetch →';
+  }
+}
+
+// Check Jira config on load + hook copy buttons into applyMetadataStyling
+const _prevApplyMeta2 = applyMetadataStyling;
+function applyMetadataStyling(container) {
+  _prevApplyMeta2(container);
+  addCopySingleButtons(container);
+}
+
+// Check if JIRA is configured
+(async function checkJiraConfig() {
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.jiraConfigured) {
+        const badge  = document.getElementById('jiraConfigBadge');
+        const notice = document.getElementById('jiraNotConfigured');
+        if (badge)  badge.style.display  = 'inline-block';
+        if (notice) notice.style.display = 'none';
+      }
+    }
+  } catch(e) {}
+})();
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ITEM 2: Jira Settings Tab — save, load, test
+// ═══════════════════════════════════════════════════════════════
+const JIRA_STORAGE_KEY = 'shuddhi-jira-config';
+
+function saveJiraSettings() {
+  const url   = document.getElementById('settingsJiraUrl')?.value.trim()   || '';
+  const email = document.getElementById('settingsJiraEmail')?.value.trim() || '';
+  const token = document.getElementById('settingsJiraToken')?.value.trim() || '';
+  if (url || email || token) {
+    localStorage.setItem(JIRA_STORAGE_KEY, JSON.stringify({ url, email, token }));
+  }
+}
+
+function loadJiraSettings() {
+  try {
+    const saved = localStorage.getItem(JIRA_STORAGE_KEY);
+    if (!saved) return;
+    const { url, email, token } = JSON.parse(saved);
+    const urlEl   = document.getElementById('settingsJiraUrl');
+    const emailEl = document.getElementById('settingsJiraEmail');
+    const tokenEl = document.getElementById('settingsJiraToken');
+    if (urlEl   && url)   urlEl.value   = url;
+    if (emailEl && email) emailEl.value = email;
+    if (tokenEl && token) tokenEl.value = token;
+  } catch(e) {}
+}
+
+async function testJiraConnection() {
+  const resultEl = document.getElementById('jiraTestResult');
+  const btnEl    = document.getElementById('jiraTestBtn');
+  if (resultEl) { resultEl.style.display='block'; resultEl.textContent='⏳ Testing Jira connection…'; resultEl.style.color='var(--text2)'; }
+  if (btnEl) btnEl.disabled = true;
+
+  try {
+    // Try a minimal fetch to check if /api/jira responds
+    const testTicketId = 'TEST-1';
+    const res = await fetch('/api/jira', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ticketId: testTicketId })
+    });
+    const data = await res.json();
+
+    if (res.status === 404 && data.error?.includes('not configured')) {
+      // Not via Vercel env — check if local settings are set
+      const saved = localStorage.getItem(JIRA_STORAGE_KEY);
+      const cfg   = saved ? JSON.parse(saved) : {};
+      if (cfg.url && cfg.email && cfg.token) {
+        if (resultEl) { resultEl.style.color='#1a7a40'; resultEl.textContent='✅ Local Jira config saved. Note: direct browser→Jira requires CORS support on your instance, or add Vercel env vars for server-side proxy.'; }
+      } else {
+        if (resultEl) { resultEl.style.color='var(--error)'; resultEl.textContent='❌ Jira not configured. Enter Base URL, Email, and API Token above, OR add Vercel environment variables.'; }
+      }
+      return;
+    }
+
+    if (res.status === 404 && data.error?.includes('not found')) {
+      // API reached Jira but ticket doesn't exist — connection works!
+      if (resultEl) { resultEl.style.color='#1a7a40'; resultEl.textContent='✅ Jira connection successful! API is reachable and authenticated.'; }
+      return;
+    }
+
+    if (res.status === 401) {
+      if (resultEl) { resultEl.style.color='var(--error)'; resultEl.textContent='❌ Authentication failed — check JIRA_EMAIL and JIRA_API_TOKEN.'; }
+      return;
+    }
+
+    // Any 2xx response means it worked
+    if (resultEl) { resultEl.style.color='#1a7a40'; resultEl.textContent='✅ Jira connected successfully!'; }
+
+  } catch(e) {
+    if (resultEl) { resultEl.style.color='var(--error)'; resultEl.textContent='❌ Connection error: ' + e.message; }
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+  }
+}
+
+// Update switchSettingsTab to handle Jira panel + load settings
+const _origSwitchTab = switchSettingsTab;
+function switchSettingsTab(tab) {
+  _origSwitchTab(tab);
+  if (tab === 'jira') {
+    loadJiraSettings();
+    checkJiraSettingsStatus();
+  }
+}
+
+async function checkJiraSettingsStatus() {
+  const iconEl = document.getElementById('jiraStatusIcon');
+  const lblEl  = document.getElementById('jiraStatusLabel');
+  const subEl  = document.getElementById('jiraStatusSub');
+  const testBtn = document.getElementById('jiraTestBtn');
+  const manualSec = document.getElementById('jiraManualSection');
+  const vercelSec = document.getElementById('jiraVercelSection');
+
+  try {
+    const res  = await fetch('/api/status');
+    const data = await res.json();
+
+    if (data.jiraConfigured) {
+      if (iconEl) iconEl.textContent = '✅';
+      if (lblEl)  lblEl.textContent  = 'Jira configured via Vercel environment variables';
+      if (subEl)  subEl.textContent  = 'Credentials are stored server-side. Browser never sees them.';
+      if (testBtn) testBtn.style.display = 'inline-block';
+      if (manualSec) manualSec.style.display = 'none';
+      if (vercelSec) vercelSec.style.display = 'block';
+    } else {
+      const saved = localStorage.getItem(JIRA_STORAGE_KEY);
+      const cfg   = saved ? JSON.parse(saved) : {};
+      if (cfg.url && cfg.email && cfg.token) {
+        if (iconEl) iconEl.textContent = '⚠️';
+        if (lblEl)  lblEl.textContent  = 'Jira configured via browser settings (less secure)';
+        if (subEl)  subEl.textContent  = 'Add Vercel env vars for production use.';
+        if (testBtn) testBtn.style.display = 'inline-block';
+      } else {
+        if (iconEl) iconEl.textContent = '❌';
+        if (lblEl)  lblEl.textContent  = 'Jira not configured';
+        if (subEl)  subEl.textContent  = 'Enter credentials below or add Vercel environment variables.';
+      }
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ITEM 3: ADO Iteration Path auto-fill from active sprint
+// ═══════════════════════════════════════════════════════════════
+async function loadCurrentSprint() {
+  const org     = document.getElementById('adoOrg')?.value.trim()     || document.getElementById('adoOrgSelect')?.value.trim() || '';
+  const project = document.getElementById('adoProject')?.value.trim() || document.getElementById('adoProjectSelect')?.value.trim() || '';
+  const statusEl = document.getElementById('sprintLoadStatus');
+  const btn      = document.getElementById('loadSprintBtn');
+
+  if (!org || !project) {
+    if (statusEl) { statusEl.style.display='inline'; statusEl.style.color='var(--error)'; statusEl.textContent='⚠️ Select org and project first'; }
+    setTimeout(() => { if(statusEl) statusEl.style.display='none'; }, 3000);
+    return;
+  }
+
+  if (btn) { btn.disabled=true; btn.textContent='⏳ Loading…'; }
+  if (statusEl) { statusEl.style.display='inline'; statusEl.style.color='var(--text2)'; statusEl.textContent='Fetching active sprint…'; }
+
+  try {
+    // ADO Teams API → get default team → get current iteration
+    const teamsUrl  = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/teams?api-version=7.1&$top=10`;
+    const teamsData = await adoRequest('GET', teamsUrl, null);
+    const teams     = teamsData.value || [];
+
+    // Find the default team (usually project name + " Team")
+    const defaultTeam = teams.find(t => t.name === project + ' Team') || teams[0];
+    if (!defaultTeam) throw new Error('No teams found in project');
+
+    const teamName = encodeURIComponent(defaultTeam.name);
+    const iterUrl  = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/${teamName}/_apis/work/teamsettings/iterations?$timeframe=current&api-version=7.1`;
+    const iterData = await adoRequest('GET', iterUrl, null);
+    const iters    = iterData.value || [];
+
+    if (!iters.length) {
+      // Fallback: get all iterations and pick the latest
+      const allIterUrl  = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/${teamName}/_apis/work/teamsettings/iterations?api-version=7.1`;
+      const allIterData = await adoRequest('GET', allIterUrl, null);
+      const allIters    = (allIterData.value || []).filter(i => i.attributes?.timeFrame !== 'past');
+      if (!allIters.length) throw new Error('No active iterations found');
+      iters.push(allIters[allIters.length-1]);
+    }
+
+    const sprint = iters[0];
+    const path   = sprint.path || `${project}\\${sprint.name}`;
+
+    // Fill both iteration path fields (ADO push modal + CSV tab)
+    ['adoIteration','csvIteration'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = path;
+    });
+
+    if (statusEl) {
+      statusEl.style.color = '#1a7a40';
+      statusEl.textContent = `✅ ${sprint.name}`;
+      if (sprint.attributes?.startDate && sprint.attributes?.finishDate) {
+        const start  = new Date(sprint.attributes.startDate).toLocaleDateString();
+        const finish = new Date(sprint.attributes.finishDate).toLocaleDateString();
+        statusEl.textContent += ` (${start} → ${finish})`;
+      }
+    }
+    showToast(`Sprint loaded: ${sprint.name} ✅`, '⚡');
+
+  } catch(e) {
+    if (statusEl) { statusEl.style.color='var(--error)'; statusEl.textContent='❌ ' + (e.message || 'Could not load sprint'); }
+    showToast('Could not load sprint: ' + e.message, '⚠️');
+  } finally {
+    if (btn) { btn.disabled=false; btn.textContent='⚡ Load Sprint'; }
+  }
+}
+
+// Auto-trigger sprint load when project is selected
+const _origOnProjectChange = onProjectSelectChange;
+function onProjectSelectChange() {
+  _origOnProjectChange();
+  // Load sprint in background after short delay
+  setTimeout(() => {
+    const project = document.getElementById('adoProject')?.value || document.getElementById('adoProjectSelect')?.value;
+    if (project) loadCurrentSprint();
+  }, 800);
+}
+
+// Load Jira settings when settings modal opens
+const _origOpenSettings = openSettings;
+function openSettings() {
+  _origOpenSettings();
+  loadJiraSettings();
+}
+</script>

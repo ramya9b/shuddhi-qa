@@ -23,6 +23,7 @@ export default function handler(req) {
 
   return new Response(JSON.stringify({
     claudeKey:  !!process.env.CLAUDE_API_KEY,
+    jiraConfigured: !!(process.env.JIRA_BASE_URL && process.env.JIRA_EMAIL && process.env.JIRA_API_TOKEN),
     adoKey:     !!process.env.ADO_PAT,
     adoOrg:     process.env.ADO_ORG     || '',   // org name if pre-configured
     adoProject: process.env.ADO_PROJECT || '',   // project name if pre-configured
