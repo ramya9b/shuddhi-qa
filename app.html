@@ -4034,6 +4034,145 @@ header::after { display: none !important; }
     transform: scale(1.05) !important;
   }
 
+
+  /* ══════════════════════════════════════════════════════════════
+     PLATFORM GROUP — screenshot style
+  ══════════════════════════════════════════════════════════════ */
+  .sb-platform-section #platformGrid {
+    display: block !important;
+    padding: 4px 0 !important;
+  }
+
+  /* Group header */
+  .pc-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background .13s;
+    user-select: none;
+    margin-bottom: 1px;
+  }
+  .pc-group-header:hover { background: var(--surface2); }
+
+  .pc-group-icon {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,.18);
+  }
+  .pc-group-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .pc-group-chevron {
+    font-size: 11px;
+    color: var(--text3);
+    transition: transform .2s;
+    display: inline-block;
+  }
+  .pc-group-header.open .pc-group-chevron { transform: rotate(0deg); }
+  .pc-group-header:not(.open) .pc-group-chevron { transform: rotate(-90deg); }
+
+  /* Group items — collapsible */
+  .pc-group-items {
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    padding: 0 0 4px 8px;
+  }
+  .pc-group-items.open { display: flex; }
+
+  /* Platform item */
+  .platform-list-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    padding: 6px 10px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all .13s !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .platform-list-item:hover {
+    background: var(--surface2) !important;
+    border-color: var(--border) !important;
+  }
+  .platform-list-item.selected {
+    background: rgba(91,95,239,.08) !important;
+    border-color: rgba(91,95,239,.2) !important;
+  }
+
+  /* Badge icon — rounded square */
+  .platform-list-item .pc-badge {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 7px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15) !important;
+    transition: transform .14s, box-shadow .14s !important;
+  }
+  .platform-list-item:hover .pc-badge {
+    transform: scale(1.07) !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.2) !important;
+  }
+  .platform-list-item.selected .pc-badge {
+    box-shadow: 0 3px 10px rgba(91,95,239,.35) !important;
+  }
+
+  /* Platform name */
+  .platform-list-item .pc-name {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: var(--text2) !important;
+    flex: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+  }
+  .platform-list-item.selected .pc-name {
+    color: var(--indigo, #5B5FEF) !important;
+    font-weight: 700 !important;
+  }
+
+  /* Check indicator */
+  .platform-list-item .pc-check {
+    font-size: 10px;
+    color: var(--indigo, #5B5FEF);
+    opacity: 0;
+    flex-shrink: 0;
+    font-weight: 800;
+    transition: opacity .13s;
+  }
+  .platform-list-item.selected .pc-check { opacity: 1; }
+
+  /* Hide sub-label */
+  .platform-list-item .pc-sub,
+  .platform-list-item .pc-text { display: none !important; }
+
+  /* Old group label override */
+  .pc-group-label { display: none !important; }
+
+  @media (max-width: 1100px) {
+    #appSidebar:not(.mobile-open) .sb-platform-section { display: none; }
+  }
+
 </style>
 </head>
 <body>
@@ -5389,43 +5528,68 @@ const GROUP_GRADIENTS = {
 // Platform groups in display order
 const PLATFORM_GROUPS = ['Microsoft', 'Salesforce', 'Enterprise ERP', 'Web / Mobile'];
 
-// ── Render platform cards — grouped by category ─────────────────
+// ── Render platform cards — collapsible groups (screenshot style) ─
 function renderPlatformCards() {
   const grid = document.getElementById('platformGrid');
   if (!grid) return;
   grid.innerHTML = '';
-
-  // Override grid with column layout
   grid.style.display = 'block';
 
-  PLATFORM_GROUPS.forEach(groupName => {
+  const GROUP_ICONS = {
+    'Microsoft':     { icon: '⊞', bg: 'linear-gradient(135deg,#0078D4,#2899F5)' },
+    'Salesforce':    { icon: '☁', bg: 'linear-gradient(135deg,#00A1E0,#0176D3)' },
+    'Enterprise ERP':{ icon: '⚡', bg: 'linear-gradient(135deg,#7B5EA7,#C74634)' },
+    'Web / Mobile':  { icon: '🌐', bg: 'linear-gradient(135deg,#1D9E75,#0891B2)' }
+  };
+
+  PLATFORM_GROUPS.forEach((groupName, gi) => {
     const groupPlatforms = PLATFORMS.filter(p => p.group === groupName);
     if (!groupPlatforms.length) return;
 
-    // Group header
-    const groupLabel = document.createElement('div');
-    groupLabel.className = 'pc-group-label';
-    groupLabel.textContent = groupName;
-    grid.appendChild(groupLabel);
-
-    // Platform items — gradient badge icon
     const grad = GROUP_GRADIENTS[groupName] || 'linear-gradient(135deg,#5B5FEF,#8B5CF6)';
+    const grpInfo = GROUP_ICONS[groupName] || { icon: '◈', bg: grad };
+    const isOpen = gi === 0; // First group expanded by default
+
+    // Group header row (collapsible)
+    const groupHeader = document.createElement('div');
+    groupHeader.className = 'pc-group-header' + (isOpen ? ' open' : '');
+    groupHeader.dataset.group = groupName;
+    groupHeader.innerHTML = `
+      <span class="pc-group-icon" style="background:${grpInfo.bg}">${grpInfo.icon}</span>
+      <span class="pc-group-name">${groupName}</span>
+      <span class="pc-group-chevron">▾</span>
+    `;
+    groupHeader.onclick = () => togglePlatformGroup(groupName);
+    grid.appendChild(groupHeader);
+
+    // Items container (collapsible)
+    const itemsWrap = document.createElement('div');
+    itemsWrap.className = 'pc-group-items' + (isOpen ? ' open' : '');
+    itemsWrap.dataset.groupItems = groupName;
+
     groupPlatforms.forEach(p => {
       const item = document.createElement('div');
       item.className = 'platform-card platform-list-item';
       item.dataset.value = p.value;
       item.innerHTML = `
         <span class="pc-badge" style="background:${grad}">${p.icon}</span>
-        <div class="pc-text">
-          <span class="pc-name">${p.label}</span>
-          <span class="pc-sub">${p.sub}</span>
-        </div>
+        <span class="pc-name">${p.label}</span>
         <span class="pc-check">✓</span>
       `;
       item.onclick = () => selectPlatform(p.value);
-      grid.appendChild(item);
+      itemsWrap.appendChild(item);
     });
+
+    grid.appendChild(itemsWrap);
   });
+}
+
+function togglePlatformGroup(groupName) {
+  const header = document.querySelector(`.pc-group-header[data-group="${groupName}"]`);
+  const items  = document.querySelector(`.pc-group-items[data-group-items="${groupName}"]`);
+  if (!header || !items) return;
+  const isOpen = items.classList.toggle('open');
+  header.classList.toggle('open', isOpen);
 }
 
 // ── Select platform ───────────────────────────────────────────────
