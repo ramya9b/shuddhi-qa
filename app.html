@@ -2905,7 +2905,7 @@ header::after { display: none !important; }
   #appSidebar {
     position: fixed;
     top: 0; left: 0; bottom: 0;
-    width: 226px;
+    width: 260px;
     background: var(--surface);
     border-right: 1px solid var(--border);
     display: flex; flex-direction: column;
@@ -2967,7 +2967,7 @@ header::after { display: none !important; }
 
   /* ── LAYOUT WITH SIDEBAR ─────────────────────────────────────── */
   #mainWrap {
-    margin-left: 226px !important;
+    margin-left: 260px !important;
     max-width: none !important;
     padding: 0 !important;
     min-height: 100vh;
@@ -3073,7 +3073,7 @@ header::after { display: none !important; }
 
   /* ── BULK ACTION BAR — mockup style ─────────────────────────── */
   #bulkActionBar {
-    left: 226px !important;
+    left: 260px !important;
     background: rgba(255,255,255,0.97) !important;
     backdrop-filter: blur(16px) !important;
     border-top: 1px solid var(--border) !important;
@@ -4309,6 +4309,78 @@ header::after { display: none !important; }
     color: var(--text) !important;
     line-height: 1.3 !important;
   }
+
+  /* ── Sidebar collapse toggle ─────────────────────────────────── */
+  .sb-collapse-btn {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text3);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+    flex-shrink: 0;
+    margin-left: auto;
+    font-family: monospace;
+  }
+  .sb-collapse-btn:hover {
+    border-color: var(--indigo, #5B5FEF);
+    color: var(--indigo, #5B5FEF);
+    background: rgba(91,95,239,.06);
+  }
+
+  /* ── Collapsed sidebar state ────────────────────────────────── */
+  #appSidebar.collapsed {
+    width: 64px !important;
+  }
+  #appSidebar.collapsed .sb-collapse-btn {
+    transform: rotate(180deg);
+    margin-left: 0;
+  }
+  #appSidebar.collapsed .sb-name,
+  #appSidebar.collapsed .sb-sub,
+  #appSidebar.collapsed .sb-group-label,
+  #appSidebar.collapsed .sb-badge,
+  #appSidebar.collapsed .sb-logo-text,
+  #appSidebar.collapsed .sb-user-info,
+  #appSidebar.collapsed .sb-platform-section { display: none !important; }
+
+  #appSidebar.collapsed .sb-logo {
+    justify-content: center;
+    padding: 0 10px;
+    gap: 0;
+  }
+  #appSidebar.collapsed .sb-logo-mark { margin: 0 auto; }
+  #appSidebar.collapsed .sb-collapse-btn {
+    position: absolute;
+    right: -12px; top: 20px;
+    z-index: 10;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  #appSidebar.collapsed .sb-item {
+    justify-content: center;
+    padding: 10px 8px;
+  }
+  #appSidebar.collapsed .sb-item span:not(.sb-icon) { display: none !important; }
+  #appSidebar.collapsed .sb-footer { padding: 8px; }
+  #appSidebar.collapsed .sb-user { justify-content: center; }
+
+  /* Animate content shift */
+  #mainWrap { transition: margin-left .25s cubic-bezier(.4,0,.2,1); }
+  #appSidebar { transition: width .25s cubic-bezier(.4,0,.2,1); }
+  #bulkActionBar { transition: left .25s cubic-bezier(.4,0,.2,1); }
+
+  /* Collapsed mainWrap offset */
+  #appSidebar.collapsed ~ * #mainWrap,
+  body.sidebar-collapsed #mainWrap { margin-left: 64px !important; }
+  body.sidebar-collapsed #bulkActionBar { left: 64px !important; }
+
 </style>
 </head>
 <body>
@@ -4321,6 +4393,7 @@ header::after { display: none !important; }
       <div class="sb-name">Shuddhi QA</div>
       <div class="sb-sub">AI Test Intelligence</div>
     </div>
+    <button class="sb-collapse-btn" id="sbCollapseBtn" onclick="toggleSidebar()" title="Collapse sidebar">◀</button>
   </div>
 
   <nav class="sb-nav">
@@ -11745,4 +11818,39 @@ function renderTGTable() {
   _origRenderTGTable();
   updateArtifactTabCounts();
 }
+</script>
+
+COLLAPSEESCRIPT
+echo "✅ Collapse JS appended"<script>
+// ── Sidebar collapse/expand ──────────────────────────────────────
+const SIDEBAR_STATE_KEY = 'shuddhi-sidebar-collapsed';
+
+function toggleSidebar() {
+  const sidebar  = document.getElementById('appSidebar');
+  const mainWrap = document.getElementById('mainWrap');
+  const bulkBar  = document.getElementById('bulkActionBar');
+  const btn      = document.getElementById('sbCollapseBtn');
+  if (!sidebar) return;
+
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+
+  if (mainWrap) mainWrap.style.marginLeft = isCollapsed ? '64px' : '260px';
+  if (bulkBar)  bulkBar.style.left        = isCollapsed ? '64px' : '260px';
+  if (btn) btn.title = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  localStorage.setItem(SIDEBAR_STATE_KEY, isCollapsed ? '1' : '0');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(SIDEBAR_STATE_KEY);
+  if (saved === '1') {
+    const sidebar  = document.getElementById('appSidebar');
+    const mainWrap = document.getElementById('mainWrap');
+    const bulkBar  = document.getElementById('bulkActionBar');
+    if (sidebar)  sidebar.classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed');
+    if (mainWrap) mainWrap.style.marginLeft = '64px';
+    if (bulkBar)  bulkBar.style.left        = '64px';
+  }
+});
 </script>
