@@ -6549,8 +6549,9 @@ function openSettings() {
   modal.style.display   = 'flex';
   overlay.style.display = 'block';
   setTimeout(() => modal.classList.add('open'), 10);
-  // Load runtime status in About tab
+  // Load runtime status + Jira settings on open
   populateAboutStatus();
+  loadJiraSettings();
   // Reset ADO connection test dropdowns
   const lbl = document.getElementById('settingsLoadOrgsLabel');
   if (lbl) lbl.textContent = '🔑 Validate PAT & Load Organisations';
@@ -6573,11 +6574,14 @@ function closeSettings() {
 }
 
 function switchSettingsTab(tab) {
-  ['claude','ado','about'].forEach(t => {
-    document.getElementById('stab-'   + t).classList.toggle('active', t === tab);
-    document.getElementById('spanel-' + t).style.display = t === tab ? 'flex' : 'none';
+  ['claude','ado','jira','about'].forEach(t => {
+    const tabBtn  = document.getElementById('stab-'   + t);
+    const tabPane = document.getElementById('spanel-' + t);
+    if (tabBtn)  tabBtn.classList.toggle('active', t === tab);
+    if (tabPane) tabPane.style.display = t === tab ? 'flex' : 'none';
   });
   if (tab === 'about') populateAboutStatus();
+  if (tab === 'jira')  { loadJiraSettings(); checkJiraSettingsStatus(); }
 }
 
 // Sync the settings API key input → main API key input
@@ -8342,15 +8346,7 @@ async function testJiraConnection() {
   }
 }
 
-// Update switchSettingsTab to handle Jira panel + load settings
-const _origSwitchTab = switchSettingsTab;
-function switchSettingsTab(tab) {
-  _origSwitchTab(tab);
-  if (tab === 'jira') {
-    loadJiraSettings();
-    checkJiraSettingsStatus();
-  }
-}
+// switchSettingsTab extended inline — see fixed function below
 
 async function checkJiraSettingsStatus() {
   const iconEl = document.getElementById('jiraStatusIcon');
@@ -8469,10 +8465,5 @@ function onProjectSelectChange() {
   }, 800);
 }
 
-// Load Jira settings when settings modal opens
-const _origOpenSettings = openSettings;
-function openSettings() {
-  _origOpenSettings();
-  loadJiraSettings();
-}
+// openSettings extended inline — see fixed function below
 </script>
