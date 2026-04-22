@@ -3,8 +3,10 @@
  * Stores ADO_PAT as a Vercel environment variable.
  *
  * Allowed domains:
- *   dev.azure.com   — Projects, Test Plans, Work Items, Teams, Members
- *   vsrm.visualstudio.com — Release Management
+ *   dev.azure.com              — Projects, Test Plans, Work Items, Teams, Members
+ *   vsrm.visualstudio.com      — Release Management
+ *   app.vssps.visualstudio.com — User identity, organisation list (memberId / accounts)
+ *   vssps.visualstudio.com     — Alternate identity endpoint
  */
 export default async function handler(req, res) {
   const origin  = req.headers.origin || '';
@@ -27,9 +29,14 @@ export default async function handler(req, res) {
   // Defensive normalisation: empty method with body = POST, empty method without body = GET
   const method = rawMethod || (body !== null && body !== undefined ? 'POST' : 'GET');
 
-  const ALLOWED = ['https://dev.azure.com/', 'https://vsrm.visualstudio.com/'];
+  const ALLOWED = [
+    'https://dev.azure.com/',
+    'https://vsrm.visualstudio.com/',
+    'https://app.vssps.visualstudio.com/',
+    'https://vssps.visualstudio.com/',
+  ];
   if (!url || !ALLOWED.some(d => url.startsWith(d))) {
-    return res.status(403).json({ error: 'URL not permitted. Only dev.azure.com is allowed.' });
+    return res.status(403).json({ error: 'URL not permitted. Allowed: dev.azure.com, vssps.visualstudio.com' });
   }
 
   const isWorkItemCreate = method === 'POST' && url.includes('/wit/workitems');
