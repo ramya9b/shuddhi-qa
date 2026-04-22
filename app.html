@@ -4312,23 +4312,26 @@ header::after { display: none !important; }
 
   /* ── Sidebar collapse toggle ─────────────────────────────────── */
   .sb-collapse-btn {
-    width: 24px; height: 24px;
-    border-radius: 6px;
-    border: 1px solid var(--border2);
-    background: var(--surface2);
-    color: var(--text3);
-    font-size: 10px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--text2);
+    font-size: 12px;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: all .15s;
+    transition: all .18s;
     flex-shrink: 0;
     margin-left: auto;
     font-family: monospace;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
   }
   .sb-collapse-btn:hover {
     border-color: var(--indigo, #5B5FEF);
     color: var(--indigo, #5B5FEF);
     background: rgba(91,95,239,.06);
+    box-shadow: 0 2px 8px rgba(91,95,239,.15);
+    transform: scale(1.05);
   }
 
   /* ── Collapsed sidebar state ────────────────────────────────── */
@@ -4355,13 +4358,23 @@ header::after { display: none !important; }
   #appSidebar.collapsed .sb-logo-mark { margin: 0 auto; }
   #appSidebar.collapsed .sb-collapse-btn {
     position: absolute;
-    right: -12px; top: 20px;
-    z-index: 10;
+    right: -14px; top: 18px;
+    z-index: 100;
     background: var(--surface);
-    border: 1px solid var(--border2);
+    border: 1.5px solid var(--indigo, #5B5FEF);
     border-radius: 50%;
-    width: 24px; height: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    width: 28px; height: 28px;
+    box-shadow: 0 2px 10px rgba(91,95,239,.25);
+    color: var(--indigo, #5B5FEF);
+    font-size: 13px;
+    transform: rotate(180deg);
+    margin-left: 0;
+  }
+  #appSidebar.collapsed .sb-collapse-btn:hover {
+    background: var(--indigo, #5B5FEF);
+    color: #fff;
+    box-shadow: 0 3px 14px rgba(91,95,239,.4);
+    transform: rotate(180deg) scale(1.1);
   }
   #appSidebar.collapsed .sb-item {
     justify-content: center;
@@ -4592,6 +4605,47 @@ header::after { display: none !important; }
     font-size: 11px; font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
   }
+  /* ── Sidebar collapse strip (bottom, always visible) ────────── */
+  .sb-collapse-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border-top: 1px solid var(--border);
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+    background: var(--surface);
+    color: var(--text3);
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    user-select: none;
+  }
+  .sb-collapse-strip:hover {
+    background: var(--surface2);
+    color: var(--indigo, #5B5FEF);
+  }
+  .sb-collapse-strip-icon {
+    font-size: 11px;
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+    flex-shrink: 0;
+    color: var(--indigo, #5B5FEF);
+    font-weight: 700;
+  }
+  .sb-collapse-strip-label {
+    font-size: 12px;
+    transition: opacity .2s;
+  }
+
+  /* Collapsed state: hide label, center icon, flip arrow */
+  #appSidebar.collapsed .sb-collapse-strip {
+    justify-content: center;
+    padding: 11px 8px;
+  }
+  #appSidebar.collapsed .sb-collapse-strip-label { display: none; }
+  #appSidebar.collapsed .sb-collapse-strip-icon  { transform: rotate(180deg); }
+  #appSidebar.collapsed .sb-collapse-strip:hover { color: var(--indigo, #5B5FEF); }
 </style>
 </head>
 <body>
@@ -4692,7 +4746,11 @@ header::after { display: none !important; }
     </div>
   </nav>
 
-  <div class="sb-footer"></div>
+  <!-- Collapse toggle strip at bottom — always visible -->
+  <div class="sb-collapse-strip" onclick="toggleSidebar()" title="Toggle sidebar">
+    <span class="sb-collapse-strip-icon" id="sbStripIcon">◀</span>
+    <span class="sb-collapse-strip-label">Collapse</span>
+  </div>
 </aside>
 <div id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
 <div class="wrap" id="mainWrap">
@@ -5694,19 +5752,33 @@ header::after { display: none !important; }
           </div>
         </div>
 
-        <!-- Validate PAT button -->
-        <button id="adoValidateBtn" onclick="validateADOPAT()"
-          style="width:100%;padding:11px;border-radius:9px;border:none;
-                 background:linear-gradient(135deg,#0078D4,#006CC1);color:#fff;
-                 font-size:13.5px;font-weight:700;cursor:pointer;display:flex;
-                 align-items:center;justify-content:center;gap:8px;
-                 font-family:'Plus Jakarta Sans',sans-serif;transition:opacity .15s;margin-bottom:16px">
-          <div class="spinner" id="adoValidateSpinner"></div>
-          <span id="adoValidateLabel">🔑 Validate PAT &amp; Load Organisations</span>
-        </button>
+        <!-- Validate button removed — enter org name directly -->
 
         <!-- Org + Project selectors (revealed after PAT validated) -->
         <div id="adoOrgProjectRow" style="display:block">
+          <!-- Organisation — manual text input -->
+          <div class="ado-field" style="margin-bottom:12px">
+            <label>Organisation Name</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="adoOrgTextInput" placeholder="e.g. RSATwithAzure" autocomplete="off"
+                style="flex:1;background:var(--surface);border:1.5px solid var(--border2);
+                       border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;
+                       outline:none;transition:border-color .15s;font-family:'Plus Jakarta Sans',sans-serif"
+                onfocus="this.style.borderColor='var(--d365)'"
+                onblur="this.style.borderColor='var(--border2)'"
+                oninput="document.getElementById('adoOrgHintText').textContent=this.value||'{org}';document.getElementById('adoOrg').value=this.value.trim()"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();loadProjectsFromInput()}"/>
+              <button onclick="loadProjectsFromInput()" id="adoLoadProjBtn2"
+                style="white-space:nowrap;flex-shrink:0;padding:9px 16px;border-radius:8px;
+                       border:1.5px solid var(--d365);background:var(--d365-dim);color:var(--d365);
+                       font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+                <span id="adoLoadProjLabel2">Load Projects →</span>
+              </button>
+            </div>
+            <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
+              https://dev.azure.com/<strong id="adoOrgHintText">{org}</strong>
+            </span>
+          </div>
 
           <!-- Organisation dropdown -->
           <div class="ado-field">
@@ -8475,17 +8547,23 @@ async function initADOModal() {
       if (adoKey) {
         document.getElementById('adoPatManualRow').style.display = 'none';
         document.getElementById('adoPatEnvRow').style.display    = 'flex';
-        // PAT in env confirmed — user can click Validate to load orgs
+      }
+      // Pre-fill org from saved default if not set by env
+      const savedOrg = window.__adoDefaultOrg || localStorage.getItem('shuddhi-ado-default-org') || '';
+      if (!adoOrg && savedOrg) {
+        const orgTxt = document.getElementById('adoOrgTextInput');
+        if (orgTxt && !orgTxt.value) orgTxt.value = savedOrg;
+        document.getElementById('adoOrg').value = savedOrg;
+        const hint = document.getElementById('adoOrgHintText');
+        if (hint) hint.textContent = savedOrg;
       }
       if (adoOrg) {
-        // Org pre-configured — fill input + show project section
-        document.getElementById('adoOrgProjectRow').style.display = 'block';
-        const orgInput = document.getElementById('adoOrgSelect');
-        if (orgInput) orgInput.value = adoOrg;
+        // Pre-fill org text input from env/saved default
+        const orgTxt = document.getElementById('adoOrgTextInput');
+        if (orgTxt) orgTxt.value = adoOrg;
         document.getElementById('adoOrg').value = adoOrg;
         const hint = document.getElementById('adoOrgHintText');
         if (hint) hint.textContent = adoOrg;
-        document.getElementById('adoValidateLabel').textContent = `✅ Org: ${adoOrg}`;
 
         // Projects may already be loaded — check if adoProjectSelect has options
         const sel = document.getElementById('adoProjectSelect');
@@ -9193,17 +9271,10 @@ function openSettings() {
   populateAboutStatus();
   loadJiraSettings();
   // Reset ADO connection test dropdowns
-  const lbl = document.getElementById('settingsLoadOrgsLabel');
-  if (lbl) lbl.textContent = '🔑 Validate PAT & Load Organisations';
-  ['settingsAdoOrgRow','settingsAdoProjectRow','settingsAdoTestRow'].forEach(id => {
+  ['settingsAdoProjectRow','settingsAdoTestRow'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
   });
-  // Auto-trigger org loading whenever ADO tab is open (PAT is in env)
-  if (window.__adoKey || document.getElementById('adoPatEnvRow')?.style.display !== 'none') {
-    setTimeout(() => settingsValidateAndLoadOrgs(), 300);
-  } else if (window.__adoOrg) {
-    setTimeout(() => settingsValidateAndLoadOrgs(), 300);
-  }
+  document.getElementById('settingsAdoOrgRow').style.display = 'block';
   const r = document.getElementById('adoTestResult');
   if (r) r.style.display = 'none';
 }
@@ -10229,6 +10300,91 @@ function saveADODefaults() {
     if (project) window.__adoDefaultProject = project;
   } catch(e) {}
 })();
+
+
+// ── Load projects from manually entered org name ─────────────────
+async function loadProjectsFromInput() {
+  const input   = document.getElementById('adoOrgTextInput');
+  const org     = (input?.value || '').trim();
+  const lbl     = document.getElementById('adoLoadProjLabel2');
+  const btn     = document.getElementById('adoLoadProjBtn2');
+  const projRow = document.getElementById('adoProjectFieldRow');
+  const loadRow = document.getElementById('adoLoadPlansRow');
+  const errEl   = document.getElementById('adoConnectError');
+  const badge   = document.getElementById('adoProjectLoadingBadge');
+
+  if (!org) {
+    if (input) { input.style.borderColor = 'var(--error)'; input.focus(); }
+    if (errEl) { errEl.textContent = '⚠️ Please enter your organisation name first.'; errEl.style.display = ''; }
+    return;
+  }
+
+  // Validate org name format (alphanumeric, hyphens, spaces)
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9\s\-_.]{0,62}$/.test(org)) {
+    if (errEl) { errEl.textContent = '⚠️ Invalid organisation name. Use only letters, numbers, hyphens and underscores.'; errEl.style.display = ''; }
+    return;
+  }
+
+  document.getElementById('adoOrg').value = org;
+  if (errEl) errEl.style.display = 'none';
+  if (lbl)   lbl.textContent = 'Loading…';
+  if (btn)   btn.disabled = true;
+  if (badge) badge.style.display = 'inline';
+  projRow.style.display = 'block';
+
+  const projSel = document.getElementById('adoProjectSelect');
+  projSel.innerHTML = '<option value="">Loading projects…</option>';
+  projSel.disabled  = true;
+  loadRow.style.display = 'none';
+
+  try {
+    const url  = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
+    const data = await adoRequest('GET', url, null);
+    const projects = (data.value || []).sort((a,b) => a.name.localeCompare(b.name));
+
+    projSel.disabled  = false;
+    projSel.innerHTML = '<option value="">— Select Project —</option>';
+    projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name; opt.textContent = p.name;
+      projSel.appendChild(opt);
+    });
+
+    if (badge) badge.style.display = 'none';
+    if (lbl)   lbl.textContent = '✓ Loaded';
+    if (btn)   btn.disabled = false;
+
+    if (!projects.length) {
+      projSel.innerHTML = '<option value="">No projects found</option>';
+      if (errEl) { errEl.textContent = `No projects found in "${org}". Check the organisation name.`; errEl.style.display = ''; }
+      return;
+    }
+
+    showToast(`${projects.length} project${projects.length!==1?'s':''} found in ${org}`, '🔷');
+
+    if (projects.length === 1) {
+      projSel.value = projects[0].name;
+      projSel.dispatchEvent(new Event('change'));
+    }
+
+  } catch(e) {
+    if (badge) badge.style.display = 'none';
+    if (lbl)   lbl.textContent = 'Load Projects →';
+    if (btn)   btn.disabled = false;
+    projSel.disabled  = false;
+    projSel.innerHTML = '<option value="">— Failed to load —</option>';
+
+    let msg = e.message;
+    if (msg.includes('401') || msg.includes('403'))
+      msg = `❌ Access denied for "${org}" — check your PAT has "Project and Team: Read" scope`;
+    else if (msg.includes('404'))
+      msg = `❌ Organisation "${org}" not found — check the spelling`;
+    else if (msg.includes('ADO_PAT'))
+      msg = '⚠️ ADO_PAT not configured in Vercel — add it in Project Settings → Environment Variables';
+
+    if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
+  }
+}
 
 </body>
 </html>
@@ -12545,6 +12701,12 @@ function toggleSidebar() {
   if (mainWrap) mainWrap.style.marginLeft = isCollapsed ? '64px' : '260px';
   if (bulkBar)  bulkBar.style.left        = isCollapsed ? '64px' : '260px';
   if (btn) btn.title = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  const stripLbl = document.getElementById('sbStripIcon');
+  if (stripLbl) {
+    stripLbl.closest('.sb-collapse-strip').querySelector('.sb-collapse-strip-label') &&
+    (stripLbl.closest('.sb-collapse-strip').querySelector('.sb-collapse-strip-label').textContent 
+      = isCollapsed ? 'Expand' : 'Collapse');
+  }
   localStorage.setItem(SIDEBAR_STATE_KEY, isCollapsed ? '1' : '0');
 }
 
@@ -12558,6 +12720,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('sidebar-collapsed');
     if (mainWrap) mainWrap.style.marginLeft = '64px';
     if (bulkBar)  bulkBar.style.left        = '64px';
+    // Update strip label
+    const lbl = document.querySelector('.sb-collapse-strip-label');
+    if (lbl) lbl.textContent = 'Expand';
   }
 });
 </script>
