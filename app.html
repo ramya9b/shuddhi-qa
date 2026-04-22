@@ -4479,6 +4479,119 @@ header::after { display: none !important; }
     .tg-section-title { font-size: 12.5px; }
   }
 
+  /* ── Requirement Gaps tab ───────────────────────────────────── */
+  .atab-gaps-style {
+    position: relative;
+  }
+  .atab-gaps-style:hover {
+    color: #B45309 !important;
+    background: rgba(245,158,11,.06) !important;
+  }
+  .atab-gaps-style.active {
+    color: #92400E !important;
+    border-bottom-color: #F59E0B !important;
+    background: rgba(245,158,11,.08) !important;
+    font-weight: 700 !important;
+  }
+  .atab-gaps-style .atab-count {
+    background: rgba(245,158,11,.15) !important;
+    color: #92400E !important;
+  }
+  .atab-gaps-style.active .atab-count {
+    background: #F59E0B !important;
+    color: #fff !important;
+  }
+  /* Pulse glow when gaps exist and tab not active */
+  .atab-gaps-style.has-gaps:not(.active)::after {
+    content: '';
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #EF4444;
+    animation: gapPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes gapPulse {
+    0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(239,68,68,.4); }
+    50%      { opacity:.8; transform:scale(1.1); box-shadow:0 0 0 5px rgba(239,68,68,0); }
+  }
+
+  /* Gap cards inside the gaps panel */
+  .gaps-panel { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .gap-card {
+    border-radius: 10px;
+    border: 1px solid rgba(245,158,11,.3);
+    background: linear-gradient(135deg, rgba(245,158,11,.04) 0%, rgba(239,68,68,.03) 100%);
+    overflow: hidden;
+    transition: box-shadow .15s;
+  }
+  .gap-card:hover { box-shadow: 0 2px 12px rgba(245,158,11,.12); }
+  .gap-card-hdr {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .gap-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .gap-icon.missing    { background: rgba(239,68,68,.12); }
+  .gap-icon.ambiguous  { background: rgba(245,158,11,.12); }
+  .gap-icon.risk       { background: rgba(139,92,246,.12); }
+  .gap-icon.assumption { background: rgba(8,145,178,.1); }
+  .gap-icon.question   { background: rgba(16,185,129,.1); }
+  .gap-content { flex: 1; min-width: 0; }
+  .gap-type {
+    font-size: 9.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .6px;
+    margin-bottom: 3px; display: block;
+  }
+  .gap-type.missing    { color: #B91C1C; }
+  .gap-type.ambiguous  { color: #92400E; }
+  .gap-type.risk       { color: #5B21B6; }
+  .gap-type.assumption { color: #0E7490; }
+  .gap-type.question   { color: #065F46; }
+  .gap-desc {
+    font-size: 13px; color: var(--text); line-height: 1.5;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .gap-suggestion {
+    margin: 8px 16px 12px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: rgba(91,95,239,.05);
+    border: 1px solid rgba(91,95,239,.12);
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .gap-suggestion-lbl {
+    font-size: 10px; font-weight: 700; color: var(--indigo, #5B5FEF);
+    text-transform: uppercase; letter-spacing: .5px;
+    display: block; margin-bottom: 4px;
+  }
+  .gaps-empty {
+    text-align: center; padding: 40px 20px;
+    color: var(--text3); font-size: 13px;
+  }
+  .gaps-summary-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    background: rgba(245,158,11,.06);
+    border-bottom: 1px solid rgba(245,158,11,.2);
+    font-size: 12.5px; color: #92400E; font-weight: 600;
+  }
+  .gaps-summary-bar .gap-stat {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
 </style>
 </head>
 <body>
@@ -5280,6 +5393,15 @@ header::after { display: none !important; }
 
       <!-- ── Section Tabs — Rich UI ───────────────────────── -->
       <div class="artifact-tabs" id="artifactTabs">
+
+        <!-- Requirement Gaps tab — shown only when gaps detected -->
+        <button class="artifact-tab atab-gaps-style" id="atab-gaps"
+          onclick="switchArtifactTab('gaps',this)"
+          style="display:none">
+          <span class="atab-icon">⚠</span>
+          <span class="atab-label">Requirement Gaps</span>
+          <span class="atab-count" id="atab-count-gaps"></span>
+        </button>
 
         <button class="artifact-tab active" id="atab-all" onclick="switchArtifactTab('all',this)">
           <span class="atab-icon">⊞</span>
@@ -9844,6 +9966,153 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// REQUIREMENT GAPS — Parse Section 0 from rawMarkdown
+// ═══════════════════════════════════════════════════════════════
+
+let tgGaps = []; // [{type, icon, typeClass, desc, suggestion}]
+
+const GAP_TYPE_MAP = [
+  { keys:['missing','not specified','unspecified','not covered','absent','no mention','lacks','undefined'],
+    type:'missing', label:'Missing Requirement', icon:'⛔', cls:'missing' },
+  { keys:['ambiguous','unclear','vague','open to','interpretation','not clear','undefined behavior','multiple'],
+    type:'ambiguous', label:'Ambiguous Requirement', icon:'⚠️', cls:'ambiguous' },
+  { keys:['risk','technical risk','ux risk','performance','security','scalability','concern','impact'],
+    type:'risk', label:'Risk Identified', icon:'🔺', cls:'risk' },
+  { keys:['assumption','assumed','assuming','presume','takes for granted'],
+    type:'assumption', label:'Assumption Made', icon:'💡', cls:'assumption' },
+  { keys:['question','clarif','ask','what if','should','consider','need to know','please confirm'],
+    type:'question', label:'Clarifying Question', icon:'❓', cls:'question' },
+];
+
+function detectGapType(text) {
+  const t = text.toLowerCase();
+  for (const g of GAP_TYPE_MAP) {
+    if (g.keys.some(k => t.includes(k))) return g;
+  }
+  return { type:'missing', label:'Gap Identified', icon:'⚠', cls:'missing' };
+}
+
+function parseRequirementGaps() {
+  tgGaps = [];
+  if (!rawMarkdown) return;
+
+  const lines = rawMarkdown.split('\n');
+  let inGapSection = false;
+  let gapBuffer = '';
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Detect Section 0 start
+    if (/^#{1,3}\s*0\.?\s*requirement gap/i.test(trimmed)) {
+      inGapSection = true;
+      continue;
+    }
+    // Stop at next section
+    if (inGapSection && /^#{1,3}\s*[1-9]/.test(trimmed)) {
+      if (gapBuffer) { processGapBuffer(gapBuffer); gapBuffer = ''; }
+      break;
+    }
+
+    if (!inGapSection) continue;
+
+    // Bullet item = new gap
+    if (trimmed.match(/^[-*•]\s+/) || trimmed.match(/^\d+\.\s+/)) {
+      if (gapBuffer) processGapBuffer(gapBuffer);
+      gapBuffer = trimmed.replace(/^[-*•]\s+|^\d+\.\s+/, '').replace(/\*\*/g,'').trim();
+    } else if (gapBuffer && trimmed) {
+      gapBuffer += ' ' + trimmed.replace(/\*\*/g,'').trim();
+    }
+  }
+  if (gapBuffer) processGapBuffer(gapBuffer);
+}
+
+function processGapBuffer(text) {
+  if (!text || text.length < 10) return;
+
+  // Split "Gap description: Suggested action" if colon present
+  const colonIdx = text.indexOf(':');
+  let desc = text, suggestion = '';
+  if (colonIdx > 10 && colonIdx < text.length - 5) {
+    desc       = text.substring(0, colonIdx).trim();
+    suggestion = text.substring(colonIdx + 1).trim();
+  }
+
+  // Also look for "→" or "Suggestion:" patterns
+  const arrowIdx = text.indexOf('→');
+  if (arrowIdx > 10) {
+    desc       = text.substring(0, arrowIdx).trim();
+    suggestion = text.substring(arrowIdx + 1).trim();
+  }
+
+  const gType = detectGapType(desc + ' ' + suggestion);
+  tgGaps.push({ type: gType.type, label: gType.label, icon: gType.icon, cls: gType.cls, desc, suggestion });
+}
+
+function renderGapsPanel() {
+  const wrap = document.getElementById('tgSectionsWrap');
+  if (!wrap) return;
+
+  if (!tgGaps.length) {
+    wrap.innerHTML = '<div class="gaps-empty">✅ No requirement gaps detected for this feature.</div>';
+    return;
+  }
+
+  const counts = { missing:0, ambiguous:0, risk:0, assumption:0, question:0 };
+  tgGaps.forEach(g => { if (counts[g.type] !== undefined) counts[g.type]++; });
+
+  const summaryBars = [
+    counts.missing    ? '<span class="gap-stat" style="background:rgba(239,68,68,.1);color:#B91C1C">⛔ ' + counts.missing    + ' Missing</span>'    : '',
+    counts.ambiguous  ? '<span class="gap-stat" style="background:rgba(245,158,11,.1);color:#92400E">⚠️ ' + counts.ambiguous  + ' Ambiguous</span>'  : '',
+    counts.risk       ? '<span class="gap-stat" style="background:rgba(139,92,246,.1);color:#5B21B6">🔺 ' + counts.risk       + ' Risks</span>'       : '',
+    counts.assumption ? '<span class="gap-stat" style="background:rgba(8,145,178,.1);color:#0E7490">💡 ' + counts.assumption + ' Assumptions</span>' : '',
+    counts.question   ? '<span class="gap-stat" style="background:rgba(16,185,129,.1);color:#065F46">❓ ' + counts.question   + ' Questions</span>'  : '',
+  ].filter(Boolean).join('');
+
+  const cardsHTML = tgGaps.map((g, i) => `
+    <div class="gap-card">
+      <div class="gap-card-hdr">
+        <div class="gap-icon ${g.cls}">${g.icon}</div>
+        <div class="gap-content">
+          <span class="gap-type ${g.cls}">${g.label}</span>
+          <div class="gap-desc">${g.desc}</div>
+        </div>
+      </div>
+      ${g.suggestion ? `<div class="gap-suggestion">
+        <span class="gap-suggestion-lbl">💬 Suggested Action</span>
+        ${g.suggestion}
+      </div>` : ''}
+    </div>
+  `).join('');
+
+  wrap.innerHTML = `
+    <div class="gaps-summary-bar">
+      ⚠️ ${tgGaps.length} requirement gap${tgGaps.length!==1?'s':''} detected
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:4px">${summaryBars}</div>
+    </div>
+    <div class="gaps-panel">${cardsHTML}</div>
+  `;
+}
+
+// Show/hide gaps tab based on content
+function updateGapsTab() {
+  const tab = document.getElementById('atab-gaps');
+  const countEl = document.getElementById('atab-count-gaps');
+  if (!tab) return;
+  if (tgGaps.length > 0) {
+    tab.style.display = 'inline-flex';
+    tab.classList.add('has-gaps');
+    if (countEl) { countEl.textContent = tgGaps.length; countEl.classList.add('has-count'); }
+  } else {
+    tab.style.display = 'none';
+    tab.classList.remove('has-gaps');
+  }
+}
+</script>
+
 </body>
 </html>
 <script>
@@ -11522,6 +11791,10 @@ function renderTestGenView() {
     });
   }
 
+  // Parse requirement gaps from Section 0
+  parseRequirementGaps();
+  updateGapsTab();
+
   if (tgAllTCs.length === 0) return; // nothing to render as TestGen style
 
   // Build stat summary cards data
@@ -12043,6 +12316,14 @@ function switchArtifactTab(tabKey, btn) {
 
   const el = document.getElementById('outputContent');
   if (!el) return;
+
+  // Handle gaps tab — render gap cards instead of TC table
+  if (tabKey === 'gaps') {
+    renderGapsPanel();
+    return;
+  }
+  // Switch back to TC table when leaving gaps tab
+  if (document.getElementById('tgSectionsWrap')) renderTGTable();
 
   // If TestGen view is active — filter tgAllTCs
   if (typeof tgAllTCs !== 'undefined' && tgAllTCs.length > 0) {
