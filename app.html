@@ -5635,11 +5635,13 @@ header::after { display: none !important; }
 
       <!-- ── STEP 1: Connect ── -->
       <div class="ado-step-panel visible" id="adoPanel1">
+
         <div class="ado-tip">
-          <strong>🏗 What this does:</strong> Validates your PAT, loads your organisations, then lets you pick a project to push test cases into.
+          <strong>🏗 What this does:</strong> Validates your PAT, auto-fetches all accessible
+          organisations, then lets you pick a project to push test cases into.
         </div>
 
-        <!-- PAT status (env var or manual) -->
+        <!-- PAT secured via env var badge -->
         <div id="adoPatEnvRow" style="display:none;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
                       background:rgba(0,135,90,.05);border:1px solid rgba(0,135,90,.2);border-radius:8px">
@@ -5653,72 +5655,103 @@ header::after { display: none !important; }
           </div>
         </div>
 
+        <!-- Manual PAT input (shown when not in env) -->
         <div id="adoPatManualRow" style="margin-bottom:14px">
           <div class="ado-field" style="margin:0">
             <label>Personal Access Token</label>
-            <input type="password" id="adoPatInput" placeholder="Paste your ADO PAT here..." autocomplete="off"
-              style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
-            <span class="ado-hint">Scopes needed: <strong>Test Management: Read &amp; Write</strong> · <strong>Work Items: Read &amp; Write</strong> · <strong>Project and Team: Read</strong></span>
+            <input type="password" id="adoPatInput" placeholder="Paste your ADO PAT here..."
+              autocomplete="off" style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
+            <span class="ado-hint">Scopes needed:
+              <strong>Test Management: Read &amp; Write</strong> ·
+              <strong>Work Items: Read &amp; Write</strong> ·
+              <strong>Project and Team: Read</strong>
+            </span>
           </div>
         </div>
 
-        <!-- Organisation input -->
-        <div class="ado-fields">
+        <!-- Validate PAT button -->
+        <button id="adoValidateBtn" onclick="validateADOPAT()"
+          style="width:100%;padding:11px;border-radius:9px;border:none;
+                 background:linear-gradient(135deg,#0078D4,#006CC1);color:#fff;
+                 font-size:13.5px;font-weight:700;cursor:pointer;display:flex;
+                 align-items:center;justify-content:center;gap:8px;
+                 font-family:'Plus Jakarta Sans',sans-serif;transition:opacity .15s;margin-bottom:16px">
+          <div class="spinner" id="adoValidateSpinner"></div>
+          <span id="adoValidateLabel">🔑 Validate PAT &amp; Load Organisations</span>
+        </button>
+
+        <!-- Org + Project selectors (revealed after PAT validated) -->
+        <div id="adoOrgProjectRow" style="display:none">
+
+          <!-- Organisation dropdown -->
           <div class="ado-field">
-            <label>Organisation Name</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="text" id="adoOrgSelect" placeholder="e.g. AlphaVarianceSolutions" autocomplete="off"
-                style="flex:1;background:var(--surface);border:1.5px solid var(--border2);
-                       border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;
-                       transition:border-color .15s"
-                onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
-                oninput="document.getElementById('adoOrgHintText').textContent=this.value||'{org}'"
-                onkeydown="if(event.key==='Enter')onOrgSelectChange()"/>
-              <button onclick="onOrgSelectChange()" id="adoLoadProjBtn"
-                style="white-space:nowrap;flex-shrink:0;padding:9px 16px;border-radius:8px;
-                       border:1.5px solid var(--d365);background:var(--d365-dim);color:var(--d365);
-                       font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s">
-                <span id="adoLoadProjLabel">Load Projects →</span>
-              </button>
+            <label style="display:flex;align-items:center;justify-content:space-between">
+              <span>Organisation</span>
+              <span id="adoOrgLoadingBadge"
+                style="display:none;font-size:10px;color:var(--text3);
+                       font-family:'JetBrains Mono',monospace">Loading…</span>
+            </label>
+            <div style="position:relative">
+              <select id="adoOrgSelect"
+                onchange="onOrgSelectChange()"
+                style="width:100%;background:var(--surface);border:1.5px solid var(--border2);
+                       border-radius:8px;padding:9px 36px 9px 12px;color:var(--text);
+                       font-size:13px;cursor:pointer;outline:none;
+                       -webkit-appearance:none;appearance:none;
+                       background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22/%3E%3C/svg%3E');
+                       background-repeat:no-repeat;background-position:right 12px center;
+                       transition:border-color .15s">
+                <option value="">— Select Organisation —</option>
+              </select>
             </div>
-            <span class="ado-hint">https://dev.azure.com/<strong id="adoOrgHintText">{org}</strong></span>
+            <span class="ado-hint">
+              URL: https://dev.azure.com/<strong id="adoOrgHintText">{org}</strong>
+            </span>
           </div>
 
-          <!-- Project dropdown -->
+          <!-- Project dropdown (shown after org selected) -->
           <div class="ado-field" id="adoProjectFieldRow" style="display:none">
             <label style="display:flex;align-items:center;gap:8px">
               Project
-              <span id="adoProjectLoadingBadge" style="display:none;font-size:10px;
-                    color:var(--text3);font-family:'JetBrains Mono',monospace">Loading…</span>
+              <span id="adoProjectLoadingBadge"
+                style="display:none;font-size:10px;color:var(--text3);
+                       font-family:'JetBrains Mono',monospace">Loading projects…</span>
             </label>
             <select id="adoProjectSelect" onchange="onProjectSelectChange()"
-              style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
-                     padding:9px 12px;color:var(--text);font-size:13px;width:100%;cursor:pointer;
-                     outline:none;-webkit-appearance:none;appearance:none;
+              style="width:100%;background:var(--surface);border:1.5px solid var(--border2);
+                     border-radius:8px;padding:9px 36px 9px 12px;color:var(--text);
+                     font-size:13px;cursor:pointer;outline:none;
+                     -webkit-appearance:none;appearance:none;
                      background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22/%3E%3C/svg%3E');
-                     background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+                     background-repeat:no-repeat;background-position:right 12px center;
+                     transition:border-color .15s">
               <option value="">— Select Project —</option>
             </select>
           </div>
-        </div>
 
-        <!-- Load Test Plans button -->
-        <div id="adoLoadPlansRow" style="display:none;margin-top:14px">
-          <button class="ado-push-btn" id="adoLoadPlansBtn" onclick="loadADOTestPlans()">
-            <div class="spinner" id="adoLoadSpinner"></div>
-            <span id="adoLoadLabel">🔗 Load Test Plans</span>
-          </button>
-        </div>
+          <!-- Load Test Plans button -->
+          <div id="adoLoadPlansRow" style="display:none;margin-top:14px">
+            <button class="ado-push-btn" id="adoLoadPlansBtn" onclick="loadADOTestPlans()">
+              <div class="spinner" id="adoLoadSpinner"></div>
+              <span id="adoLoadLabel">🔗 Load Test Plans &amp; Continue</span>
+            </button>
+          </div>
 
-        <!-- Hidden inputs + error -->
+        </div><!-- /adoOrgProjectRow -->
+
+        <!-- Hidden values + error display -->
         <input type="hidden" id="adoOrg"/>
         <input type="hidden" id="adoProject"/>
         <div id="adoPatStatus" style="display:none"></div>
-        <div id="adoConnectError" style="display:none;margin-top:12px;padding:10px 14px;
-             background:rgba(220,60,60,.08);border:1px solid rgba(220,60,60,.25);
-             border-radius:8px;font-size:12.5px;color:var(--error)"></div>
+        <div id="adoConnectError"
+          style="display:none;margin-top:12px;padding:10px 14px;
+                 background:rgba(220,60,60,.08);border:1px solid rgba(220,60,60,.25);
+                 border-radius:8px;font-size:12.5px;color:var(--error);line-height:1.5">
+        </div>
+
       </div>
 
+      <!-- ── STEP 2: Configure ── -->
       <!-- ── STEP 2: Configure ── -->
       <div class="ado-step-panel" id="adoPanel2">
         <div class="ado-fields">
@@ -8451,11 +8484,14 @@ async function initADOModal() {
   } catch(e) { /* offline */ }
 }
 
+// Alias so button onclick works
+function validateADOPAT() { return validateAndLoadOrgs(); }
+
 // Step 1a: Validate PAT using connectionData (works with any valid PAT, no extra scope)
 // Then load organisations the user belongs to
 async function validateAndLoadOrgs() {
   const errEl = document.getElementById('adoConnectError');
-  const btn   = document.getElementById('adoValidatePatBtn');
+  const btn   = document.getElementById('adoValidateBtn') || document.getElementById('adoValidatePatBtn');
   const lbl   = document.getElementById('adoValidateLabel');
   const spin  = document.getElementById('adoValidateSpinner');
   if (errEl) errEl.style.display = 'none';
@@ -8531,53 +8567,69 @@ async function validateAndLoadOrgs() {
 
 // Step 1b: Org entered → load projects
 async function onOrgSelectChange() {
-  const orgInput = document.getElementById('adoOrgSelect');
-  const org      = (orgInput.value || orgInput.textContent || '').trim();
+  const orgSel  = document.getElementById('adoOrgSelect');
+  const org     = orgSel?.value?.trim() || '';
   const hintEl  = document.getElementById('adoOrgHintText');
   const projRow = document.getElementById('adoProjectFieldRow');
   const loadRow = document.getElementById('adoLoadPlansRow');
   const errEl   = document.getElementById('adoConnectError');
   const badge   = document.getElementById('adoProjectLoadingBadge');
 
-  // Update hidden input + hint
+  // Update hidden input + hint URL
   document.getElementById('adoOrg').value = org;
   if (hintEl) hintEl.textContent = org || '{org}';
+
+  // Reset downstream
   projRow.style.display = 'none';
   loadRow.style.display = 'none';
-  errEl.style.display   = 'none';
+  if (errEl) errEl.style.display = 'none';
 
   if (!org) return;
 
+  // Show project loading state
   badge.style.display = 'inline';
   projRow.style.display = 'block';
 
-  try {
-    const url = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
-    const data = await adoRequest('GET', url, null);
-    const projects = data.value || [];
+  const projSel = document.getElementById('adoProjectSelect');
+  projSel.innerHTML = '<option value="">Loading projects…</option>';
+  projSel.disabled  = true;
 
-    const projSel = document.getElementById('adoProjectSelect');
+  try {
+    const url  = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
+    const data = await adoRequest('GET', url, null);
+    const projects = (data.value || []).sort((a,b) => a.name.localeCompare(b.name));
+
+    projSel.disabled  = false;
     projSel.innerHTML = '<option value="">— Select Project —</option>';
-    projects.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p => {
+    projects.forEach(p => {
       const opt = document.createElement('option');
-      opt.value       = p.name;
-      opt.textContent = p.name;
+      opt.value = p.name; opt.textContent = p.name;
       projSel.appendChild(opt);
     });
 
     badge.style.display = 'none';
-    showToast(`${projects.length} project(s) found in ${org}`, '🔷');
 
-    // Auto-select if only 1 project
+    if (!projects.length) {
+      projSel.innerHTML = '<option value="">No projects found in this org</option>';
+      return;
+    }
+
+    showToast(`${projects.length} project${projects.length!==1?'s':''} found in ${org}`, '🔷');
+
+    // Auto-select when only 1 project
     if (projects.length === 1) {
       projSel.value = projects[0].name;
       projSel.dispatchEvent(new Event('change'));
     }
 
   } catch(e) {
-    badge.style.display = 'none';
-    errEl.textContent   = `Failed to load projects: ${e.message}`;
-    errEl.style.display = '';
+    badge.style.display  = 'none';
+    projSel.disabled     = false;
+    projSel.innerHTML    = '<option value="">— Failed to load —</option>';
+    const msg = e.message.includes('401') || e.message.includes('403')
+      ? '❌ Access denied for this organisation — check PAT scopes'
+      : `Failed to load projects: ${e.message}`;
+    if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
   }
 }
 
