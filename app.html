@@ -4920,52 +4920,76 @@ header::after { display: none !important; }
       <!-- Test result -->
       <div class="settings-test-result" id="adoTestResult" style="display:none"></div>
 
-      <!-- Organisation dropdown — visible directly, no "Validate PAT" button -->
+      <!-- Organisation + Project — auto-loaded from PAT via dropdown -->
       <div id="settingsAdoOrgRow" style="margin-top:20px">
         <div class="settings-field-label">
           Organisation
-          <span id="settingsOrgLoadingBadge" style="display:none;font-size:10px;color:var(--text3);
-                font-family:'JetBrains Mono',monospace;margin-left:6px">Loading…</span>
+          <span id="settingsOrgLoadingBadge"
+            style="display:none;font-size:10px;color:var(--text3);
+                   font-family:'JetBrains Mono',monospace;margin-left:6px">Loading…</span>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="settingsAdoOrg" placeholder="e.g. AlphaVarianceSolutions" autocomplete="off"
-            style="flex:1;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
-                   padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s"
-            onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"
-            oninput="document.getElementById('settingsOrgHint').textContent=this.value||'your-org'"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();settingsLoadProjects();}"/>
-          <button class="settings-test-btn" onclick="settingsLoadProjects()" id="settingsLoadProjBtn" style="white-space:nowrap;flex-shrink:0">
-            <span id="settingsLoadProjLabel">Load Projects →</span>
-          </button>
+        <div style="position:relative">
+          <select id="settingsAdoOrgSelect"
+            onchange="settingsOnOrgChange()"
+            style="width:100%;background:var(--surface);border:1.5px solid var(--border2);
+                   border-radius:8px;padding:9px 36px 9px 12px;color:var(--text);font-size:13px;
+                   cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;
+                   background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22/%3E%3C/svg%3E');
+                   background-repeat:no-repeat;background-position:right 12px center;
+                   transition:border-color .15s;font-family:'Plus Jakarta Sans',sans-serif">
+            <option value="">⏳ Loading organisations…</option>
+          </select>
         </div>
         <span style="font-size:11px;color:var(--text3);margin-top:4px;display:block">
           https://dev.azure.com/<strong id="settingsOrgHint">your-org</strong>
         </span>
+        <!-- Hidden text input kept for JS compat -->
+        <input type="hidden" id="settingsAdoOrg"/>
       </div>
 
-      <!-- Project dropdown (shown after org entered + Load Projects clicked) -->
+      <!-- Project dropdown -->
       <div id="settingsAdoProjectRow" style="display:none;margin-top:14px">
         <div class="settings-field-label">
-          Project
-          <span id="settingsProjectLoadingBadge" style="display:none;font-size:10px;color:var(--text3);
-                font-family:'JetBrains Mono',monospace;margin-left:6px">Loading…</span>
+          Default Project
+          <span id="settingsProjectLoadingBadge"
+            style="display:none;font-size:10px;color:var(--text3);
+                   font-family:'JetBrains Mono',monospace;margin-left:6px">Loading…</span>
         </div>
-        <select id="settingsAdoProjectSelect" onchange="settingsOnProjectChange()"
-          style="width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
-                 padding:9px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer;
-                 -webkit-appearance:none;appearance:none;
-                 background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22/%3E%3C/svg%3E');
-                 background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-          <option value="">— Select Project —</option>
-        </select>
+        <div style="position:relative">
+          <select id="settingsAdoProjectSelect" onchange="settingsOnProjectChange()"
+            style="width:100%;background:var(--surface);border:1.5px solid var(--border2);
+                   border-radius:8px;padding:9px 36px 9px 12px;color:var(--text);font-size:13px;
+                   cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;
+                   background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22/%3E%3C/svg%3E');
+                   background-repeat:no-repeat;background-position:right 12px center;
+                   font-family:'Plus Jakarta Sans',sans-serif">
+            <option value="">— Select Project —</option>
+          </select>
+        </div>
         <input type="hidden" id="settingsAdoProject"/>
       </div>
 
-      <!-- Test ADO Connection button (shown after project selected) -->
+      <!-- Save Defaults + Test Connection row -->
       <div id="settingsAdoTestRow" style="display:none;margin-top:14px">
-        <button class="settings-test-btn" style="width:100%;padding:11px" onclick="testADOConnection()">
-          🔷 Test ADO Connection
-        </button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button class="settings-test-btn"
+            style="padding:10px;border-radius:9px;background:rgba(0,120,212,.08);
+                   border:1.5px solid rgba(0,120,212,.3);color:#0078D4;font-weight:700"
+            onclick="saveADODefaults()">
+            💾 Save as Default
+          </button>
+          <button class="settings-test-btn"
+            style="padding:10px;border-radius:9px"
+            onclick="testADOConnection()">
+            🔷 Test Connection
+          </button>
+        </div>
+        <div id="settingsSaveConfirm"
+          style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;
+                 background:rgba(0,135,90,.06);border:1px solid rgba(0,135,90,.2);
+                 font-size:12px;color:#005a28;font-weight:600">
+          ✅ Default org &amp; project saved — pre-filled on next ADO export
+        </div>
       </div>
 
       <!-- Hidden stubs for JS compatibility -->
@@ -9174,8 +9198,10 @@ function openSettings() {
   ['settingsAdoOrgRow','settingsAdoProjectRow','settingsAdoTestRow'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
   });
-  // If ADO_ORG is pre-configured, auto-trigger org validation
-  if (window.__adoOrg && window.__adoKey) {
+  // Auto-trigger org loading whenever ADO tab is open (PAT is in env)
+  if (window.__adoKey || document.getElementById('adoPatEnvRow')?.style.display !== 'none') {
+    setTimeout(() => settingsValidateAndLoadOrgs(), 300);
+  } else if (window.__adoOrg) {
     setTimeout(() => settingsValidateAndLoadOrgs(), 300);
   }
   const r = document.getElementById('adoTestResult');
@@ -10166,6 +10192,43 @@ function updateGapsTab() {
   }
 }
 </script>
+
+
+// ── Save ADO org + project as defaults ───────────────────────────
+function saveADODefaults() {
+  const org     = document.getElementById('settingsAdoOrgSelect')?.value || '';
+  const project = document.getElementById('settingsAdoProjectSelect')?.value || '';
+  if (!org) { showToast('Select an organisation first', '⚠️'); return; }
+
+  // Save to localStorage for pre-filling export modal
+  try {
+    localStorage.setItem('shuddhi-ado-default-org',     org);
+    localStorage.setItem('shuddhi-ado-default-project', project);
+  } catch(e) {}
+
+  // Also set global vars used by initADOModal
+  window.__adoDefaultOrg     = org;
+  window.__adoDefaultProject = project;
+
+  // Show confirm
+  const confirm = document.getElementById('settingsSaveConfirm');
+  if (confirm) {
+    confirm.style.display = 'block';
+    confirm.innerHTML = '✅ Default saved: <strong>' + org + (project ? ' → ' + project : '') + '</strong> — pre-filled on next ADO export';
+    setTimeout(() => { confirm.style.display = 'none'; }, 3500);
+  }
+  showToast('Default org & project saved!', '💾');
+}
+
+// ── Load saved defaults on page start ────────────────────────────
+(function loadADODefaults() {
+  try {
+    const org     = localStorage.getItem('shuddhi-ado-default-org');
+    const project = localStorage.getItem('shuddhi-ado-default-project');
+    if (org)     window.__adoDefaultOrg     = org;
+    if (project) window.__adoDefaultProject = project;
+  } catch(e) {}
+})();
 
 </body>
 </html>
