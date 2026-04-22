@@ -8523,7 +8523,7 @@ async function adoRequest(method, url, _pat, body = null) {
   const res = await fetch('/api/ado', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, method, body })
+    body: JSON.stringify({ url, method, body, org: document.getElementById("adoOrg")?.value?.trim() || "" })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
