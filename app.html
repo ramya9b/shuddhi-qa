@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+// autoLoadProjectsFromEnv — duplicate removed, using version below
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -4957,7 +4958,7 @@ header::after { display: none !important; }
             oninput="window.__manualAdoPAT=this.value;document.getElementById('adoPatStatus').textContent=this.value?'✓ PAT entered (session only)':'';"
             onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"/>
         </div>
-        <div id="adoPatStatus" style="font-size:11px;color:#00875a;margin-top:5px;font-family:'JetBrains Mono',monospace"></div>
+        <div id="adoPatStatusSettings" style="font-size:11px;color:#00875a;margin-top:5px;font-family:'JetBrains Mono',monospace"></div>
         <div class="settings-hint">⚠️ For security: add <code>ADO_PAT</code> as a Vercel Environment Variable so the PAT never touches the browser.</div>
       </div>
 
@@ -9302,79 +9303,8 @@ async function testClaudeConnection() {
     if (btn) btn.disabled = false;
   }
 }
+// autoLoadProjectsFromEnv — see definition below
 
-
-// ── Auto-load projects when org is pre-configured via env var ────
-async function autoLoadProjectsFromEnv(org, presetProject) {
-  if (!org) return;
-  try {
-    const url  = `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
-    const res  = await fetch('/api/ado', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ method:'GET', url, body:null })
-    });
-    if (!res.ok) return; // silent fail — user can still type manually
-
-    const data     = await res.json().catch(() => ({}));
-    const projects = (data.value || []).sort((a,b) => a.name.localeCompare(b.name));
-
-    // Populate Settings modal project dropdown
-    const settingsSel = document.getElementById('settingsAdoProjectSelect');
-    if (settingsSel) {
-      settingsSel.innerHTML = '<option value="">— Select Project —</option>';
-      projects.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.name; opt.textContent = p.name;
-        settingsSel.appendChild(opt);
-      });
-      document.getElementById('settingsAdoProjectRow').style.display = 'block';
-      // Auto-select preset project if provided
-      if (presetProject) {
-        settingsSel.value = presetProject;
-        settingsOnProjectChange();
-      } else if (projects.length === 1) {
-        settingsSel.value = projects[0].name;
-        settingsOnProjectChange();
-      }
-    }
-
-    // Populate ADO modal project dropdown
-    const adoSel = document.getElementById('adoProjectSelect');
-    if (adoSel) {
-      adoSel.innerHTML = '<option value="">— Select Project —</option>';
-      projects.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.name; opt.textContent = p.name;
-        adoSel.appendChild(opt);
-      });
-      document.getElementById('adoProjectFieldRow').style.display = 'block';
-      if (presetProject) {
-        adoSel.value = presetProject;
-        onProjectSelectChange();
-      } else if (projects.length === 1) {
-        adoSel.value = projects[0].name;
-        onProjectSelectChange();
-      }
-    }
-
-    // Set hidden inputs
-    if (presetProject || projects.length === 1) {
-      const proj = presetProject || projects[0].name;
-      ['settingsAdoProject','adoProject'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.value = proj;
-      });
-    }
-
-    // Update Load Projects button label
-    const lbl = document.getElementById('settingsLoadProjLabel');
-    if (lbl) lbl.textContent = `✅ ${projects.length} project(s)`;
-
-    // Show the project section in settings
-    const testRow = document.getElementById('settingsAdoTestRow');
-    if (testRow && (presetProject || projects.length === 1)) testRow.style.display = 'block';
-
-  } catch(e) { /* silent — org will still be shown, user can load manually */ }
-}
 
 
 // ── Load ADO team members for Assigned To dropdown ───────────────
@@ -12035,36 +11965,22 @@ function buildTGTabsAndTable(el) {
   const view = document.createElement('div');
   view.id = 'tg-main-view';
 
-  // ── Internal search + filter tabs ────────────────────────────
-  const types    = [...new Set(tgAllTCs.map(t => t.type))];
-  const tabsHtml = `
-    <div class="tg-tabs" id="tgTabs">
-      <div class="tg-tab active" data-filter="all" onclick="setTGFilter('all',this)">
-        All <span class="tab-count">${tgAllTCs.length}</span>
-      </div>
-      ${types.map(type => {
-        const cnt = tgAllTCs.filter(t => t.type === type).length;
-        const typeClsMap = {
-          'E2E':'tg-tab-e2e','Negative':'tg-tab-neg','Field Valid.':'tg-tab-field',
-          'Integration':'tg-tab-int','Functional':'tg-tab-func','Edge Cases':'tg-tab-edge',
-          'Smoke':'tg-tab-smoke','Test Data':'tg-tab-data','Metadata':'tg-tab-meta'
-        };
-        return `<div class="tg-tab ${typeClsMap[type]||''}" data-filter="${type}" onclick="setTGFilter('${type}',this)">
-          ${type} <span class="tab-count">${cnt}</span>
-        </div>`;
-      }).join('')}
-      <div class="tg-tab-right">
-        <input id="tgSearch" type="text" placeholder="🔍 Search test cases…"
-          style="padding:6px 14px;background:var(--surface2);border:1.5px solid var(--border2);
-                 border-radius:8px;font-size:12px;color:var(--text);outline:none;width:220px"
-          oninput="renderTGTable()"
-          onfocus="this.style.borderColor='var(--d365)'"
-          onblur="this.style.borderColor='var(--border2)'"/>
-      </div>
+  // ── No inner tab bar — outer #artifactTabs handles filtering ──
+  // Search input only (no duplicate tabs)
+  const searchHtml = `
+    <div id="tgSearchBar" style="padding:10px 20px 6px;display:flex;align-items:center;gap:10px">
+      <input id="tgSearch" type="text" placeholder="🔍 Search test cases…"
+        style="padding:7px 14px;background:var(--surface2);border:1.5px solid var(--border2);
+               border-radius:8px;font-size:12.5px;color:var(--text);outline:none;width:260px;
+               font-family:'Plus Jakarta Sans',sans-serif"
+        oninput="renderTGTable()"
+        onfocus="this.style.borderColor='var(--d365)'"
+        onblur="this.style.borderColor='var(--border2)'"/>
+      <span id="tgSearchCount" style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace"></span>
     </div>`;
 
   // ── Grouped section wrapper ───────────────────────────────────
-  view.innerHTML = tabsHtml + `<div id="tgSectionsWrap"></div>`;
+  view.innerHTML = searchHtml + `<div id="tgSectionsWrap"></div>`;
 
   const reqRow = document.getElementById('tg-req-row');
   if (reqRow) reqRow.after(view);
@@ -12385,9 +12301,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Close old mobile nav functions (kept for compatibility)
-function openMobileNav()  { toggleMobileSidebar(); }
-function closeMobileNav() { closeMobileSidebar(); }
+// openMobileNav / closeMobileNav defined above (full version)
 </script>
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -12443,8 +12357,8 @@ function switchArtifactTab(tabKey, btn) {
     tgPage = 1;
     renderTGTable();
     // Also sync the tgTabs if visible
-    document.querySelectorAll('#tgTabs .tg-tab').forEach(t => t.classList.remove('active'));
-    const syncTab = document.querySelector('#tgTabs .tg-tab[data-filter="'+tgFilter+'"]');
+    // tgTabs removed — outer artifactTabs handles active state
+    const syncTab = null;
     if (syncTab) syncTab.classList.add('active');
     return;
   }
