@@ -7376,13 +7376,21 @@ Make the output production-ready and specific to ${platform}. Use real field nam
           switched = handleProviderRateLimit(curProvider);
         }
         if (switched) {
+          // Clear the error bar before retrying so it doesn't flash
+          hideError();
           setTimeout(() => {
             const btn = document.getElementById('genBtn');
             if (btn && !btn.disabled) btn.click();
-          }, 800);
-          msg = `${curProvider} limit reached — auto-switched to ${switched}. Retrying…`;
+          }, 1000);
+          msg = `${curProvider} limit reached — switching to ${switched}. Retrying…`;
         } else {
-          msg = `All providers unavailable right now. Groq resets in ~1 min — try again shortly.`;
+          // All providers exhausted — give user actionable options
+          msg = [
+            '⚠️ All AI providers are currently unavailable:',
+            '• Claude: locked until May 1, 2026',
+            '• Gemini & Groq: rate limits reached',
+            'Groq resets every ~1 minute. Try again shortly, or wait for May 1 for Claude.'
+          ].join(' ');
         }
       }
       if (status === 401) msg = 'Invalid API key — check Settings → AI Provider.';
@@ -7813,6 +7821,11 @@ function finalizeOutput(elapsed, platform, module) {
   }, 100);
 
   showToast('Test scenarios generated successfully!');
+  // Reset provider failure tracking after successful generation
+  if (typeof _failedProviders !== 'undefined') {
+    _failedProviders.clear();
+    _autoRetryCount = 0;
+  }
 }
 
 function showError(msg) {
@@ -10602,27 +10615,60 @@ async function testJiraConnection() {
 // AUTO-SWITCH TO GROQ — when Claude/Gemini limits hit
 // ═══════════════════════════════════════════════════════════════
 // Check on each generate if current provider hits 429 → auto-suggest switch
-function handleProviderRateLimit(provider) {
-  // Full circular chain: claude → gemini → groq → claude
-  const chain = ['claude', 'gemini', 'groq'];
-  const keys  = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey };
-  const currentIdx = chain.indexOf(provider);
+// ── Provider failure tracker (session-level, resets after 60s) ───
+const _failedProviders  = new Set();
+let   _autoRetryCount   = 0;
+const MAX_AUTO_RETRIES  = 3;
+let   _failedResetTimer = null;
 
-  // Try each next provider in order (skip unavailable keys)
-  for (let offset = 1; offset <= chain.length; offset++) {
-    const next = chain[(currentIdx + offset) % chain.length];
-    if (next === provider) continue; // full circle, none available
-    if (keys[next]) {
-      const meta = PROVIDER_META[next] || { name: next, icon: '⚡' };
-      showToast(
-        `⚡ ${provider} limit reached → switching to ${meta.name}`,
-        meta.icon
-      );
-      selectProvider(next, true);
-      return next; // return new provider so caller can auto-retry
-    }
+function _resetFailedProviders() {
+  _failedProviders.clear();
+  _autoRetryCount = 0;
+  console.log('[Provider] Failure list cleared — providers available again');
+}
+
+function handleProviderRateLimit(provider) {
+  // Mark current provider as failed for this session
+  _failedProviders.add(provider);
+
+  // Enforce max retry limit to prevent infinite loops
+  _autoRetryCount++;
+  if (_autoRetryCount > MAX_AUTO_RETRIES) {
+    _autoRetryCount = 0;
+    _failedProviders.clear();
+    return null; // stop retrying — show error to user
   }
-  // No other provider has a key — show helpful message
+
+  // Schedule automatic reset after 65s (Groq rate limit window)
+  clearTimeout(_failedResetTimer);
+  _failedResetTimer = setTimeout(_resetFailedProviders, 65000);
+
+  const chain = ['gemini', 'groq', 'claude']; // priority: gemini > groq > claude
+  const keys  = {
+    claude: window.__claudeKey,
+    gemini: window.__geminiKey,
+    groq:   window.__groqKey
+  };
+
+  // Find next provider that: has a key AND hasn't failed this session
+  for (const next of chain) {
+    if (next === provider)              continue; // skip current
+    if (_failedProviders.has(next))    continue; // skip already-failed
+    if (!keys[next])                   continue; // skip unconfigured
+
+    const meta = PROVIDER_META[next] || { name: next, icon: '⚡' };
+    showToast(
+      `⚡ ${provider} limit → switching to ${meta.name} (attempt ${_autoRetryCount}/${MAX_AUTO_RETRIES})`,
+      meta.icon
+    );
+    console.log(`[Provider] ${provider} failed → trying ${next} (retry ${_autoRetryCount})`);
+    selectProvider(next, true);
+    return next;
+  }
+  // All configured providers have failed
+  _autoRetryCount = 0;
+  _failedProviders.clear();
+  return null; // caller shows error
   showToast('All providers hit rate limits. Groq resets every ~1 min — try again shortly.', '⏱');
   return null;
 }
