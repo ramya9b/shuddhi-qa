@@ -7547,6 +7547,134 @@ function applyMetadataStyling(container) {
   (window.addCopySingleButtons||function(){})(container);
 }
 
+
+
+// ═══════════════════════════════════════════════════════════════
+// MISSING FUNCTIONS: buildOutputStats, buildOutputToolbar,
+//                    initStepsChips, initBulkSelect, initPagination
+// ═══════════════════════════════════════════════════════════════
+
+// ── buildOutputStats ─────────────────────────────────────────────
+// Reads stat cards in the output header and updates counts
+function buildOutputStats() {
+  const tcs = tgAllTCs.length ? tgAllTCs : parseTestCasesFromMarkdown();
+
+  const stats = {
+    total: tcs.length,
+    e2e:   tcs.filter(t => t.type === 'E2E'          || (t.section||'').toLowerCase().includes('end-to-end')).length,
+    neg:   tcs.filter(t => t.type === 'Negative'     || (t.section||'').toLowerCase().includes('negative')).length,
+    field: tcs.filter(t => t.type === 'Field Valid.'  || (t.section||'').toLowerCase().includes('field valid')).length,
+    integ: tcs.filter(t => t.type === 'Integration'  || (t.section||'').toLowerCase().includes('integration')).length,
+  };
+
+  // Update stat cards if present (outputStats section)
+  const statMap = {
+    'statTotal':      stats.total,
+    'statE2E':        stats.e2e,
+    'statNegative':   stats.neg,
+    'statFieldValid': stats.field,
+    'statIntegration':stats.integ,
+  };
+  Object.entries(statMap).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  });
+
+  // Update the tc count badge in meta bar
+  const tcCountEl = document.getElementById('tcCount');
+  if (tcCountEl) tcCountEl.textContent = stats.total;
+
+  // Update the atab-count-all badge
+  const allCount = document.getElementById('atab-count-all');
+  if (allCount) { allCount.textContent = stats.total; allCount.style.display = stats.total ? 'inline' : 'none'; }
+
+  return stats;
+}
+
+// ── buildOutputToolbar ───────────────────────────────────────────
+// Enables/disables export buttons based on whether output exists
+function buildOutputToolbar() {
+  const hasOutput = !!(rawMarkdown && rawMarkdown.trim().length > 50);
+  const btnIds = ['copyBtn','copyXlsBtn','pdfBtn','xlsBtn','adoBtn','editBtn','jiraBtn'];
+  btnIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = !hasOutput;
+  });
+  // Show the artifact tabs panel
+  const tabs = document.getElementById('artifactTabs');
+  if (tabs) tabs.style.display = '';
+}
+
+// ── initStepsChips ───────────────────────────────────────────────
+// Wire up expand/collapse for step chips in the markdown output
+function initStepsChips() {
+  document.querySelectorAll('.steps-chip, .tg-steps-chip').forEach(chip => {
+    if (chip.dataset.wired) return;
+    chip.dataset.wired = '1';
+    chip.addEventListener('click', function() {
+      const popup = this.nextElementSibling;
+      if (!popup) return;
+      const isOpen = popup.style.display === 'block';
+      popup.style.display = isOpen ? 'none' : 'block';
+      const arr = this.querySelector('.chip-arr');
+      if (arr) arr.textContent = isOpen ? '▾' : '▴';
+    });
+  });
+}
+
+// ── initBulkSelect ───────────────────────────────────────────────
+// Wire up checkbox select-all in TC table
+function initBulkSelect() {
+  const selectAllCb = document.getElementById('selectAllTCs');
+  if (selectAllCb) {
+    selectAllCb.addEventListener('change', function() {
+      document.querySelectorAll('.tc-row-cb').forEach(cb => {
+        cb.checked = this.checked;
+        const row = cb.closest('tr');
+        if (row) row.classList.toggle('tg-selected', this.checked);
+      });
+      if (typeof updateBulkBar === 'function') updateBulkBar();
+    });
+  }
+  // Wire individual row checkboxes
+  document.querySelectorAll('.tc-row-cb').forEach(cb => {
+    if (cb.dataset.wired) return;
+    cb.dataset.wired = '1';
+    cb.addEventListener('change', function() {
+      const id = this.closest('tr')?.dataset.tcId;
+      if (id) {
+        if (this.checked) tgSelectedIds.add(id); else tgSelectedIds.delete(id);
+      }
+      if (typeof updateBulkBar === 'function') updateBulkBar();
+    });
+  });
+}
+
+// ── initPagination ───────────────────────────────────────────────
+// Show/hide pagination bar based on TC count
+function initPagination() {
+  const pg = document.getElementById('tcPagination');
+  if (!pg) return;
+  const total = tgAllTCs.length || parseTestCasesFromMarkdown().length;
+  if (total <= TG_PAGE) {
+    pg.classList.remove('visible');
+    pg.innerHTML = '';
+  } else {
+    if (typeof buildTGPagination === 'function') {
+      buildTGPagination(total, Math.ceil(total / TG_PAGE));
+    }
+  }
+}
+
+// ── Safe window assignments ───────────────────────────────────────
+window.buildOutputStats   = buildOutputStats;
+window.buildOutputToolbar = buildOutputToolbar;
+window.initStepsChips     = initStepsChips;
+window.initBulkSelect     = initBulkSelect;
+window.initPagination     = initPagination;
+
+
+
 function finalizeOutput(elapsed, platform, module) {
   // Show filter bar
   const fb = document.getElementById('filterBar');
@@ -7586,11 +7714,11 @@ function finalizeOutput(elapsed, platform, module) {
   // Save to history
   saveToHistory(platform, module, rawMarkdown);
 
-  buildOutputStats();
-  buildOutputToolbar();
-  initStepsChips();
-  initBulkSelect();
-  initPagination();
+  if (typeof buildOutputStats   === 'function') buildOutputStats();
+  if (typeof buildOutputToolbar === 'function') buildOutputToolbar();
+  if (typeof initStepsChips     === 'function') initStepsChips();
+  if (typeof initBulkSelect     === 'function') initBulkSelect();
+  if (typeof initPagination     === 'function') initPagination();
   // Render TestGen-style clean table view (after DOM is ready)
   setTimeout(() => renderTestGenView(), 200);
 
