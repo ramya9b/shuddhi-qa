@@ -7045,8 +7045,15 @@ async function generate() {
   const integrations = document.getElementById('integrations').value.trim();
   const outputFormat = document.getElementById('outputFormat').value;
 
-  // Skip key validation if secured via Vercel env var (claudeKeyConfigured flag set on load)
-  if (!apiKey && !window.__claudeKeyConfigured) { showError('Please enter your Claude API key.'); return; }
+  // Provider-aware key validation — pass if ANY provider key is configured
+  const _activeP = typeof getActiveProvider === 'function' ? getActiveProvider() : 'claude';
+  const _hasKey  = window.__claudeKeyConfigured ||
+                   window.__claudeKey  || window.__geminiKey || window.__groqKey || apiKey;
+  if (!_hasKey) {
+    const _pName = { claude:'Claude', gemini:'Gemini', groq:'Groq' }[_activeP] || _activeP;
+    showError('No AI provider configured. Go to Settings → AI Provider and select ' + _pName + '.');
+    return;
+  }
   if (!platform) { showError('Please select a platform.'); return; }
   if (!flow && !extractedDocText) { showError('Please describe the business flow or upload a requirement document.'); return; }
 
@@ -8118,10 +8125,17 @@ renderHistory();
   try {
     const res = await fetch('/api/status');
     if (!res.ok) return; // running locally without Vercel dev — show inputs as-is
-    const { claudeKey, adoKey, adoOrg = '', adoProject = '' } = await res.json();
+    const res_data = await res.json();
+    const { claudeKey, adoKey, adoOrg = '', adoProject = '',
+            geminiKey = false, groqKey = false, aiProvider = '' } = res_data;
 
     // Apply to both the API bar and the settings modal
-    applySettingsStatus(claudeKey, adoKey, data.geminiKey, data.groqKey, data.aiProvider);
+    applySettingsStatus(claudeKey, adoKey, geminiKey, groqKey, aiProvider);
+
+    // Set per-provider key flags used by getActiveProvider validation
+    window.__claudeKey  = !!claudeKey;
+    window.__geminiKey  = !!geminiKey;
+    window.__groqKey    = !!groqKey;
 
     if (claudeKey) {
       window.__claudeKeyConfigured = true;
@@ -8343,7 +8357,9 @@ function renderBulkFileList() {
 
 async function runBulkGenerate() {
   const apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) { showToast('Enter your Claude API key first', '⚠️'); return; }
+  // Provider-aware check for bulk generate
+  const _bulkHasKey = apiKey || window.__claudeKey || window.__geminiKey || window.__groqKey;
+  if (!_bulkHasKey) { showToast('No AI provider key configured — go to Settings → AI Provider', '⚠️'); return; }
   if (bulkFiles.length === 0) { showToast('Upload at least one file', '⚠️'); return; }
 
   // FIX TC-NEW-007: Validate platform before bulk generation
@@ -10007,7 +10023,10 @@ const PROVIDER_META={
   gemini:{name:'Gemini',icon:'✦',model:'gemini-2.0-flash',envKey:'GEMINI_API_KEY',url:'https://aistudio.google.com',urlLabel:'aistudio.google.com',color:'#0369A1'},
   groq:{name:'Groq',icon:'⚡',model:'llama-3.3-70b-versatile',envKey:'GROQ_API_KEY',url:'https://console.groq.com',urlLabel:'console.groq.com',color:'#7C3AED'},
 };
-function getActiveProvider(){return _activeProvider||'claude';}
+function getActiveProvider(){
+  return window.__activeProvider || _activeProvider ||
+    (()=>{try{return localStorage.getItem('shuddhi-ai-provider')||'claude';}catch(e){return 'claude';}})();
+}
 function saveProviderChoice(){
   try{localStorage.setItem('shuddhi-ai-provider',_activeProvider);}catch(e){}
   const meta=PROVIDER_META[_activeProvider]||{};
@@ -10020,6 +10039,8 @@ function selectProvider(provider,save=true){
   const meta=PROVIDER_META[provider];
   if(!meta) return;
   if(save){try{localStorage.setItem('shuddhi-ai-provider',provider);}catch(e){} showToast('Switched to '+meta.name,meta.icon);}
+  // Immediately update the window flags so generate() sees the right provider
+  window.__activeProvider=provider;
   document.querySelectorAll('.provider-pill').forEach(p=>p.classList.remove('active'));
   document.getElementById('pill-'+provider)?.classList.add('active');
   const fields={activeProviderIcon:meta.icon,activeProviderName:meta.name,activeProviderModel:meta.model,activeEnvKey:meta.envKey+' · Vercel Env',guideEnvKey:meta.envKey};
