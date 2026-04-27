@@ -67,7 +67,7 @@ function buildUpstreamRequest(provider, key, body) {
     };
     const alt = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
     return {
-      url: `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.gemini}:${alt}&key=${key}`,
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.gemini}:${alt}${stream?'&':'?'}key=${key}`,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(geminiBody),
     };
@@ -204,10 +204,15 @@ export default async function handler(req) {
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '');
-      let msg = `${provider} API error ${response.status}`;
-      if (response.status === 429) msg = `${provider} rate limit reached. Try switching provider in Settings.`;
-      if (response.status === 401) msg = `${provider} API key is invalid or expired.`;
-      return new Response(JSON.stringify({ error: msg, detail: errText.substring(0, 200) }),
+      let errJson = {};
+      try { errJson = JSON.parse(errText); } catch(e) {}
+      const detail = errJson?.error?.message || errJson?.message || errText.substring(0, 200);
+      let msg = `${provider} API error ${response.status}: ${detail || 'Unknown error'}`;
+      if (response.status === 429) msg = `${provider} rate limit reached — try Gemini or Groq (free tier) in Settings.`;
+      if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
+      if (response.status === 404) msg = `${provider} model/endpoint not found. URL: ${upstream.url.substring(0, 80)}`;
+      if (response.status === 403) msg = `${provider} API key does not have permission. Check key scopes.`;
+      return new Response(JSON.stringify({ error: msg, detail }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
