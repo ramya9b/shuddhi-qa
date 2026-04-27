@@ -9293,7 +9293,7 @@ function syncApiKey(val) {
 // applySettingsStatus — handled by multi-provider wrapper below
 
 function applySettingsStatus(claudeKey, adoKey, geminiKey, groqKey, activeProvider) {
-  if (_origApplySettings) _origApplySettings(claudeKey, adoKey);
+  // single applySettingsStatus — calls applyProviderStatus only
   applyProviderStatus(claudeKey, geminiKey || false, groqKey || false, activeProvider || '');
 }
 </script>
@@ -9474,5 +9474,626 @@ async function testClaudeConnection() {
 }
 </script>
 
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// RESTORED SCRIPT BLOCK — Functions removed during cleanup
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Global TC state ──────────────────────────────────────────────
+let tgAllTCs     = [];
+let tgFilter     = '';
+let tgPage       = 1;
+const TG_PAGE    = 50;
+let tgSelectedIds= new Set();
+// rawMarkdown declared in main block above
+
+// ── TYPE_REGISTRY — classification engine ────────────────────────
+const TYPE_REGISTRY = [
+  { type:'Negative',    cls:'tg-type-negative',
+    sectionKeys:['negative','invalid','error handling','5.'],
+    titleKeys:['invalid','unauthorized','wrong','expired','fail','error','reject',
+               'deny','exceed','missing','not found','forbidden','blocked','incorrect',
+               'null input','empty field','duplicate','conflict','locked','disabled'] },
+  { type:'Edge Cases',  cls:'tg-type-edge',
+    sectionKeys:['edge','boundary','limit','corner','extreme'],
+    titleKeys:['boundary','max ','min ','maximum','minimum','limit','zero records',
+               'overflow','underflow','threshold','just above','just below','exactly',
+               'special char','unicode','very long','large dataset','concurrent'] },
+  { type:'E2E',         cls:'tg-type-e2e',
+    sectionKeys:['end-to-end','e2e','end to end','2.','complete flow','full flow','user journey'],
+    titleKeys:['end-to-end','full flow','complete flow','entire process','journey',
+               'lifecycle','happy path','golden path','approval flow','multi-step','from creation'] },
+  { type:'Field Valid.', cls:'tg-type-field',
+    sectionKeys:['field valid','field-valid','3.','form validation','input validation'],
+    titleKeys:['field ','required field','mandatory','format','regex','max length',
+               'min length','data type','dropdown','picklist','date format','email format',
+               'phone number','postal','currency','decimal','alphanumeric','input mask'] },
+  { type:'Integration',  cls:'tg-type-integration',
+    sectionKeys:['integration','4.','api test','cross-module','data sync'],
+    titleKeys:['integration','api call','sync ','webhook','middleware','cross-system',
+               'cross-module','third-party','external system','payload','inbound',
+               'outbound','message queue','event trigger','data exchange','rest api'] },
+  { type:'Smoke',        cls:'tg-type-smoke',
+    sectionKeys:['smoke','sanity','critical path'],
+    titleKeys:['smoke test','sanity','critical access','page loads','health check','basic login'] },
+  { type:'Test Data',    cls:'tg-type-smoke',
+    sectionKeys:['test data','data requirement','6.'],
+    titleKeys:['test data','data set','prerequisite data','seed data','master data'] },
+  { type:'Metadata',     cls:'tg-type-field',
+    sectionKeys:['metadata','test case metadata','7.'],
+    titleKeys:['tc id','precondition','automation feasibility','risk score'] },
+  { type:'Functional',   cls:'tg-type-positive',
+    sectionKeys:['functional','positive','scenario','1.','summary'],
+    titleKeys:['verify','validate','confirm','ensure','create','read','update','delete',
+               'view','display','submit','save','search','filter','sort','generate',
+               'export','import','upload','download','assign','approve','navigate','open'] }
+];
+
+function getTCType(sectionTitle) {
+  const s = (sectionTitle||'').toLowerCase();
+  for (const reg of TYPE_REGISTRY) {
+    if (reg.sectionKeys.some(k => s.includes(k))) return { type:reg.type, cls:reg.cls };
+  }
+  return { type:'Functional', cls:'tg-type-positive' };
+}
+
+function classifyTCByTitle(title, fallbackType, fallbackCls) {
+  const t = (title||'').toLowerCase();
+  if (['Test Data','Metadata'].includes(fallbackType)) return { type:fallbackType, cls:fallbackCls };
+  let best = { type:fallbackType, cls:fallbackCls, score:0 };
+  for (const reg of TYPE_REGISTRY) {
+    if (['Test Data','Metadata'].includes(reg.type)) continue;
+    const score = reg.titleKeys.reduce((a,kw) => a+(t.includes(kw)?1:0), 0);
+    if (score > best.score) best = { type:reg.type, cls:reg.cls, score };
+  }
+  return best.score >= 2 ? { type:best.type, cls:best.cls } : { type:fallbackType, cls:fallbackCls };
+}
+
+function inferPriority(title) {
+  const t = (title||'').toLowerCase();
+  if (t.includes('critical')||t.includes('high')||t.includes('smoke')) return {pri:'High',   cls:'tg-pri-high'};
+  if (t.includes('negative')||t.includes('invalid')||t.includes('error')) return {pri:'High', cls:'tg-pri-high'};
+  if (t.includes('medium')||t.includes('integration'))                    return {pri:'Medium',cls:'tg-pri-med'};
+  if (t.includes('low')||t.includes('metadata')||t.includes('test data')) return {pri:'Low',  cls:'tg-pri-low'};
+  return {pri:'Medium',cls:'tg-pri-med'};
+}
+
+// ── Build a single TC table row ───────────────────────────────────
+function buildTGRow(tc) {
+  const raw = tc.stepsRaw || '';
+  const stepsArr = raw.split(/;\s*(?=\d+\.)/).filter(Boolean);
+  const cnt = Math.max(stepsArr.length, (raw.match(/\d+\./g)||[]).length, 1);
+  const stepsHtml = stepsArr.map((s,i) =>
+    `<div style="padding:2px 0"><strong style="color:var(--d365);font-size:11px">${i+1}.</strong> ${s.replace(/^\d+\.\s*/,'').trim()}</div>`
+  ).join('');
+  const sel = tgSelectedIds.has(tc.id);
+  return `<tr class="${sel?'tg-selected':''}" data-tc-id="${tc.id}" data-type="${tc.type}">
+    <td class="tg-col-cb" style="text-align:center">
+      <input type="checkbox" class="tc-row-cb" ${sel?'checked':''}
+        style="accent-color:var(--d365);cursor:pointer;width:13px;height:13px"
+        onchange="tgToggleSelect('${tc.id}',this.checked,this.closest('tr'))"/>
+    </td>
+    <td class="tg-col-id"><span class="tg-tc-id">${tc.id}</span></td>
+    <td class="tg-col-sc"><span class="tg-scenario">${tc.title}</span></td>
+    <td class="tg-col-st steps-td">
+      <span class="tg-steps-chip" onclick="tgToggleSteps(this)">
+        ${cnt} Step${cnt!==1?'s':''} <span class="chip-arr">▾</span>
+      </span>
+      <div class="tg-steps-popup">${stepsHtml||raw}</div>
+    </td>
+    <td class="tg-col-exp" style="font-size:12.5px;color:var(--text2);line-height:1.5">${tc.expected||''}</td>
+    <td class="tg-col-pri"><span class="tg-badge ${tc.priCls}">${tc.priority}</span></td>
+    <td class="tg-col-act"><div class="tg-actions">
+      <button class="tg-act-btn" title="Copy" onclick="tgCopyRow('${tc.id}')">📋</button>
+      <button class="tg-act-btn del" title="Remove" onclick="tgRemoveRow('${tc.id}',this)">🗑</button>
+    </div></td>
+  </tr>`;
+}
+
+function tgToggleSelect(id, checked, row) {
+  if (checked) tgSelectedIds.add(id); else tgSelectedIds.delete(id);
+  if (row) row.classList.toggle('tg-selected', checked);
+  updateBulkBar();
+}
+function tgSelectAll(checked) {
+  tgAllTCs.forEach(tc => { if(checked) tgSelectedIds.add(tc.id); else tgSelectedIds.delete(tc.id); });
+  renderTGTable(); updateBulkBar();
+}
+function tgSelectSection(type, checked) {
+  tgAllTCs.filter(t=>t.type===type).forEach(tc=>{ if(checked) tgSelectedIds.add(tc.id); else tgSelectedIds.delete(tc.id); });
+  renderTGTable(); updateBulkBar();
+}
+function tgCopyRow(id) {
+  const tc = tgAllTCs.find(t=>t.id===id);
+  if (!tc) return;
+  navigator.clipboard?.writeText(`${tc.id}\t${tc.title}\t${tc.stepsRaw}\t${tc.expected}\t${tc.priority}`)
+    .then(()=>showToast('TC copied','📋')).catch(()=>{});
+}
+function tgRemoveRow(id, btn) {
+  tgAllTCs = tgAllTCs.filter(t=>t.id!==id);
+  tgSelectedIds.delete(id);
+  btn?.closest('tr')?.remove();
+  updateArtifactTabCounts();
+  updateBulkBar();
+}
+function tgToggleSteps(chip) {
+  const popup = chip.nextElementSibling;
+  if (!popup) return;
+  const open = popup.style.display === 'block';
+  popup.style.display = open ? 'none' : 'block';
+  const arr = chip.querySelector('.chip-arr');
+  if (arr) arr.textContent = open ? '▾' : '▴';
+}
+function updateBulkBar() {
+  const bar = document.getElementById('bulkActionBar');
+  const cnt = document.getElementById('bulkCount');
+  if (!bar) return;
+  if (tgSelectedIds.size > 0) {
+    bar.style.display = 'flex';
+    if (cnt) cnt.textContent = tgSelectedIds.size + ' selected';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+function buildTGPagination(total, totalPages) {
+  const pg = document.getElementById('tcPagination');
+  if (!pg) return;
+  if (total <= TG_PAGE) { pg.classList.remove('visible'); pg.innerHTML=''; return; }
+  pg.classList.add('visible');
+  let html = '';
+  for (let i=1; i<=totalPages; i++) {
+    html += `<button class="pg-btn${i===tgPage?' active':''}" onclick="tgGoPage(${i})">${i}</button>`;
+  }
+  pg.innerHTML = html;
+}
+function tgGoPage(n) { tgPage=n; renderTGTable(); }
+function setTGFilter(f, btn) {
+  document.querySelectorAll('#tgTabs .tg-tab').forEach(t=>t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  tgFilter=f; tgPage=1; renderTGTable();
+}
+function filterTGTable() { tgPage=1; renderTGTable(); }
+
+// ── Re-entrancy guarded renderTGTable ────────────────────────────
+let _tgRenderInProgress = false;
+function renderTGTable() {
+  if (_tgRenderInProgress) return;
+  _tgRenderInProgress = true;
+  try {
+    const wrap = document.getElementById('tgSectionsWrap');
+    if (!wrap) return;
+    const q = (document.getElementById('tgSearch')?.value||'').toLowerCase();
+    const filtered = tgAllTCs.filter(tc => {
+      const matchFilter = !tgFilter || tgFilter==='all' || tc.type===tgFilter;
+      const matchSearch = !q || tc.id.toLowerCase().includes(q) || tc.title.toLowerCase().includes(q) || (tc.expected||'').toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
+    const totalPages = Math.ceil(filtered.length / TG_PAGE);
+    const pageTCs = filtered.slice((tgPage-1)*TG_PAGE, tgPage*TG_PAGE);
+    const countEl = document.getElementById('tgSearchCount');
+    if (countEl) countEl.textContent = q ? `${filtered.length} match${filtered.length!==1?'es':''}` : '';
+
+    if (tgFilter && tgFilter !== 'all') {
+      // Single-type flat view
+      const color={'E2E':'#0891B2','Negative':'#EF4444','Field Valid.':'#10B981','Integration':'#8B5CF6','Functional':'#5B5FEF','Edge Cases':'#F97316','Smoke':'#F59E0B','Test Data':'#64748B','Metadata':'#EC4899'}[tgFilter]||'#5B5FEF';
+      const rows = pageTCs.map(tc=>buildTGRow(tc)).join('');
+      wrap.innerHTML = `<div class="tg-section-card">
+        <div class="tg-section-hdr"><div class="tg-section-dot" style="background:${color}"></div>
+          <span class="tg-section-title">${tgFilter}</span>
+          <span class="tg-section-count" style="background:${color}20;color:${color};border:1px solid ${color}40">${filtered.length} TCs</span>
+        </div>
+        <div class="tg-section-body"><table class="tg-table">
+          <thead><tr><th style="width:36px"><input type="checkbox" onchange="tgSelectAll(this.checked)" style="accent-color:var(--d365);width:13px;height:13px"/></th>
+          <th class="tg-col-id">ID</th><th class="tg-col-sc">Scenario</th><th class="tg-col-st">Steps</th>
+          <th class="tg-col-exp">Expected</th><th class="tg-col-pri">Priority</th><th class="tg-col-act">Actions</th></tr></thead>
+          <tbody>${rows||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No test cases in this category.</td></tr>'}</tbody>
+        </table></div>
+      </div>`;
+    } else {
+      // Grouped section view
+      const typeOrder=['Functional','E2E','Field Valid.','Integration','Negative','Edge Cases','Smoke','Test Data','Metadata'];
+      const grouped={};
+      filtered.forEach(tc=>{ (grouped[tc.type]=grouped[tc.type]||[]).push(tc); });
+      const COLOR={'E2E':'#0891B2','Negative':'#EF4444','Field Valid.':'#10B981','Integration':'#8B5CF6','Functional':'#5B5FEF','Edge Cases':'#F97316','Smoke':'#F59E0B','Test Data':'#64748B','Metadata':'#EC4899'};
+      const sectionsHTML = typeOrder.filter(t=>grouped[t]?.length).map(type=>{
+        const tcs=grouped[type]; const color=COLOR[type]||'#5B5FEF';
+        return `<div class="tg-section-card" id="tgsec-${type.replace(/[\s.]/g,'-')}">
+          <div class="tg-section-hdr" onclick="this.closest('.tg-section-card').classList.toggle('collapsed')">
+            <div class="tg-section-dot" style="background:${color}"></div>
+            <span class="tg-section-title">${type}</span>
+            <span class="tg-section-count" style="background:${color}20;color:${color};border:1px solid ${color}40">${tcs.length} TC${tcs.length!==1?'s':''}</span>
+            <span class="tg-section-chevron">▾</span>
+          </div>
+          <div class="tg-section-body"><table class="tg-table">
+            <thead><tr><th style="width:36px"><input type="checkbox" onchange="tgSelectSection('${type}',this.checked)" style="accent-color:var(--d365);width:13px;height:13px"/></th>
+            <th class="tg-col-id">ID</th><th class="tg-col-sc">Scenario</th><th class="tg-col-st">Steps</th>
+            <th class="tg-col-exp">Expected</th><th class="tg-col-pri">Priority</th><th class="tg-col-act">Actions</th></tr></thead>
+            <tbody>${tcs.map(tc=>buildTGRow(tc)).join('')}</tbody>
+          </table></div>
+        </div>`;
+      }).join('');
+      wrap.innerHTML = sectionsHTML || '<div style="text-align:center;padding:40px;color:var(--text3)">No test cases generated yet.</div>';
+    }
+    updateArtifactTabCounts();
+    buildTGPagination(filtered.length, totalPages);
+    updateBulkBar();
+  } finally { _tgRenderInProgress = false; }
+}
+
+// ── buildTGTabsAndTable ───────────────────────────────────────────
+function buildTGTabsAndTable(el) {
+  document.getElementById('tg-main-view')?.remove();
+  const keep=['tg-progress-bar','tg-req-row'];
+  [...el.children].forEach(child=>{ if(!keep.includes(child.id)) child.remove(); });
+  const view=document.createElement('div');
+  view.id='tg-main-view';
+  view.innerHTML=`<div id="tgSearchBar" style="padding:10px 20px 6px;display:flex;align-items:center;gap:10px">
+    <input id="tgSearch" type="text" placeholder="🔍 Search test cases…"
+      style="padding:7px 14px;background:var(--surface2);border:1.5px solid var(--border2);
+             border-radius:8px;font-size:12.5px;color:var(--text);outline:none;width:260px;
+             font-family:'Plus Jakarta Sans',sans-serif"
+      oninput="renderTGTable()"
+      onfocus="this.style.borderColor='var(--d365)'"
+      onblur="this.style.borderColor='var(--border2)'"/>
+    <span id="tgSearchCount" style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace"></span>
+  </div><div id="tgSectionsWrap"></div>`;
+  const reqRow=document.getElementById('tg-req-row');
+  if (reqRow) reqRow.after(view); else el.appendChild(view);
+  renderTGTable();
+}
+
+// ── switchArtifactTab ─────────────────────────────────────────────
+function switchArtifactTab(tabKey, btn) {
+  document.querySelectorAll('.artifact-tab').forEach(t=>t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  tgFilter = (tabKey==='all'||tabKey==='gaps') ? '' : ({
+    all:'',functional:'Functional',e2e:'E2E',field:'Field Valid.',
+    integration:'Integration',negative:'Negative',edge:'Edge Cases',
+    smoke:'Smoke',testdata:'Test Data',metadata:'Metadata'
+  }[tabKey]||'');
+
+  const el=document.getElementById('outputContent');
+  if (!el) return;
+
+  if (tabKey==='gaps') { renderGapsPanel(); return; }
+  const wrap=document.getElementById('tgSectionsWrap');
+  if (wrap) renderTGTable();
+}
+
+// ── updateArtifactTabCounts ───────────────────────────────────────
+function updateArtifactTabCounts() {
+  const counts={
+    all:tgAllTCs.length, functional:0, e2e:0, field:0, integration:0,
+    negative:0, edge:0, smoke:0, testdata:0, metadata:0
+  };
+  tgAllTCs.forEach(tc=>{
+    const k={'Functional':'functional','E2E':'e2e','Field Valid.':'field','Integration':'integration',
+             'Negative':'negative','Edge Cases':'edge','Smoke':'smoke','Test Data':'testdata','Metadata':'metadata'}[tc.type];
+    if(k) counts[k]++;
+  });
+  Object.entries(counts).forEach(([k,v])=>{
+    const el=document.getElementById('atab-count-'+k);
+    if(el){ el.textContent=v||''; el.style.display=v?'inline':'none'; }
+  });
+}
+
+// ── renderTestGenView ─────────────────────────────────────────────
+function renderTestGenView() {
+  tgAllTCs=[];
+  const el=document.getElementById('outputContent');
+  if (!el || !rawMarkdown) return;
+
+  // Parse gaps first
+  parseRequirementGaps();
+  updateGapsTab();
+
+  const mdLines=(typeof rawMarkdown==='string'?rawMarkdown:'').split('\n');
+  let currentSection='General';
+  let currentType={type:'Functional',cls:'tg-type-positive'};
+  let inTCTable=false;
+
+  for (const line of mdLines) {
+    const trimmed=line.trim();
+    if (/^#{1,3}\s/.test(trimmed)) {
+      const heading=trimmed.replace(/^#{1,3}\s+/,'').replace(/\*\*/g,'').trim();
+      currentSection=heading;
+      currentType=getTCType(heading);
+      inTCTable=false;
+      continue;
+    }
+    if (!trimmed.startsWith('|')) { if(inTCTable) inTCTable=false; continue; }
+    if (trimmed.match(/^\|[\s\-:|]+\|$/)) continue;
+    const cells=trimmed.split('|').map(c=>cleanCell(c)).filter(c=>c!=='');
+    if (cells.length<2) continue;
+    if (['Title','Step Action','Steps','Test Case Title'].some(h=>cells[0]&&cells[0].toLowerCase().includes(h.toLowerCase()))) {
+      inTCTable=true; continue;
+    }
+    if (!inTCTable) continue;
+    const rawTitle=cells[0]||'';
+    if (!rawTitle||rawTitle.length<2) continue;
+    const idPart=rawTitle.match(/^(TC[-\s]?\d+(?:\.\d+)?)/i);
+    const tcId=idPart?idPart[1].replace(/[\s]/g,''):('TC'+String(tgAllTCs.length+1).padStart(3,'0'));
+    const tcTitle=rawTitle.replace(/^TC[-\s]?\d+(?:\.\d+)?\s*[-–—:.\s]+/i,'').trim()||rawTitle;
+    const priInfo=inferPriority(tcTitle||rawTitle);
+    const refined=classifyTCByTitle(tcTitle||rawTitle, currentType.type, currentType.cls);
+    tgAllTCs.push({id:tcId,title:tcTitle,stepsRaw:cells[1]||'',expected:cells[2]||'',
+      section:currentSection,type:refined.type,typeCls:refined.cls,
+      priority:priInfo.pri,priCls:priInfo.cls});
+  }
+
+  if (tgAllTCs.length===0) return;
+  buildTGProgressBar(el);
+  buildTGRequirementRow(el);
+  buildTGTabsAndTable(el);
+  updateArtifactTabCounts();
+}
+
+// ── Requirement Gaps ─────────────────────────────────────────────
+let tgGaps=[];
+const GAP_TYPE_MAP=[
+  {keys:['missing','not specified','unspecified','not covered','absent','lacks'],type:'missing',label:'Missing Requirement',icon:'⛔',cls:'missing'},
+  {keys:['ambiguous','unclear','vague','open to','not clear','multiple interpretations'],type:'ambiguous',label:'Ambiguous Requirement',icon:'⚠️',cls:'ambiguous'},
+  {keys:['risk','technical risk','ux risk','performance','security','scalability'],type:'risk',label:'Risk Identified',icon:'🔺',cls:'risk'},
+  {keys:['assumption','assumed','assuming','presume'],type:'assumption',label:'Assumption Made',icon:'💡',cls:'assumption'},
+  {keys:['question','clarif','ask','should','consider','please confirm'],type:'question',label:'Clarifying Question',icon:'❓',cls:'question'},
+];
+function detectGapType(text){
+  const t=text.toLowerCase();
+  for(const g of GAP_TYPE_MAP){ if(g.keys.some(k=>t.includes(k))) return g; }
+  return {type:'missing',label:'Gap Identified',icon:'⚠',cls:'missing'};
+}
+function parseRequirementGaps(){
+  tgGaps=[];
+  if(!rawMarkdown) return;
+  const lines=rawMarkdown.split('\n');
+  let inGap=false,buf='';
+  for(const line of lines){
+    const t=line.trim();
+    if(/^#{1,3}\s*0\.?\s*requirement gap/i.test(t)){inGap=true;continue;}
+    if(inGap&&/^#{1,3}\s*[1-9]/.test(t)){if(buf){processGapBuffer(buf);buf='';}break;}
+    if(!inGap) continue;
+    if(t.match(/^[-*•]\s+/)||t.match(/^\d+\.\s+/)){
+      if(buf) processGapBuffer(buf);
+      buf=t.replace(/^[-*•]\s+|^\d+\.\s+/,'').replace(/\*\*/g,'').trim();
+    } else if(buf&&t){ buf+=' '+t.replace(/\*\*/g,'').trim(); }
+  }
+  if(buf) processGapBuffer(buf);
+}
+function processGapBuffer(text){
+  if(!text||text.length<10) return;
+  let desc=text,suggestion='';
+  const arrow=text.indexOf('→');
+  const colon=text.indexOf(':');
+  if(arrow>10){desc=text.substring(0,arrow).trim();suggestion=text.substring(arrow+1).trim();}
+  else if(colon>10&&colon<text.length-5){desc=text.substring(0,colon).trim();suggestion=text.substring(colon+1).trim();}
+  const g=detectGapType(desc+' '+suggestion);
+  tgGaps.push({type:g.type,label:g.label,icon:g.icon,cls:g.cls,desc,suggestion});
+}
+function updateGapsTab(){
+  const tab=document.getElementById('atab-gaps');
+  const cnt=document.getElementById('atab-count-gaps');
+  if(!tab) return;
+  if(tgGaps.length>0){
+    tab.style.display='inline-flex';
+    tab.classList.add('has-gaps');
+    if(cnt){cnt.textContent=tgGaps.length;cnt.classList.add('has-count');}
+  } else {
+    tab.style.display='none';
+    tab.classList.remove('has-gaps');
+  }
+}
+function renderGapsPanel(){
+  const wrap=document.getElementById('tgSectionsWrap');
+  if(!wrap) return;
+  if(!tgGaps.length){wrap.innerHTML='<div class="gaps-empty">✅ No requirement gaps detected.</div>';return;}
+  const cards=tgGaps.map(g=>`
+    <div class="gap-card">
+      <div class="gap-card-hdr">
+        <div class="gap-icon ${g.cls}">${g.icon}</div>
+        <div class="gap-content"><span class="gap-type ${g.cls}">${g.label}</span><div class="gap-desc">${g.desc}</div></div>
+      </div>
+      ${g.suggestion?`<div class="gap-suggestion"><span class="gap-suggestion-lbl">💬 Suggested Action</span>${g.suggestion}</div>`:''}
+    </div>`).join('');
+  wrap.innerHTML=`<div class="gaps-panel">${cards}</div>`;
+}
+
+// ── Sidebar collapse ──────────────────────────────────────────────
+const SIDEBAR_STATE_KEY='shuddhi-sidebar-collapsed';
+function toggleSidebar(){
+  const sidebar=document.getElementById('appSidebar');
+  const mainWrap=document.getElementById('mainWrap');
+  const bulkBar=document.getElementById('bulkActionBar');
+  const btn=document.getElementById('sbCollapseBtn');
+  if(!sidebar) return;
+  const isCollapsed=sidebar.classList.toggle('collapsed');
+  document.body.classList.toggle('sidebar-collapsed',isCollapsed);
+  if(mainWrap) mainWrap.style.marginLeft=isCollapsed?'64px':'260px';
+  if(bulkBar) bulkBar.style.left=isCollapsed?'64px':'260px';
+  if(btn) btn.textContent=isCollapsed?'▶':'◀';
+  const lbl=document.querySelector('.sb-collapse-strip-label');
+  if(lbl) lbl.textContent=isCollapsed?'Expand':'Collapse';
+  try{localStorage.setItem(SIDEBAR_STATE_KEY,isCollapsed?'1':'0');}catch(e){}
+}
+function toggleMobileSidebar(){
+  const sidebar=document.getElementById('appSidebar');
+  const overlay=document.getElementById('mobileNavOverlay');
+  if(!sidebar) return;
+  const open=sidebar.classList.toggle('mobile-open');
+  if(overlay) overlay.style.display=open?'block':'none';
+  document.body.style.overflow=open?'hidden':'';
+}
+function closeMobileSidebar(){
+  const sidebar=document.getElementById('appSidebar');
+  const overlay=document.getElementById('mobileNavOverlay');
+  if(sidebar) sidebar.classList.remove('mobile-open');
+  if(overlay) overlay.style.display='none';
+  document.body.style.overflow='';
+}
+// Restore sidebar state
+(function(){
+  try{
+    const saved=localStorage.getItem(SIDEBAR_STATE_KEY);
+    if(saved==='1'){
+      const s=document.getElementById('appSidebar'),m=document.getElementById('mainWrap');
+      if(s) s.classList.add('collapsed');
+      document.body.classList.add('sidebar-collapsed');
+      if(m) m.style.marginLeft='64px';
+      const lbl=document.querySelector('.sb-collapse-strip-label');
+      if(lbl) lbl.textContent='Expand';
+    }
+  }catch(e){}
+})();
+
+// ── Settings helpers ──────────────────────────────────────────────
+function populateAboutStatus(){
+  const version=document.getElementById('aboutVersion');
+  const provider=document.getElementById('aboutProvider');
+  if(version) version.textContent='v2.0';
+  if(provider) provider.textContent=typeof getActiveProvider==='function'?getActiveProvider():'—';
+}
+function settingsOnProjectChange(){
+  const sel=document.getElementById('settingsAdoProjectSelect');
+  const hidden=document.getElementById('settingsAdoProject');
+  const testRow=document.getElementById('settingsAdoTestRow');
+  if(hidden) hidden.value=sel?.value||'';
+  if(testRow) testRow.style.display=sel?.value?'block':'none';
+}
+function testADOConnection(){
+  const res=document.getElementById('adoTestResult')||document.getElementById('settingsTestResult');
+  if(res){res.style.display='block';res.className='settings-test-result';res.textContent='⏳ Testing ADO connection…';}
+  adoRequest('GET',`https://dev.azure.com/${encodeURIComponent(document.getElementById('settingsAdoOrg')?.value||'')}/_apis/projects?api-version=7.1&$top=1`,null)
+    .then(d=>{
+      if(res){res.className='settings-test-result ok';res.textContent='✅ ADO connected — '+((d.value||[]).length||0)+' projects found';}
+    }).catch(e=>{
+      if(res){res.className='settings-test-result err';res.textContent='❌ '+e.message;}
+    });
+}
+function syncApiKey(val){
+  if(typeof window!=='undefined') window.apiKey=val;
+}
+
+// ── ADO defaults save/load ────────────────────────────────────────
+function saveADODefaults(){
+  const org=document.getElementById('settingsAdoOrgSelect')?.value||document.getElementById('settingsAdoOrg')?.value||'';
+  const project=document.getElementById('settingsAdoProjectSelect')?.value||'';
+  if(!org){showToast('Enter organisation first','⚠️');return;}
+  try{localStorage.setItem('shuddhi-ado-default-org',org);localStorage.setItem('shuddhi-ado-default-project',project);}catch(e){}
+  window.__adoDefaultOrg=org; window.__adoDefaultProject=project;
+  const confirm=document.getElementById('settingsSaveConfirm');
+  if(confirm){
+    confirm.style.display='block';
+    confirm.innerHTML='✅ Default saved: <strong>'+org+(project?' → '+project:'')+'</strong>';
+    setTimeout(()=>{confirm.style.display='none';},3500);
+  }
+  showToast('ADO defaults saved!','💾');
+}
+(function loadADODefaults(){
+  try{
+    const org=localStorage.getItem('shuddhi-ado-default-org');
+    const project=localStorage.getItem('shuddhi-ado-default-project');
+    if(org) window.__adoDefaultOrg=org;
+    if(project) window.__adoDefaultProject=project;
+  }catch(e){}
+})();
+
+// ── Multi-Provider AI switcher ────────────────────────────────────
+let _activeProvider=(()=>{try{return localStorage.getItem('shuddhi-ai-provider')||'claude';}catch(e){return 'claude';}})();
+const PROVIDER_META={
+  claude:{name:'Claude',icon:'🤖',model:'claude-sonnet-4-6',envKey:'CLAUDE_API_KEY',url:'https://console.anthropic.com',urlLabel:'console.anthropic.com',color:'var(--indigo)'},
+  gemini:{name:'Gemini',icon:'✦',model:'gemini-2.0-flash',envKey:'GEMINI_API_KEY',url:'https://aistudio.google.com',urlLabel:'aistudio.google.com',color:'#0369A1'},
+  groq:{name:'Groq',icon:'⚡',model:'llama-3.3-70b-versatile',envKey:'GROQ_API_KEY',url:'https://console.groq.com',urlLabel:'console.groq.com',color:'#7C3AED'},
+};
+function getActiveProvider(){return _activeProvider||'claude';}
+function saveProviderChoice(){
+  try{localStorage.setItem('shuddhi-ai-provider',_activeProvider);}catch(e){}
+  const meta=PROVIDER_META[_activeProvider]||{};
+  showToast('✅ '+(meta.name||_activeProvider)+' set as active provider',meta.icon||'✅');
+  const badge=document.getElementById('activeProviderBadge');
+  if(badge){badge.textContent='✓ ACTIVE';}
+}
+function selectProvider(provider,save=true){
+  _activeProvider=provider;
+  const meta=PROVIDER_META[provider];
+  if(!meta) return;
+  if(save){try{localStorage.setItem('shuddhi-ai-provider',provider);}catch(e){} showToast('Switched to '+meta.name,meta.icon);}
+  document.querySelectorAll('.provider-pill').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pill-'+provider)?.classList.add('active');
+  const fields={activeProviderIcon:meta.icon,activeProviderName:meta.name,activeProviderModel:meta.model,activeEnvKey:meta.envKey+' · Vercel Env',guideEnvKey:meta.envKey};
+  Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val;});
+  const hasKey={claude:window.__claudeKey,gemini:window.__geminiKey,groq:window.__groqKey}[provider];
+  const iconEl=document.getElementById('activeKeyStatusIcon');
+  const lblEl=document.getElementById('activeKeyStatusLabel');
+  const envEl=document.getElementById('activeEnvKey');
+  const card=document.getElementById('activeProviderCard');
+  if(iconEl) iconEl.textContent=hasKey?'✅':'⚠️';
+  if(lblEl)  lblEl.textContent=hasKey?'API key configured in Vercel':'Key not found — add '+meta.envKey+' to Vercel';
+  if(envEl)  envEl.textContent=meta.envKey+(hasKey?' · Vercel Env ✓':' · Not set');
+  if(card)   card.style.borderColor=hasKey?'rgba(16,185,129,.3)':'rgba(220,38,38,.25)';
+  const dot=document.getElementById('claudeKeyDot');
+  const lbl=document.getElementById('claudeKeyDotLabel');
+  if(dot){dot.style.background=hasKey?'var(--success,#10B981)':'var(--error,#EF4444)';dot.title='AI: '+provider+' active';}
+  if(lbl) lbl.textContent=meta.name;
+}
+function applyProviderStatus(claudeKey,geminiKey,groqKey,activeProvider){
+  window.__claudeKey=claudeKey; window.__geminiKey=geminiKey; window.__groqKey=groqKey;
+  const pills={claude:claudeKey,gemini:geminiKey,groq:groqKey};
+  Object.entries(pills).forEach(([p,hasKey])=>{
+    const el=document.getElementById('pill-status-'+p);
+    if(!el) return;
+    el.textContent=hasKey?'✓ Set':'— Not set';
+    el.className='pill-status '+(hasKey?'ok':'off');
+  });
+  const savedP=(() =>{try{return localStorage.getItem('shuddhi-ai-provider')||'';}catch(e){return '';}})();
+  const provider=savedP||activeProvider||(claudeKey?'claude':geminiKey?'gemini':groqKey?'groq':'claude');
+  selectProvider(provider,false);
+}
+function applySettingsStatus(claudeKey,adoKey,geminiKey,groqKey,activeProvider){
+  applyProviderStatus(claudeKey,geminiKey||false,groqKey||false,activeProvider||'');
+}
+
+// ── Settings auto-load ────────────────────────────────────────────
+async function settingsAutoLoadProjects(){
+  try{
+    const res=await fetch('/api/status');
+    if(!res.ok) return;
+    const {adoOrg}=await res.json();
+    const org=adoOrg||window.__adoDefaultOrg||'';
+    if(!org) return;
+    ['settingsOrgDisplay','adoOrgDisplay'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=org;});
+    ['settingsOrgHint','adoOrgHintText'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=org;});
+    ['settingsAdoOrg','adoOrg'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=org;});
+    await loadProjectsIntoSettings(org);
+  }catch(e){}
+}
+async function loadProjectsIntoSettings(org){
+  const projRow=document.getElementById('settingsAdoProjectRow');
+  const badge=document.getElementById('settingsProjectLoadingBadge');
+  const projSel=document.getElementById('settingsAdoProjectSelect');
+  const testRow=document.getElementById('settingsAdoTestRow');
+  if(!projSel) return;
+  if(badge) badge.style.display='inline';
+  if(projRow) projRow.style.display='block';
+  projSel.innerHTML='<option value="">Loading projects…</option>';
+  projSel.disabled=true;
+  try{
+    const url=`https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects?api-version=7.1&$top=200`;
+    const data=await adoRequest('GET',url,null);
+    const projects=(data.value||[]).sort((a,b)=>a.name.localeCompare(b.name));
+    projSel.disabled=false;
+    projSel.innerHTML='<option value="">— Select Default Project —</option>';
+    projects.forEach(p=>{const opt=document.createElement('option');opt.value=p.name;opt.textContent=p.name;projSel.appendChild(opt);});
+    if(badge) badge.style.display='none';
+    const saved=window.__adoDefaultProject||localStorage.getItem('shuddhi-ado-default-project')||'';
+    if(saved){const m=projects.find(p=>p.name.toLowerCase()===saved.toLowerCase());if(m){projSel.value=m.name;settingsOnProjectChange();}}
+    else if(projects.length===1){projSel.value=projects[0].name;settingsOnProjectChange();}
+    if(testRow) testRow.style.display=projects.length?'block':'none';
+  }catch(e){
+    if(badge) badge.style.display='none';
+    projSel.disabled=false;
+    projSel.innerHTML='<option value="">Failed to load</option>';
+  }
+}
+
+</script>
 </body>
 </html>
