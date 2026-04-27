@@ -17,8 +17,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23E8A020'/><text y='.9em' font-size='72' x='12' fill='white'>श</text></svg>" type="image/svg+xml"/>
 <link rel="canonical" href="https://shuddhi-qa.vercel.app/"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js">
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
 
 
@@ -2885,19 +2884,18 @@ header::after { display: none !important; }
   .tg-steps-chip.open .chip-arr { transform:rotate(180deg); }
   .tg-steps-popup {
     display: none;
-    position: fixed;       /* fixed so it escapes table overflow clipping */
+    position: fixed;
     z-index: 9999;
-    min-width: 320px;
-    max-width: 460px;
-    width: max-content;
+    min-width: 340px;
+    max-width: 500px;
+    max-height: 320px;        /* cap height — scroll if many steps */
+    overflow-y: auto;
+    overflow-x: hidden;
     background: var(--surface);
     border: 1.5px solid var(--border2);
     border-radius: 12px;
-    padding: 6px 0;
-    box-shadow: 0 12px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04);
-    font-size: 12.5px;
-    color: var(--text2);
-    overflow: hidden;
+    padding: 4px 0;
+    box-shadow: 0 12px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
   }
   .tg-steps-popup.open { display: block; }
   td.steps-td { position: relative; overflow: visible !important; }
@@ -3505,6 +3503,10 @@ header::after { display: none !important; }
       overflow-x: auto !important;
     }
     .tg-table { min-width: 640px !important; }
+    .tg-col-sc { max-width: 160px !important; word-break: break-word !important; }
+    .tg-col-exp { max-width: 140px !important; word-break: break-word !important; }
+    .tg-scenario { font-size: 12px !important; }
+    .tg-exp-short { -webkit-line-clamp: 1 !important; font-size: 12px !important; }
 
     /* Stat cards: 3-col on mobile */
     #outputStats {
@@ -4684,24 +4686,26 @@ header::after { display: none !important; }
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 8px 14px;
+    padding: 7px 14px;
     border-bottom: 1px solid var(--border);
-    line-height: 1.55;
+    line-height: 1.5;
+    min-height: 36px;         /* prevents circles from compressing into each other */
   }
-  .tg-step-line:last-child { border-bottom: none; }
+  .tg-step-line:last-child { border-bottom: none; padding-bottom: 8px; }
   .tg-step-num {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 22px;
+    width: 22px;              /* explicit width prevents squeezing */
     height: 22px;
     border-radius: 50%;
     background: var(--indigo, #5B5FEF);
     color: #fff;
     font-size: 10px;
     font-weight: 800;
-    flex-shrink: 0;
-    margin-top: 1px;
+    flex-shrink: 0;           /* NEVER shrink the circle */
+    margin-top: 2px;
     font-family: 'JetBrains Mono', monospace;
   }
   .tg-step-text {
@@ -4709,6 +4713,48 @@ header::after { display: none !important; }
     font-size: 12.5px;
     color: var(--text2);
     word-break: break-word;
+    word-break: break-word;
+  }
+
+  /* ── Inline expanded row ─────────────────────────────────────── */
+  .tg-main-row:hover { background: rgba(99,102,241,.035) !important; }
+  .tg-main-row.row-expanded { background: rgba(99,102,241,.05) !important; }
+  .tg-exp-row td { padding: 0 !important; background: var(--surface2); }
+  .tg-exp-panel {
+    border-top: 2px solid rgba(91,95,239,.15);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 20px;
+    animation: expSlideDown .18s ease;
+  }
+  @keyframes expSlideDown {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .tg-exp-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 768px) { .tg-exp-cols { grid-template-columns: 1fr; } }
+  .tg-exp-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .6px; color: var(--text3); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tg-copy-steps-btn {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 6px;
+    padding: 2px 8px; font-size: 11px; cursor: pointer; color: var(--text3); transition: all .14s;
+    margin-left: auto;
+  }
+  .tg-copy-steps-btn:hover { color: var(--indigo); border-color: var(--indigo); }
+  .tg-exp-expected-text {
+    font-size: 13px; line-height: 1.65; color: var(--text2);
+    padding: 10px 14px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);
+  }
+  .tg-exp-short {
+    font-size: 12.5px; color: var(--text2);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; line-height: 1.5;
   }
 </style>
 </head>
@@ -5009,6 +5055,7 @@ header::after { display: none !important; }
           <li>Name: <code id="guideEnvKey">GEMINI_API_KEY</code> or <code>GROQ_API_KEY</code> → paste value → Save</li>
           <li>Run <code>vercel --prod --force</code> to deploy</li>
           <li>Switch provider anytime from this Settings panel — no Vercel changes needed!</li>
+          <li><strong>Privacy:</strong> Only your preference choices are stored in browser localStorage (provider selection, ADO org name, assigned-to email). No API keys or secrets ever leave Vercel's server.</li>
         </ol>
       </details>
 
@@ -5468,7 +5515,7 @@ header::after { display: none !important; }
           <div class="step-label"><span class="step-num">2</span><span>Describe the Business Flow</span></div>
         <div class="field">
           <label>Business Flow Description</label>
-          <textarea id="flowDesc" placeholder="Describe the business process in plain English...&#10;&#10;e.g. Vendor submits invoice via portal. AP Clerk reviews and matches to PO. Finance Manager approves if amount > ₹50,000. Payment is processed and vendor is notified."></textarea>
+          <textarea id="flowDesc" oninput="updateFlowCharCount(this)" placeholder="Describe the business process in plain English...&#10;&#10;e.g. Vendor submits invoice via portal. AP Clerk reviews and matches to PO. Finance Manager approves if amount > ₹50,000. Payment is processed and vendor is notified."></textarea>
         </div>
           <!-- Advanced toggle -->
         <div class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">
@@ -6234,7 +6281,7 @@ function renderPlatformCards() {
              onerror="this.style.display='none'"/>
       </span>
       <span class="pc-group-name">${groupName}</span>
-      <span class="pc-group-chevron">▾</span>
+      <span class="pc-group-chevron">&#9662;</span>
     `;
     groupHeader.onclick = () => togglePlatformGroup(groupName);
     grid.appendChild(groupHeader);
@@ -6254,7 +6301,7 @@ function renderPlatformCards() {
                onerror="this.style.display='none';this.parentNode.textContent='${p.label.charAt(0)}'"/>
         </span>
         <span class="pc-name">${p.label}</span>
-        <span class="pc-check">✓</span>
+        <span class="pc-check">&#10003;</span>
       `;
       item.onclick = () => selectPlatform(p.value);
       itemsWrap.appendChild(item);
@@ -6422,7 +6469,7 @@ function fillSample(key) {
   document.getElementById('integrations').value = s.integrations;
 }
 
-function showToast(msg, emoji = '✅') {
+function showToast(msg, emoji = '\u2705') {
   const t = document.getElementById('toast');
   t.textContent = emoji + ' ' + msg;
   t.classList.add('show');
@@ -6792,11 +6839,11 @@ function applyDetectedPlatform(d365Score, sfScore) {
   if (d365Score > sfScore * 3 || (d365Score > 0 && sfScore === 0)) {
     platform  = 'D365 F&O';
     badgeClass = 'd365';
-    badgeText  = `🔵 Detected: Microsoft D365 (score: ${d365Score} vs SF: ${sfScore})`;
+    badgeText  = `&#128309; Detected: Microsoft D365 (score: ${d365Score} vs SF: ${sfScore})`;
   } else if (sfScore > d365Score * 3 || (sfScore > 0 && d365Score === 0)) {
     platform  = 'Salesforce Sales';
     badgeClass = 'sf';
-    badgeText  = `☁️ Detected: Salesforce (score: ${sfScore} vs D365: ${d365Score})`;
+    badgeText  = `&#9729;&#65039; Detected: Salesforce (score: ${sfScore} vs D365: ${d365Score})`;
   } else if (d365Score > 0 && sfScore > 0) {
     platform  = 'D365+Salesforce';
 function detectSpecialPlatform(lower) {
@@ -6888,7 +6935,7 @@ async function parseSwagger(file) {
     document.getElementById('flowDesc').value =
       `Test all API endpoints from the uploaded Swagger spec.\n\n${summary}`;
 
-    showToast(`Swagger parsed — ${pathKeys.length} endpoints found`, '✅');
+    showToast(`Swagger parsed &#8212; ${pathKeys.length} endpoints found`, '\u2705');
     return summary;
   } catch(e) {
     showToast('Could not parse Swagger/OpenAPI file — check format', '⚠️');
@@ -7082,13 +7129,90 @@ function stopBulkGenerate() {
   document.getElementById('bulkStopBtn').style.display = 'none';
   document.getElementById('bulkSpinner').style.display = 'none';
   document.getElementById('bulkGenBtn').disabled = false;
-  document.getElementById('bulkGenLabel').textContent = '⚡ Generate All & Export Excel';
+  document.getElementById('bulkGenLabel').textContent = '\u26A1 Generate All & Export Excel';
   const progLbl = document.getElementById('bulkProgressLabel');
   if (progLbl) progLbl.textContent = 'Stopped by user.';
   showToast('Bulk generation stopped.', '⏹');
 }
 
+// ══════════════════════════════════════════════════════════════════
+// Internal provider fallback loop — tries each provider silently
+// Returns { reader, decoder } for streaming or throws if all fail
+// ══════════════════════════════════════════════════════════════════
+async function _callProviderWithFallback(requestBody) {
+  const chain    = ['gemini', 'groq', 'claude'];
+  const keys     = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey };
+  const active   = getActiveProvider();
+  // Put active provider first, then others
+  const ordered  = [active, ...chain.filter(p => p !== active)];
+  const toTry    = ordered.filter(p => keys[p] && !_failedProviders.has(p));
+
+  if (!toTry.length) {
+    // All with keys have failed — reset and try anyway (Groq resets in ~1min)
+    _failedProviders.clear();
+    toTry.push(...ordered.filter(p => keys[p]));
+  }
+
+  let lastErr = null;
+  for (const provider of toTry) {
+    try {
+      const body = { ...requestBody, provider };
+      const response = await fetch('/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const status = response.status;
+        const errText = err.error || err.detail || '';
+        const isLimit = status === 429 ||
+          (status === 400 && (errText.includes('usage limits') || errText.includes('regain access') || err.switchProvider));
+
+        if (isLimit) {
+          _failedProviders.add(provider);
+          console.log('[Provider] ' + provider + ' limit → trying next');
+          lastErr = new Error(provider + ' rate limited');
+          continue; // try next provider
+        }
+        // Non-retryable error
+        throw new Error(errText || 'API error ' + status);
+      }
+
+      // Success — update active provider silently
+      if (provider !== active) {
+        _activeProvider = provider;
+        window.__activeProvider = provider;
+        try { localStorage.setItem('shuddhi-ai-provider', provider); } catch(e) {}
+        console.log('[Provider] Silently switched to', provider);
+      }
+      return response;
+
+    } catch(e) {
+      if (e.message.includes('rate limited') || e.message.startsWith('__PROVIDER_LIMIT__')) {
+        lastErr = e;
+        continue;
+      }
+      throw e; // non-rate-limit error — surface it
+    }
+  }
+
+  // All providers exhausted
+  console.error('[Provider] All providers failed:', [..._failedProviders]);
+  throw new Error('Unable to generate test cases right now. All AI providers are temporarily unavailable. Please try again in a few minutes.');
+}
+
+let _isGenerating = false; // module-level guard — prevents concurrent generate() calls
+
 async function generate() {
+  // Guard: block concurrent calls (rapid double-click protection)
+  if (_isGenerating) {
+    console.log('[Generate] Blocked — already generating');
+    return;
+  }
+  _isGenerating = true;
+
   // Reset provider failure state on every manual generate click
   if (typeof _failedProviders !== 'undefined') {
     _failedProviders.clear();
@@ -7097,7 +7221,8 @@ async function generate() {
   const apiKey = document.getElementById('apiKey').value.trim();
   const platform = document.getElementById('platform').value;
   const module = document.getElementById('module').value;
-  const flow = document.getElementById('flowDesc').value.trim();
+  let flow = document.getElementById('flowDesc').value.trim();
+  flow = (typeof checkAndTrimFlow === 'function') ? checkAndTrimFlow(flow) : flow;
   const roles = document.getElementById('roles').value.trim();
   const integrations = document.getElementById('integrations').value.trim();
   const outputFormat = document.getElementById('outputFormat').value;
@@ -7109,10 +7234,10 @@ async function generate() {
   if (!_hasKey) {
     const _pName = { claude:'Claude', gemini:'Gemini', groq:'Groq' }[_activeP] || _activeP;
     showError('No AI provider configured. Go to Settings → AI Provider and select ' + _pName + '.');
-    return;
+    _isGenerating = false; return;
   }
-  if (!platform) { showError('Please select a platform.'); return; }
-  if (!flow && !extractedDocText) { showError('Please describe the business flow or upload a requirement document.'); return; }
+  if (!platform) { showError('Please select a platform.'); _isGenerating = false; return; }
+  if (!flow && !extractedDocText) { showError('Please describe the business flow or upload a requirement document.'); _isGenerating = false; return; }
 
   const btn = document.getElementById('genBtn');
   btn.classList.add('loading');
@@ -7122,7 +7247,10 @@ async function generate() {
 
   document.getElementById('placeholder').style.display = 'none';
   document.getElementById('outputContent').className = 'output-content visible';
-  document.getElementById('outputContent').innerHTML = '<span class="cursor"></span>';
+  document.getElementById('outputContent').innerHTML =
+    '<div style="display:flex;align-items:center;gap:10px;padding:24px;color:var(--text3);font-size:13.5px">' +
+    '<span style="animation:spin 1s linear infinite;display:inline-block;font-size:20px">⟳</span>' +
+    'Generating test cases…</div>';
   document.getElementById('metaBar').className = 'meta-bar';
   document.getElementById('copyBtn').disabled = true;
   document.getElementById('copyXlsBtn').disabled = true;
@@ -7142,7 +7270,7 @@ async function generate() {
   const systemPrompt = isWebOrMobile
     ? `You are a senior QA Engineer with 12+ years of experience testing web and mobile applications. You specialise in functional, integration, API, and UI/UX testing across modern tech stacks (React, Angular, Vue, Node.js, REST/GraphQL APIs, iOS, Android). You create production-ready test artifacts that development teams can immediately use in Jira, Azure DevOps, or any test management tool.
 
-CRITICAL LANGUAGE RULE: Generate ALL test case output in ${outputLang}. All column values (Title, Step Action, Step Expected Result, Assigned To, State), section headings, and test data must be written in ${outputLang}. The input document may be in any language — fully understand it and produce output exclusively in ${outputLang}.
+CRITICAL LANGUAGE RULE: Generate ALL test case output in ${outputLang}. All column values (Title, Step Action, Step Expected Result, Assigned To, State), section headings, and test data must be written in ${outputLang}. The input document may be in any language &#8212; fully understand it and produce output exclusively in ${outputLang}.
 
 When given a feature or user flow description, generate a complete structured QA test artifact in clean Markdown.
 
@@ -7159,7 +7287,7 @@ Column definitions:
 FORMATTING RULES:
 - NEVER use backtick code spans inside table cells
 - NEVER use bold in Step Action cells
-- Keep cell content concise — separate multiple steps with semicolons
+- Keep cell content concise &#8212; separate multiple steps with semicolons
 
 Before generating test cases, perform a Requirement Gap Analysis.
 
@@ -7169,9 +7297,9 @@ Analyse the provided feature description and identify:
 - **Ambiguous requirements**: Statements open to multiple interpretations
 - **Risks**: Technical or UX risks affecting test coverage
 - **Assumptions made**: What you assumed to proceed
-- **Clarifying questions**: 3–5 questions a QA engineer should ask the product team
+- **Clarifying questions**: 3&#8211;5 questions a QA engineer should ask the product team
 
-Keep it concise — max 10 items total.
+Keep it concise &#8212; max 10 items total.
 
 ---
 
@@ -7181,7 +7309,7 @@ Generate these sections:
 Table: Platform | Module | Priority | Total Test Cases | Created Date
 
 ## 2. End-to-End Test Cases
-Happy path + alternate flows + role-based access. Min 6–10 test cases.
+Happy path + alternate flows + role-based access. Min 6&#8211;10 test cases.
 
 ## 3. Field Validation Test Cases
 Form inputs: mandatory fields, email format, min/max length, special characters, SQL injection, XSS.
@@ -7198,7 +7326,7 @@ Table: Data Type | Sample Valid Value | Sample Invalid Value | Notes
 Use realistic URLs, HTTP status codes, error messages, and field names. Format for direct import into Azure DevOps or Jira Zephyr.
 
 ## 7. Test Case Metadata
-For EVERY test case generated in sections 2–5, produce ONE row in this table.
+For EVERY test case generated in sections 2&#8211;5, produce ONE row in this table.
 CRITICAL: The TC ID in this table MUST exactly match the TC ID in the Title column above (e.g. "TC001").
 
 | TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact |
@@ -7207,13 +7335,13 @@ CRITICAL: The TC ID in this table MUST exactly match the TC ID in the Title colu
 Column definitions:
 - TC ID: Match exactly to Title (e.g. "TC001")
 - Preconditions: What must be true BEFORE the test runs (e.g. "User account exists; Browser: Chrome latest; Test environment: UAT")
-- Execution Type: ONE of — Smoke | Regression | E2E | Integration | UAT | Negative
+- Execution Type: ONE of &#8212; Smoke | Regression | E2E | Integration | UAT | Negative
 - Risk Score: P0 (release blocker) | P1 (must-run) | P2 (regression) | P3 (nice-to-have). Base on: business impact × likelihood of failure
-- Automation Feasibility: YES or NO + 1-line reason (e.g. "YES — stable UI selector, repeatable flow" or "NO — requires manual visual inspection")
+- Automation Feasibility: YES or NO + 1-line reason (e.g. "YES &#8212; stable UI selector, repeatable flow" or "NO &#8212; requires manual visual inspection")
 - Tool & Layer: Best tool + layer for automation (e.g. "Playwright / UI" or "REST Assured / API" or "Postman / API" or "N/A")
-- Failure Impact: Business + system consequence if test fails (e.g. "Users cannot log in — complete application outage. Revenue impact: immediate.")
+- Failure Impact: Business + system consequence if test fails (e.g. "Users cannot log in &#8212; complete application outage. Revenue impact: immediate.")
 
-Generate one row per test case. Never leave Preconditions blank — at minimum write "Test environment active; Valid test data available".
+Generate one row per test case. Never leave Preconditions blank &#8212; at minimum write "Test environment active; Valid test data available".
 NEVER use backticks inside table cells.`
     : `You are a senior QA Automation Engineer and enterprise platform specialist with 15+ years of experience across Microsoft Dynamics 365 (F&O, CRM, Business Central), Salesforce (Sales, Service, CPQ), Workday (HCM/Payroll), Oracle ERP Cloud (Fusion/NetSuite), SAP (S/4HANA, R3), Guidewire (PolicyCenter, ClaimCenter, BillingCenter), and ServiceNow. You specialize in creating comprehensive, production-ready QA test artifacts for enterprise platform implementations.
 
@@ -7224,7 +7352,7 @@ PLATFORM-SPECIFIC EXPERTISE:
 - SAP: Use transaction codes (ME21N for PO, MIRO for invoice verification, FB50 for GL posting). Reference authorization objects, BAPI calls, and IDoc processing. Include table-level validations where relevant (EKKO, BSEG, VBAK).
 - ServiceNow: Use table names (incident, change_request, cmdb_ci), reference SLA stages, assignment groups, catalog items, and Flow Designer steps.
 
-CRITICAL LANGUAGE RULE: Generate ALL test case output in ${outputLang}. All column values (Title, Step Action, Step Expected Result, Assigned To, State), section headings, descriptions, and test data must be written in ${outputLang}. The input document may be in any language — fully understand it and produce the complete test artifact exclusively in ${outputLang}. For right-to-left languages (Arabic), use RTL text naturally.
+CRITICAL LANGUAGE RULE: Generate ALL test case output in ${outputLang}. All column values (Title, Step Action, Step Expected Result, Assigned To, State), section headings, descriptions, and test data must be written in ${outputLang}. The input document may be in any language &#8212; fully understand it and produce the complete test artifact exclusively in ${outputLang}. For right-to-left languages (Arabic), use RTL text naturally.
 
 When given a business process description, generate a complete structured QA test artifact in clean Markdown.
 
@@ -7239,10 +7367,10 @@ Column definitions:
 - State: Always set to "Active" for all newly created test cases
 
 FORMATTING RULES FOR TABLE CELLS:
-- NEVER use backtick code spans (e.g. \`value\`) inside table cells — write values as plain text instead
-- NEVER use bold (**text**) inside Step Action cells — plain text only
+- NEVER use backtick code spans (e.g. \`value\`) inside table cells &#8212; write values as plain text instead
+- NEVER use bold (**text**) inside Step Action cells &#8212; plain text only
 - You MAY use bold in Step Expected Result cells for status values (e.g. **Passed**, **Active**)
-- Keep cell content concise — long steps should use semicolons as separators, not line breaks
+- Keep cell content concise &#8212; long steps should use semicolons as separators, not line breaks
 
 Before generating test cases, perform a Requirement Gap Analysis.
 
@@ -7252,9 +7380,9 @@ Analyse the provided business flow and identify:
 - **Ambiguous requirements**: Statements that could be interpreted multiple ways
 - **Risks**: Technical or business risks that could affect testing
 - **Assumptions made**: What you assumed to proceed with test generation
-- **Clarifying questions**: 3–5 questions a QA engineer should ask the BA/PO
+- **Clarifying questions**: 3&#8211;5 questions a QA engineer should ask the BA/PO
 
-Format as a brief bullet list under each heading. Keep it concise — max 10 items total.
+Format as a brief bullet list under each heading. Keep it concise &#8212; max 10 items total.
 
 ---
 
@@ -7285,7 +7413,7 @@ A table: Data Type | Sample Valid Value | Sample Invalid Value | Notes
 Be very specific to the ERP platform mentioned. Use actual field names, form names, and navigation paths from D365 or Salesforce. Format output so it can be directly imported into Azure DevOps Test Plans or Jira Zephyr.
 
 ## 7. Test Case Metadata
-For EVERY test case generated in sections 2–5, produce ONE row in this table.
+For EVERY test case generated in sections 2&#8211;5, produce ONE row in this table.
 CRITICAL: The TC ID in this table MUST exactly match the TC ID in the Title column above (e.g. "TC001").
 
 | TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact |
@@ -7294,11 +7422,11 @@ CRITICAL: The TC ID in this table MUST exactly match the TC ID in the Title colu
 Column definitions:
 - TC ID: Match exactly to Title column TC ID (e.g. "TC001")
 - Preconditions: System and data prerequisites before this test can run. Be ERP-specific (e.g. "D365 F&O UAT environment active; Vendor record exists (VENDOR-001); Purchase Order posted (PO-2024-001); User assigned AP Clerk role")
-- Execution Type: ONE of — Smoke | Regression | E2E | Integration | UAT | Negative
-- Risk Score: P0 (release blocker — data loss, security, financial) | P1 (must-run — core business flow) | P2 (regression — existing functionality) | P3 (nice-to-have — edge case)
-- Automation Feasibility: YES or NO + 1-line reason (e.g. "YES — D365 UI is stable, Playwright can handle F&O navigation" or "NO — requires physical approval in workflow, cannot be automated")
-- Tool & Layer: Best tool for this test case (e.g. "Playwright/TypeScript / UI" or "REST Assured / API" or "Provar / Salesforce UI" or "D365 RSAT / UI" or "N/A — Manual only")
-- Failure Impact: Business consequence if this test fails (e.g. "AP invoices cannot be processed — blocks entire accounts payable cycle. Financial close delayed. Compliance risk if invoices unpaid past due date.")
+- Execution Type: ONE of &#8212; Smoke | Regression | E2E | Integration | UAT | Negative
+- Risk Score: P0 (release blocker &#8212; data loss, security, financial) | P1 (must-run &#8212; core business flow) | P2 (regression &#8212; existing functionality) | P3 (nice-to-have &#8212; edge case)
+- Automation Feasibility: YES or NO + 1-line reason (e.g. "YES &#8212; D365 UI is stable, Playwright can handle F&O navigation" or "NO &#8212; requires physical approval in workflow, cannot be automated")
+- Tool & Layer: Best tool for this test case (e.g. "Playwright/TypeScript / UI" or "REST Assured / API" or "Provar / Salesforce UI" or "D365 RSAT / UI" or "N/A &#8212; Manual only")
+- Failure Impact: Business consequence if this test fails (e.g. "AP invoices cannot be processed &#8212; blocks entire accounts payable cycle. Financial close delayed. Compliance risk if invoices unpaid past due date.")
 
 Generate one row per test case. Never skip a test case. For Preconditions, always list: environment, master data dependencies, user role/permissions, and any prerequisite transactions.
 NEVER use backticks inside table cells.`;
@@ -7324,7 +7452,7 @@ NEVER use backticks inside table cells.`;
 **Priority:** ${priority}
 **User Roles:** ${roles || 'Not specified'}
 **Integrations/Systems:** ${integrations || 'Not specified'}
-**Document Language:** ${detectedLanguage} — IMPORTANT: Generate ALL test cases in English only, even though the source document may be in ${detectedLanguage}.
+**Document Language:** ${detectedLanguage} &#8212; IMPORTANT: Generate ALL test cases in English only, even though the source document may be in ${detectedLanguage}.
 
 ${extractedDocText
   ? `**Source:** Requirement Document (auto-parsed, language: ${detectedLanguage})
@@ -7377,35 +7505,7 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       if (status === 429 || isUsageCap) {
         const curProvider = getActiveProvider();
         let switched = null;
-        if (typeof handleProviderRateLimit === 'function') {
-          switched = handleProviderRateLimit(curProvider);
-        }
-        if (switched) {
-          // NO auto-retry — user clicks Generate again after switch
-          // This prevents infinite loops when multiple providers fail
-          hideError();
-          const switchedMeta = (typeof PROVIDER_META !== 'undefined' && PROVIDER_META[switched]) || { name: switched };
-          msg = `${curProvider} limit reached — switched to ${switchedMeta.name}. Click Generate to retry.`;
-          // Show a persistent banner (not just toast) so user sees it clearly
-          showError(msg);
-          // Re-enable the generate button so user can click
-          const btn2 = document.getElementById('genBtn');
-          if (btn2) {
-            btn2.disabled  = false;
-            btn2.classList.remove('loading');
-          }
-          const stopBtn2 = document.getElementById('stopBtn');
-          if (stopBtn2) stopBtn2.style.display = 'none';
-          return; // stop generate(), do not throw
-        } else {
-          // All providers exhausted
-          const nextReset = new Date(Date.now() + 65000);
-          msg = [
-            '⚠️ All AI providers unavailable right now.',
-            'Groq resets in ~1 min — try again shortly.',
-            'Claude access resumes May 1, 2026.'
-          ].join(' ');
-        }
+        // provider fallback handled by _callProviderWithFallback()
       }
       if (status === 401) msg = 'Invalid API key — check Settings → AI Provider.';
       throw new Error(msg);
@@ -7414,6 +7514,16 @@ Make the output production-ready and specific to ${platform}. Use real field nam
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    // DEF-004: Stream timeout — if no delta for 30s, abort
+    let _streamLastActivity = Date.now();
+    const _streamTimeout = setInterval(() => {
+      if (Date.now() - _streamLastActivity > 30000) {
+        clearInterval(_streamTimeout);
+        reader.cancel();
+        console.warn('[Stream] No activity for 30s — aborting');
+        throw new Error('Generation timed out. Please try again.');
+      }
+    }, 5000);
 
     while (true) {
       const { done, value } = await reader.read();
@@ -7446,7 +7556,12 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       // Stopped intentionally — stopGeneration() already handled UI cleanup
       return;
     }
-    showError('Error: ' + err.message);
+    // Show clean error — never expose provider names or internal details
+    const cleanMsg = err.message.startsWith('Unable to generate') || err.message.startsWith('All AI')
+      ? err.message
+      : 'Unable to generate test cases right now. Please try again in a moment.';
+    showError(cleanMsg);
+    _isGenerating = false; // release guard on error
     document.getElementById('placeholder').style.display = 'flex';
     document.getElementById('outputContent').className = 'output-content';
     document.getElementById('statusDot').className = 'status-dot';
@@ -7795,7 +7910,7 @@ function finalizeOutput(elapsed, platform, module) {
   document.getElementById('genTime').textContent = elapsed;
   document.getElementById('metaPlatform').textContent = platform;
   document.getElementById('metaModule').textContent = module || 'General';
-  document.getElementById('metaLang').textContent = `${detectedLanguage} → EN`;
+  document.getElementById('metaLang').textContent = `${detectedLanguage} &#8594; EN`;
   document.getElementById('tokenBadge').textContent = '✓ Complete';
 
   document.getElementById('copyBtn').disabled = false;
@@ -7840,6 +7955,7 @@ function finalizeOutput(elapsed, platform, module) {
     _failedProviders.clear();
     _autoRetryCount = 0;
   }
+  _isGenerating = false; // release guard on success
 }
 
 function showError(msg) {
@@ -8346,12 +8462,12 @@ function renderHistory() {
   emptyEl.style.display = 'none';
   listEl.innerHTML = history.map(s => `
     <div class="history-item" onclick="loadHistory('${s.id}')">
-      <div class="history-item-icon">📄</div>
+      <div class="history-item-icon">&#128196;</div>
       <div class="history-item-info">
-        <div class="history-item-title">${s.platform} — ${s.module || 'General'}</div>
+        <div class="history-item-title">${s.platform} &#8212; ${s.module || 'General'}</div>
         <div class="history-item-meta">${s.date} · ${s.tcCount} test cases</div>
       </div>
-      <button class="history-item-del" onclick="event.stopPropagation();deleteHistory('${s.id}')" title="Delete">🗑</button>
+      <button class="history-item-del" onclick="event.stopPropagation();deleteHistory('${s.id}')" title="Delete">&#128465;</button>
     </div>
   `).join('');
 }
@@ -8376,12 +8492,12 @@ function loadHistory(id) {
     document.getElementById(id).disabled = false;
   });
   document.getElementById('resetBtn').className = 'reset-btn visible';
-  showToast(`Loaded: ${session.platform} — ${session.module}`);
+  showToast(`Loaded: ${session.platform} &#8212; ${session.module}`);
 }
 
 function deleteHistory(id) {
   const session = getHistory().find(s => String(s.id) === String(id));
-  const label = session ? `${session.platform} — ${session.module||'General'}` : 'this session';
+  const label = session ? `${session.platform} &#8212; ${session.module||'General'}` : 'this session';
   if (!confirm(`Delete "${label}"?\n\nThis cannot be undone.`)) return;
   const history = getHistory().filter(s => String(s.id) !== String(id));
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
@@ -8487,7 +8603,7 @@ function toggleEditMode() {
     btn.textContent = '✏️ Edit';
     tables.forEach(td => { td.contentEditable = 'false'; });
     syncEditedContent();
-    showToast('Edits saved — ready to export!', '✅');
+    showToast('Edits saved — ready to export!', '\u2705');
   }
 }
 
@@ -8763,7 +8879,7 @@ Each test case must use this 5-column structure. Generate 6-10 E2E test cases an
   }
 
   progFill.style.width = '100%';
-  progLbl.textContent = `Complete — ${successCount}/${bulkFiles.length} documents processed`;
+  progLbl.textContent = `Complete &#8212; ${successCount}/${bulkFiles.length} documents processed`;
 
   if (successCount > 0) {
     // Add a Summary sheet
@@ -8778,7 +8894,7 @@ Each test case must use this 5-column structure. Generate 6-10 E2E test cases an
     const wasAborted = !bulkAbortController && successCount < bulkFiles.length && bulkFiles.some(b=>b.status==='stopped');
     XLSX.writeFile(wb, `BulkTestCases-${Date.now()}.xlsx`);
     showToast(wasAborted
-      ? `Stopped — ${successCount} of ${bulkFiles.length} documents saved to Excel.`
+      ? `Stopped &#8212; ${successCount} of ${bulkFiles.length} documents saved to Excel.`
       : `${successCount} documents exported to Excel!`);
   }
 
@@ -8786,7 +8902,7 @@ Each test case must use this 5-column structure. Generate 6-10 E2E test cases an
   document.getElementById('bulkStopBtn').style.display = 'none';
   btn.disabled = false;
   spinner.style.display = 'none';
-  lbl.textContent = '⚡ Generate All & Export Excel';
+  lbl.textContent = '\u26A1 Generate All & Export Excel';
 }
 
 // API key validation + persistence
@@ -8836,7 +8952,7 @@ function openADOModal() {
   const platform = document.getElementById('platform').value || 'QA';
   const module   = document.getElementById('module').value   || 'General';
   const dateStr  = new Date().toISOString().slice(0,10);
-  document.getElementById('adoSuiteName').value = `${platform} – ${module} – ${dateStr}`;
+  document.getElementById('adoSuiteName').value = `${platform} &#8211; ${module} &#8211; ${dateStr}`;
   // Update tree preview
   updateADOTreePreview();
   document.getElementById('adoModal').classList.add('open');
@@ -8871,17 +8987,17 @@ function updateADOTreePreview() {
   if (!tree) return;
   if (grouped) {
     tree.innerHTML = `
-      <div class="plan-node">📋 ${planName}</div>
-      <div class="suite-node">📁 ${suiteName}</div>
-      <div class="child-node">└ 📂 E2E Test Cases</div>
-      <div class="child-node">└ 📂 Field Validation</div>
-      <div class="child-node">└ 📂 Integration Tests</div>
-      <div class="child-node">└ 📂 Negative Test Cases</div>`;
+      <div class="plan-node">&#128203; ${planName}</div>
+      <div class="suite-node">&#128193; ${suiteName}</div>
+      <div class="child-node">&#9492; &#128194; E2E Test Cases</div>
+      <div class="child-node">&#9492; &#128194; Field Validation</div>
+      <div class="child-node">&#9492; &#128194; Integration Tests</div>
+      <div class="child-node">&#9492; &#128194; Negative Test Cases</div>`;
   } else {
     tree.innerHTML = `
-      <div class="plan-node">📋 ${planName}</div>
-      <div class="suite-node">📁 ${suiteName}</div>
-      <div class="child-node">└ 🗒 All test cases (flat)</div>`;
+      <div class="plan-node">&#128203; ${planName}</div>
+      <div class="suite-node">&#128193; ${suiteName}</div>
+      <div class="child-node">&#9492; &#128466; All test cases (flat)</div>`;
   }
 }
 
@@ -9006,11 +9122,11 @@ async function initADOModal() {
                 style="padding:9px 14px;border-radius:8px;border:1.5px solid var(--d365);
                        background:rgba(91,95,239,.07);color:var(--d365);font-size:13px;
                        font-weight:600;cursor:pointer;white-space:nowrap">
-                Load Projects →
+                Load Projects &#8594;
               </button>
             </div>
             <div style="font-size:11.5px;color:var(--text3);margin-top:4px">
-              💡 To pre-configure, add <code style="background:var(--surface2);padding:1px 6px;
+              &#128161; To pre-configure, add <code style="background:var(--surface2);padding:1px 6px;
               border-radius:4px;font-family:monospace">DEVOPS_ORG</code> = your org name in Vercel env vars
             </div>`;
           orgSection.insertBefore(div, orgSection.firstChild);
@@ -9111,7 +9227,7 @@ function onProjectSelectChange() {
     const platform = document.getElementById('platform').value || 'QA';
     const module   = document.getElementById('module').value   || '';
     const date     = new Date().toISOString().slice(0,10);
-    suiteEl.value  = `${platform}${module?' — '+module:''} — ${date}`;
+    suiteEl.value  = `${platform}${module?' — '+module:''} &#8212; ${date}`;
   }
 
   loadRow.style.display = project ? 'block' : 'none';
@@ -9161,7 +9277,7 @@ async function loadADOTestPlans() {
     sel.appendChild(newOpt);
 
     updateADOTreePreview();
-    showToast(`${adoLoadedPlans.length} test plan(s) in ${project}`, '✅');
+    showToast(`${adoLoadedPlans.length} test plan(s) in ${project}`, '\u2705');
     adoGoToStep(2);
 
   } catch(e) {
@@ -9253,7 +9369,7 @@ async function pushToADOFull() {
 
   const addResult = (icon, html) => {
     const d = document.createElement('div');
-    d.className = `ado-result-item ${icon==='✅'?'success':icon==='❌'?'error':'info'}`;
+    d.className = `ado-result-item ${icon==='\u2705'?'success':icon==='❌'?'error':'info'}`;
     d.innerHTML = `${icon} ${html}`;
     resEl.appendChild(d);
     resEl.scrollTop = resEl.scrollHeight;
@@ -9271,7 +9387,7 @@ async function pushToADOFull() {
       setProgress(5, 'Creating Test Plan…');
       const r = await adoCreateTestPlan(org, project, null, newPlan, areaPath);
       planId = r.planId; rootId = r.rootSuiteId;
-      addResult('✅', `Test Plan created: <strong>${newPlan}</strong> (ID: ${planId})`);
+      addResult('\u2705', `Test Plan created: <strong>${newPlan}</strong> (ID: ${planId})`);
     } else {
       planId = Number(planSel);
       const plan = adoLoadedPlans.find(p => p.id === planId);
@@ -9290,7 +9406,7 @@ async function pushToADOFull() {
     // ── 2. Create parent Test Suite ────────────────────────
     setProgress(12, 'Creating Test Suite…');
     const parentSuiteId = await adoCreateTestSuite(org, project, null, planId, rootId, suiteName);
-    addResult('✅', `Test Suite created: <strong>${suiteName}</strong> (ID: ${parentSuiteId})`);
+    addResult('\u2705', `Test Suite created: <strong>${suiteName}</strong> (ID: ${parentSuiteId})`);
 
     // ── 3. Group test cases by section (if enabled) ────────
     let sectionGroups = {};
@@ -9353,7 +9469,7 @@ async function pushToADOFull() {
 
       let suiteId = parentSuiteId;
       if (grouped && Object.keys(sectionGroups).length > 1) {
-        setProgress(15 + Math.round((done/totalTCs)*75), `Creating child suite: ${secName}…`);
+        setProgress(15 + Math.round((done/totalTCs)*75), `Creating child suite: ${secName}&#8230;`);
         suiteId = await adoCreateTestSuite(org, project, null, planId, parentSuiteId, secName);
         addResult('ℹ️', `Child suite: <strong>${secName}</strong> (ID: ${suiteId})`);
       }
@@ -9363,22 +9479,22 @@ async function pushToADOFull() {
         if (adoPushCancelled) break;
         done++;
         const pct = 15 + Math.round((done/totalTCs)*75);
-        setProgress(pct, `(${done}/${totalTCs}) Creating: ${tc.title.substring(0,55)}…`);
+        setProgress(pct, `(${done}/${totalTCs}) Creating: ${tc.title.substring(0,55)}&#8230;`);
         try {
           const tcId = await createADOTestCase(org, project, null, tc, areaPath, iterPath);
           createdIds.push(tcId);
           successCount++;
-          addResult('✅', `<strong>#${tcId}</strong> — ${tc.title.substring(0,65)}`);
+          addResult('\u2705', `<strong>#${tcId}</strong> &#8212; ${tc.title.substring(0,65)}`);
         } catch(e) {
           failCount++;
-          addResult('❌', `Failed: ${tc.title.substring(0,50)} — ${e.message}`);
+          addResult('❌', `Failed: ${tc.title.substring(0,50)} &#8212; ${e.message}`);
         }
         await new Promise(r => setTimeout(r, 150));
       }
 
       // ── 5. Batch-add created TCs to suite ─────────────────
       if (createdIds.length) {
-        setProgress(90 + Math.round((done/totalTCs)*8), `Adding ${createdIds.length} TCs to suite…`);
+        setProgress(90 + Math.round((done/totalTCs)*8), `Adding ${createdIds.length} TCs to suite&#8230;`);
         try {
           await adoAddTCsToSuite(org, project, null, planId, suiteId, createdIds);
         } catch(e) {
@@ -9387,13 +9503,13 @@ async function pushToADOFull() {
       }
     }
 
-    setProgress(100, adoPushCancelled ? `Stopped — ${successCount} created` : `Complete — ${successCount} created, ${failCount} failed`);
+    setProgress(100, adoPushCancelled ? `Stopped &#8212; ${successCount} created` : `Complete &#8212; ${successCount} created, ${failCount} failed`);
 
     // ── Summary ──────────────────────────────────────────────
     const adoUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_testPlans/define?planId=${planId}`;
     const summary = document.createElement('div');
     summary.className = 'ado-result-item info';
-    summary.innerHTML = `🔷 <strong>${successCount} test cases</strong> created in <strong>${suiteName}</strong> · <a href="${adoUrl}" target="_blank" style="color:var(--d365)">Open in ADO ↗</a>`;
+    summary.innerHTML = `&#128311; <strong>${successCount} test cases</strong> created in <strong>${suiteName}</strong> · <a href="${adoUrl}" target="_blank" style="color:var(--d365)">Open in ADO &#8599;</a>`;
     resEl.prepend(summary);
 
     document.getElementById('adoDoneNav').style.display = 'flex';
@@ -9528,7 +9644,7 @@ async function createADOTestCase(org, project, _pat, tc, areaPath, iterPath) {
     { op:'add', path:'/fields/System.State',                       value: 'Design' },
     { op:'add', path:'/fields/Microsoft.VSTS.Common.Priority',     value: tc.priority },
     { op:'add', path:'/fields/Microsoft.VSTS.TCM.Steps',           value: buildStepsXML(tc.steps) },
-    { op:'add', path:'/fields/System.Description',                 value: `${platform} — ${module} | Auto-generated by ERP Test Generator` },
+    { op:'add', path:'/fields/System.Description',                 value: `${platform} &#8212; ${module} | Auto-generated by ERP Test Generator` },
     { op:'add', path:'/fields/System.Tags',                        value: `auto-generated; ${platform}; ${module}`.replace(/\s+/g,'-') }
   ];
   // Conditionally add Assigned To — only if user provided a valid ADO identity
@@ -9568,7 +9684,7 @@ document.addEventListener('keydown', e => {
     const btn = document.getElementById('genBtn');
     if (btn && !btn.disabled && !btn.classList.contains('loading')) {
       btn.click();
-      showToast('Generating… (Ctrl+Enter)', '⚡');
+      showToast('Generating… (Ctrl+Enter)', '\u26A1');
     }
   }
 });
@@ -9739,7 +9855,7 @@ async function loadProjectsFromInput() {
     if (projSel) { projSel.disabled = false; projSel.innerHTML = '<option value="">— Failed —</option>'; }
     let msg = e.message;
     if (msg.includes('401') || msg.includes('403')) msg = '❌ Access denied — check PAT scopes';
-    else if (msg.includes('404'))                   msg = `❌ Organisation "${org}" not found`;
+    else if (msg.includes('404'))                   msg = `&#10060; Organisation "${org}" not found`;
     if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
   }
 }
@@ -9791,8 +9907,8 @@ async function autoLoadProjectsFromEnv(org, presetProject) {
     projSel.disabled = false;
     projSel.innerHTML = '<option value="">— Failed to load —</option>';
     let msg = e.message;
-    if (msg.includes('401')) msg = '❌ PAT expired — renew in Azure DevOps → User Settings → PATs';
-    else if (msg.includes('404')) msg = `❌ Org "${org}" not found — check DEVOPS_ORG in Vercel`;
+    if (msg.includes('401') || msg.includes('403')) msg = '⚠️ PAT expired or insufficient scope — go to Azure DevOps → User Settings (avatar top-right) → Personal Access Tokens → renew with Test Plans Read & Write scope.';
+    else if (msg.includes('404')) msg = `&#10060; Org "${org}" not found &#8212; check DEVOPS_ORG in Vercel`;
     if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
   }
 }
@@ -9839,7 +9955,7 @@ async function testClaudeConnection() {
     } else {
       const text = data.content?.[0]?.text || data.choices?.[0]?.message?.content || '';
       resultEl.className   = 'settings-test-result ok';
-      resultEl.textContent = '✅ ' + meta.name + ' connected — response: "' + text.trim().substring(0,30) + '"';
+      resultEl.textContent = '\u2705 ' + meta.name + ' connected — response: "' + text.trim().substring(0,30) + '"';
     }
   } catch(e) {
     resultEl.className   = 'settings-test-result err';
@@ -9935,13 +10051,45 @@ function inferPriority(title) {
 }
 
 // ── Build a single TC table row ───────────────────────────────────
+// -- parseStepsArr (defined here, before buildTGRow) --
+function parseStepsArr(raw) {
+  if (!raw) return [];
+  var arr = [];
+  if (/\d+\./.test(raw)) {
+    arr = raw.split(/;\s*(?=\d+\.)|\n\s*(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
+    if (arr.length === 1)
+      arr = raw.split(/\s+(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
+  } else {
+    arr = raw.split(/;|\n/).map(function(s){return s.trim();}).filter(Boolean);
+  }
+  return arr;
+}
+window.parseStepsArr = parseStepsArr;
+
 function buildTGRow(tc) {
   const raw = tc.stepsRaw || '';
-  // Split on semicolons before numbers, or plain semicolons, or newlines
-  const stepsArr = raw
-    .split(/;\s*(?=\d+\.)|\n/)
-    .map(s => s.trim())
-    .filter(Boolean);
+  // Comprehensive step splitting — handles all AI output formats
+  let stepsArr = [];
+  if (/\d+\./.test(raw)) {
+    // Has numbered steps — split on semicolon+number OR newline+number
+    stepsArr = raw
+      .split(/;\s*(?=\d+\.)|\n\s*(?=\d+\.)/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    // Fallback: split on whitespace before "N." pattern
+    if (stepsArr.length === 1) {
+      stepsArr = raw
+        .split(/\s+(?=\d+\.)/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+  } else {
+    // No numbers — split on semicolons or newlines
+    stepsArr = raw
+      .split(/;|\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
   const cnt = Math.max(stepsArr.length, (raw.match(/\d+\./g)||[]).length, 1);
   const stepsHtml = stepsArr.map((s, i) => {
     const text = s.replace(/^\d+\.\s*/, '').trim();
@@ -9961,17 +10109,18 @@ function buildTGRow(tc) {
     <td class="tg-col-sc"><span class="tg-scenario">${tc.title}</span></td>
     <td class="tg-col-st steps-td">
       <span class="tg-steps-chip" onclick="tgToggleSteps(this)">
-        ${cnt} Step${cnt!==1?'s':''} <span class="chip-arr">▾</span>
+        ${cnt} Step${cnt!==1?'s':''} <span class="chip-arr">&#9662;</span>
       </span>
       <div class="tg-steps-popup">${stepsHtml||raw}</div>
     </td>
     <td class="tg-col-exp" style="font-size:12.5px;color:var(--text2);line-height:1.5">${tc.expected||''}</td>
     <td class="tg-col-pri"><span class="tg-badge ${tc.priCls}">${tc.priority}</span></td>
     <td class="tg-col-act"><div class="tg-actions">
-      <button class="tg-act-btn" title="Copy" onclick="tgCopyRow('${tc.id}')">📋</button>
-      <button class="tg-act-btn del" title="Remove" onclick="tgRemoveRow('${tc.id}',this)">🗑</button>
+      <button class="tg-act-btn" title="Copy" onclick="tgCopyRow('${tc.id}')">&#128203;</button>
+      <button class="tg-act-btn del" title="Remove" onclick="tgRemoveRow('${tc.id}',this)">&#128465;</button>
     </div></td>
   </tr>`;
+  return mainRow + expandedRow;
 }
 
 function tgToggleSelect(id, checked, row) {
@@ -9991,7 +10140,7 @@ function tgCopyRow(id) {
   const tc = tgAllTCs.find(t=>t.id===id);
   if (!tc) return;
   navigator.clipboard?.writeText(`${tc.id}\t${tc.title}\t${tc.stepsRaw}\t${tc.expected}\t${tc.priority}`)
-    .then(()=>showToast('TC copied','📋')).catch(()=>{});
+    .then(()=>showToast('TC copied','&#128203;')).catch(()=>{});
 }
 function tgRemoveRow(id, btn) {
   tgAllTCs = tgAllTCs.filter(t=>t.id!==id);
@@ -10034,14 +10183,27 @@ function tgToggleSteps(chip) {
     const arr = chip.querySelector('.chip-arr');
     if (arr) arr.textContent = '▴';
 
-    // Position popup below the chip using fixed coords
-    const rect = chip.getBoundingClientRect();
-    const popupW = 360;
-    const viewW  = window.innerWidth;
+    // Position popup — below chip by default, flip above if near viewport bottom
+    const rect    = chip.getBoundingClientRect();
+    const popupW  = 380;
+    const popupH  = 320; // max-height from CSS
+    const viewW   = window.innerWidth;
+    const viewH   = window.innerHeight;
+
+    // Horizontal: align left of chip, prevent right overflow
     let left = rect.left;
-    // Prevent right overflow
-    if (left + popupW > viewW - 12) left = viewW - popupW - 12;
-    popup.style.top  = (rect.bottom + 6) + 'px';
+    if (left + popupW > viewW - 12) left = Math.max(8, viewW - popupW - 12);
+
+    // Vertical: show below chip; flip above if not enough room below
+    const spaceBelow = viewH - rect.bottom - 8;
+    const spaceAbove = rect.top - 8;
+    let top;
+    if (spaceBelow >= Math.min(popupH, 120) || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 6;  // below chip
+    } else {
+      top = Math.max(8, rect.top - Math.min(popupH, spaceAbove) - 6); // above chip
+    }
+    popup.style.top  = top + 'px';
     popup.style.left = left + 'px';
 
     // Close popup when clicking outside
@@ -10135,7 +10297,7 @@ function renderTGTable() {
             <div class="tg-section-dot" style="background:${color}"></div>
             <span class="tg-section-title">${type}</span>
             <span class="tg-section-count" style="background:${color}20;color:${color};border:1px solid ${color}40">${tcs.length} TC${tcs.length!==1?'s':''}</span>
-            <span class="tg-section-chevron">▾</span>
+            <span class="tg-section-chevron">&#9662;</span>
           </div>
           <div class="tg-section-body"><table class="tg-table">
             <thead><tr><th style="width:36px"><input type="checkbox" onchange="tgSelectSection('${type}',this.checked)" style="accent-color:var(--d365);width:13px;height:13px"/></th>
@@ -10161,7 +10323,7 @@ function buildTGTabsAndTable(el) {
   const view=document.createElement('div');
   view.id='tg-main-view';
   view.innerHTML=`<div id="tgSearchBar" style="padding:10px 20px 6px;display:flex;align-items:center;gap:10px">
-    <input id="tgSearch" type="text" placeholder="🔍 Search test cases…"
+    <input id="tgSearch" type="text" placeholder="&#128269; Search test cases&#8230;"
       style="padding:7px 14px;background:var(--surface2);border:1.5px solid var(--border2);
              border-radius:8px;font-size:12.5px;color:var(--text);outline:none;width:260px;
              font-family:'Plus Jakarta Sans',sans-serif"
@@ -10318,7 +10480,7 @@ function updateGapsTab(){
 function renderGapsPanel(){
   const wrap=document.getElementById('tgSectionsWrap');
   if(!wrap) return;
-  if(!tgGaps.length){wrap.innerHTML='<div class="gaps-empty">✅ No requirement gaps detected.</div>';return;}
+  if(!tgGaps.length){wrap.innerHTML='<div class="gaps-empty">\u2705 No requirement gaps detected.</div>';return;}
   const cards=tgGaps.map(g=>`
     <div class="gap-card">
       <div class="gap-card-hdr">
@@ -10434,7 +10596,7 @@ let _activeProvider=(()=>{try{return localStorage.getItem('shuddhi-ai-provider')
 const PROVIDER_META={
   claude:{name:'Claude',icon:'🤖',model:'claude-sonnet-4-6',envKey:'CLAUDE_API_KEY',url:'https://console.anthropic.com',urlLabel:'console.anthropic.com',color:'var(--indigo)'},
   gemini:{name:'Gemini',icon:'✦',model:'gemini-2.0-flash',envKey:'GEMINI_API_KEY',url:'https://aistudio.google.com',urlLabel:'aistudio.google.com',color:'#0369A1'},
-  groq:{name:'Groq',icon:'⚡',model:'llama-3.3-70b-versatile',envKey:'GROQ_API_KEY',url:'https://console.groq.com',urlLabel:'console.groq.com',color:'#7C3AED'},
+  groq:{name:'Groq',icon:'\u26A1',model:'llama-3.3-70b-versatile',envKey:'GROQ_API_KEY',url:'https://console.groq.com',urlLabel:'console.groq.com',color:'#7C3AED'},
 };
 function getActiveProvider(){
   return window.__activeProvider || _activeProvider ||
@@ -10456,14 +10618,15 @@ function selectProvider(provider,save=true){
   window.__activeProvider=provider;
   document.querySelectorAll('.provider-pill').forEach(p=>p.classList.remove('active'));
   document.getElementById('pill-'+provider)?.classList.add('active');
-  const fields={activeProviderIcon:meta.icon,activeProviderName:meta.name,activeProviderModel:meta.model,activeEnvKey:meta.envKey+' · Vercel Env',guideEnvKey:meta.envKey};
-  Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val;});
+  // Update icon, name, model — but NOT activeEnvKey yet (set after hasKey check below)
+  const earlyFields={activeProviderIcon:meta.icon,activeProviderName:meta.name,activeProviderModel:meta.model,guideEnvKey:meta.envKey};
+  Object.entries(earlyFields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val;});
   const hasKey={claude:window.__claudeKey,gemini:window.__geminiKey,groq:window.__groqKey}[provider];
   const iconEl=document.getElementById('activeKeyStatusIcon');
   const lblEl=document.getElementById('activeKeyStatusLabel');
   const envEl=document.getElementById('activeEnvKey');
   const card=document.getElementById('activeProviderCard');
-  if(iconEl) iconEl.textContent=hasKey?'✅':'⚠️';
+  if(iconEl) iconEl.textContent=hasKey?'\u2705':'⚠️';
   if(lblEl)  lblEl.textContent=hasKey?'API key configured in Vercel':'Key not found — add '+meta.envKey+' to Vercel';
   if(envEl)  envEl.textContent=meta.envKey+(hasKey?' · Vercel Env ✓':' · Not set');
   if(card)   card.style.borderColor=hasKey?'rgba(16,185,129,.3)':'rgba(220,38,38,.25)';
@@ -10614,7 +10777,7 @@ async function testJiraConnection() {
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      if (resultEl) { resultEl.className='settings-test-result ok'; resultEl.textContent='✅ Jira connected successfully'; }
+      if (resultEl) { resultEl.className='settings-test-result ok'; resultEl.textContent='\u2705 Jira connected successfully'; }
     } else {
       if (resultEl) { resultEl.className='settings-test-result err'; resultEl.textContent='❌ '+(data.error||'Connection failed'); }
     }
@@ -10663,12 +10826,9 @@ function handleProviderRateLimit(provider) {
     if (_failedProviders.has(next))    continue; // skip already-failed
     if (!keys[next])                   continue; // skip unconfigured
 
-    const meta = PROVIDER_META[next] || { name: next, icon: '⚡' };
-    showToast(
-      `⚡ ${provider} limit reached — switched to ${meta.name}. Click Generate ↑`,
-      meta.icon
-    );
-    console.log(`[Provider] ${provider} failed → trying ${next} (retry ${_autoRetryCount})`);
+    const meta = PROVIDER_META[next] || { name: next, icon: '\u26A1' };
+    // Silent switch — log only, no user-facing toast
+    console.log('[Provider] ' + provider + ' limit reached, switching to ' + next);
     selectProvider(next, true);
     return next;
   }
@@ -10818,6 +10978,120 @@ function adoRestoreAssignedTo() {
     const saved = localStorage.getItem(ADO_ASSIGNED_KEY) || '';
     if (saved) input.value = saved;
   } catch(e) {}
+}
+</script>
+
+
+<script>
+// -- tgToggleRow - inline accordion expand ------------------------
+function tgToggleRow(id, btn) {
+  const expRow = document.getElementById('tgexp-' + id);
+  if (!expRow) return;
+  const isOpen = expRow.style.display !== 'none' && expRow.style.display !== '';
+  const arr    = btn ? btn.querySelector('.chip-arr') : null;
+
+  if (isOpen) {
+    expRow.style.display = 'none';
+    expRow.classList.remove('open');
+    if (btn) btn.classList.remove('open');
+    if (arr) arr.textContent = '\u25be';
+    const mainRow = document.querySelector('[data-tc-id="'+id+'"]');
+    if (mainRow) mainRow.classList.remove('row-expanded');
+  } else {
+    // Accordion: close others
+    document.querySelectorAll('.tg-exp-row.open').forEach(r => {
+      r.style.display = 'none';
+      r.classList.remove('open');
+      const prev = r.previousElementSibling;
+      if (prev) {
+        prev.classList.remove('row-expanded');
+        const pb = prev.querySelector('.tg-steps-chip');
+        if (pb) { pb.classList.remove('open'); const a=pb.querySelector('.chip-arr'); if(a) a.textContent='\u25be'; }
+      }
+    });
+    expRow.style.display = 'table-row';
+    expRow.classList.add('open');
+    if (btn) btn.classList.add('open');
+    if (arr) arr.textContent = '\u25b4';
+    const mainRow = document.querySelector('[data-tc-id="'+id+'"]');
+    if (mainRow) mainRow.classList.add('row-expanded');
+    setTimeout(() => expRow.scrollIntoView({ behavior:'smooth', block:'nearest' }), 60);
+  }
+}
+
+function tgRowClick(e, id) {
+  if (e.target.closest('button, input, a')) return;
+  const btn = document.querySelector('[data-tc-id="'+id+'"] .tg-steps-chip');
+  tgToggleRow(id, btn);
+}
+
+function tgCopySteps(id) {
+  const tc = tgAllTCs.find(t => t.id === id);
+  if (!tc) return;
+  const arr = (typeof parseStepsArr === 'function') ? parseStepsArr(tc.stepsRaw||'') : [];
+  const text = arr.map((s,i) => (i+1)+'. '+s.replace(/^d+.s*/,'')).join('
+') || tc.stepsRaw;
+  navigator.clipboard?.writeText(text).then(() => showToast('Steps copied', String.fromCodePoint(0x1F4CB)));
+}
+
+// Legacy alias
+function tgToggleSteps(chip) {
+  const row = chip.closest('tr');
+  if (!row) return;
+  const id = row.dataset.tcId;
+  if (id) tgToggleRow(id, chip);
+}
+// Expose to global scope for onclick handlers in dynamic HTML
+window.tgToggleRow   = tgToggleRow;
+window.tgRowClick    = tgRowClick;
+window.tgCopySteps   = tgCopySteps;
+window.tgToggleSteps = tgToggleSteps;
+</script>
+
+
+<script>
+function parseStepsArr(raw) {
+  if (!raw) return [];
+  var arr = [];
+  if (/\d+\./.test(raw)) {
+    arr = raw.split(/;\s*(?=\d+\.)|
+\s*(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
+    if (arr.length === 1)
+      arr = raw.split(/\s+(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
+  } else {
+    arr = raw.split(/;|
+/).map(function(s){return s.trim();}).filter(Boolean);
+  }
+  return arr;
+}
+window.parseStepsArr = parseStepsArr;
+</script>
+
+
+<script>
+// ── DEF-003: Flow description char counter + large input guard ────
+function updateFlowCharCount(textarea) {
+  const len = (textarea.value || '').length;
+  const el  = document.getElementById('flowCharCount');
+  if (!el) return;
+  el.textContent = len.toLocaleString() + ' / 6,000';
+  if (len > 6000) {
+    el.style.color = '#EF4444';
+    el.textContent = len.toLocaleString() + ' / 6,000 ⚠️ May exceed AI token limits — consider shortening';
+  } else if (len > 4000) {
+    el.style.color = '#FBBF24';
+    el.textContent = len.toLocaleString() + ' / 6,000 — Long input, generation may be slower';
+  } else {
+    el.style.color = 'var(--text3)';
+  }
+}
+
+// Called in generate() — soft-cap long inputs with user notice
+function checkAndTrimFlow(flow) {
+  if (!flow || flow.length <= 6000) return flow;
+  const trimmed = flow.substring(0, 6000);
+  showToast('Input trimmed to 6,000 chars to fit AI token limits. Full text preserved in textarea.', '✂️');
+  return trimmed;
 }
 </script>
 
