@@ -7299,8 +7299,12 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       const status = response.status;
       let msg = err.error?.message || `API error ${status}`;
       if (status === 529) msg = 'Claude is currently overloaded. Please wait 30 seconds and try again.';
-      if (status === 429) msg = 'Rate limit reached. Please wait a moment before generating again.';
-      if (status === 401) msg = 'Invalid API key — please check your Claude API key and try again.';
+      if (status === 429) {
+        const curProvider = getActiveProvider();
+        if (typeof handleProviderRateLimit === 'function') handleProviderRateLimit(curProvider);
+        msg = (err.error || 'Rate limit reached on ' + curProvider + ' — switched to next provider. Try generating again.');
+      }
+      if (status === 401) msg = 'Invalid API key — check Settings → AI Provider.';
       throw new Error(msg);
     }
 
@@ -10095,5 +10099,114 @@ async function loadProjectsIntoSettings(org){
 }
 
 </script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// JIRA SETTINGS FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+const JIRA_LS_KEY = 'shuddhi-jira-config';
+
+function loadJiraSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(JIRA_LS_KEY) || '{}');
+    const urlEl   = document.getElementById('settingsJiraUrl');
+    const emailEl = document.getElementById('settingsJiraEmail');
+    const tokenEl = document.getElementById('settingsJiraToken');
+    if (urlEl   && saved.url)   urlEl.value   = saved.url;
+    if (emailEl && saved.email) emailEl.value = saved.email;
+    if (tokenEl && saved.token) tokenEl.value = saved.token;
+  } catch(e) {}
+}
+
+function saveJiraSettings() {
+  try {
+    const url   = document.getElementById('settingsJiraUrl')?.value   || '';
+    const email = document.getElementById('settingsJiraEmail')?.value || '';
+    const token = document.getElementById('settingsJiraToken')?.value || '';
+    localStorage.setItem(JIRA_LS_KEY, JSON.stringify({ url, email, token }));
+  } catch(e) {}
+}
+
+function checkJiraSettingsStatus() {
+  const icon  = document.getElementById('jiraStatusIcon');
+  const label = document.getElementById('jiraStatusLabel');
+  const sub   = document.getElementById('jiraStatusSub');
+  const btn   = document.getElementById('jiraTestBtn');
+  const manual  = document.getElementById('jiraManualSection');
+  const vercel  = document.getElementById('jiraVercelSection');
+
+  // Check Vercel env first (returned by /api/status)
+  if (window.__jiraConfigured) {
+    if (icon)   icon.textContent   = '🔐';
+    if (label)  label.textContent  = 'Jira configured via Vercel Environment Variables';
+    if (label)  label.style.color  = '#00875a';
+    if (sub)    sub.textContent    = 'JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN are set server-side.';
+    if (btn)    btn.style.display  = 'block';
+    if (manual) manual.style.display = 'none';
+    if (vercel) vercel.style.display = 'flex';
+    return;
+  }
+
+  // Check localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem(JIRA_LS_KEY) || '{}');
+    const hasLocal = !!(saved.url && saved.email && saved.token);
+    if (hasLocal) {
+      if (icon)   icon.textContent  = '💾';
+      if (label)  label.textContent = 'Jira configured via browser settings';
+      if (label)  label.style.color = '#0369A1';
+      if (sub)    sub.textContent   = 'Credentials stored locally — add Vercel env vars for production.';
+      if (btn)    btn.style.display = 'block';
+    } else {
+      if (icon)   icon.textContent  = '⚠️';
+      if (label)  label.textContent = 'Jira not configured';
+      if (label)  label.style.color = '#b45309';
+      if (sub)    sub.textContent   = 'Enter credentials below or add Vercel environment variables.';
+      if (btn)    btn.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+async function testJiraConnection() {
+  const resultEl = document.getElementById('jiraTestResult') || document.getElementById('claudeTestResult');
+  const btn      = document.getElementById('jiraTestBtn');
+  if (resultEl) { resultEl.style.display='block'; resultEl.className='settings-test-result'; resultEl.textContent='⏳ Testing Jira connection…'; }
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch('/api/jira', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'test' })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      if (resultEl) { resultEl.className='settings-test-result ok'; resultEl.textContent='✅ Jira connected successfully'; }
+    } else {
+      if (resultEl) { resultEl.className='settings-test-result err'; resultEl.textContent='❌ '+(data.error||'Connection failed'); }
+    }
+  } catch(e) {
+    if (resultEl) { resultEl.className='settings-test-result err'; resultEl.textContent='❌ Network error: '+e.message; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO-SWITCH TO GROQ — when Claude/Gemini limits hit
+// ═══════════════════════════════════════════════════════════════
+// Check on each generate if current provider hits 429 → auto-suggest switch
+function handleProviderRateLimit(provider) {
+  const next = provider === 'claude' ? 'gemini' :
+               provider === 'gemini' ? 'groq'   : null;
+  if (!next) return;
+  const meta = PROVIDER_META[next] || {};
+  const hasKey = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey }[next];
+  if (hasKey) {
+    showToast(`⚡ Auto-switching to ${meta.name} (limit reached on ${provider})`, meta.icon||'⚡');
+    selectProvider(next, true);
+  }
+}
+</script>
+
 </body>
 </html>
