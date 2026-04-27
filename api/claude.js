@@ -58,13 +58,17 @@ function buildUpstreamRequest(provider, key, body) {
   }
 
   if (provider === 'gemini') {
+    // Use systemInstruction field (not a user turn) to avoid consecutive-user-turn 400
     const contents = [];
-    if (system) contents.push({ role: 'user', parts: [{ text: `[SYSTEM INSTRUCTIONS]\n${system}\n[/SYSTEM INSTRUCTIONS]\n\n` }] });
-    (messages || []).forEach(m => contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+    (messages || []).forEach(m => {
+      contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
+    });
     const geminiBody = {
       contents,
-      generationConfig: { maxOutputTokens: max_tokens, temperature: 0.3 },
+      generationConfig: { maxOutputTokens: Math.min(max_tokens, 8192), temperature: 0.3 },
     };
+    // Add system instruction separately (supported in Gemini 1.5+)
+    if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
     const alt = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
     return {
       url: `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.gemini}:${alt}${stream?'&':'?'}key=${key}`,
@@ -83,7 +87,13 @@ function buildUpstreamRequest(provider, key, body) {
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${key}`,
       },
-      body: JSON.stringify({ model: MODELS.groq, messages: groqMessages, max_tokens, stream }),
+      body: JSON.stringify({
+        model: MODELS.groq,
+        messages: groqMessages,
+        max_tokens: Math.min(max_tokens, 4096), // Groq llama cap
+        temperature: 0.3,
+        stream,
+      }),
     };
   }
 }
@@ -128,7 +138,12 @@ function normalizeStream(provider, upstreamBody) {
           if (provider === 'gemini') {
             text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
           } else if (provider === 'groq') {
-            text = json.choices?.[0]?.delta?.content || '';
+            // Handle both delta.content and direct content
+            text = json.choices?.[0]?.delta?.content
+                || json.choices?.[0]?.message?.content
+                || '';
+            // Skip empty deltas (e.g. finish_reason only)
+            if (!text && json.choices?.[0]?.finish_reason) continue;
           }
 
           if (text) {
@@ -208,7 +223,28 @@ export default async function handler(req) {
       try { errJson = JSON.parse(errText); } catch(e) {}
       const detail = errJson?.error?.message || errJson?.message || errText.substring(0, 200);
       let msg = `${provider} API error ${response.status}: ${detail || 'Unknown error'}`;
-      if (response.status === 429) msg = `${provider} rate limit reached — try Gemini or Groq (free tier) in Settings.`;
+      if (response.status === 400) {
+        // Detect Anthropic account usage cap — treat as switchable rate limit
+        const isUsageCap = detail && (
+          detail.includes('usage limits') ||
+          detail.includes('regain access') ||
+          detail.includes('API usage limits')
+        );
+        if (isUsageCap) {
+          // Return 429 so the frontend auto-switches provider
+          return new Response(JSON.stringify({
+            error: `claude limit reached until May 1 — auto-switching to Groq/Gemini`,
+            detail,
+            switchProvider: true
+          }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        msg = `${provider} 400 Bad Request: ${detail || 'Invalid payload'}`;
+      }
+      if (response.status === 429) {
+        const nextMap = { claude:'Gemini', gemini:'Groq', groq:'Claude (resets in ~1 min)' };
+        const nextHint = nextMap[provider] || 'another provider';
+        msg = `${provider} rate limit reached. Auto-switching to ${nextHint}. Click Generate again.`;
+      }
       if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
       if (response.status === 404) msg = `${provider} model/endpoint not found. URL: ${upstream.url.substring(0, 80)}`;
       if (response.status === 403) msg = `${provider} API key does not have permission. Check key scopes.`;

@@ -7361,21 +7361,28 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       let msg = typeof errDetail === 'string' ? errDetail : JSON.stringify(errDetail);
       if (!msg || msg === '{}') msg = 'API error ' + status;
       if (status === 529) msg = 'Claude is currently overloaded. Please wait 30 seconds and try again.';
-      if (status === 429) {
+
+      // Treat 400 usage cap same as 429 — auto-switch provider
+      const isUsageCap = status === 400 && (
+        (err.error||'').includes('usage limits') ||
+        (err.error||'').includes('regain access') ||
+        err.switchProvider === true
+      );
+
+      if (status === 429 || isUsageCap) {
         const curProvider = getActiveProvider();
         let switched = null;
         if (typeof handleProviderRateLimit === 'function') {
           switched = handleProviderRateLimit(curProvider);
         }
         if (switched) {
-          // Auto-retry with new provider after short delay
           setTimeout(() => {
             const btn = document.getElementById('genBtn');
             if (btn && !btn.disabled) btn.click();
           }, 800);
-          msg = `${curProvider} rate limit — auto-switched to ${switched}. Retrying…`;
+          msg = `${curProvider} limit reached — auto-switched to ${switched}. Retrying…`;
         } else {
-          msg = `Rate limit reached on all providers. Groq resets every ~1 min — try again shortly.`;
+          msg = `All providers unavailable right now. Groq resets in ~1 min — try again shortly.`;
         }
       }
       if (status === 401) msg = 'Invalid API key — check Settings → AI Provider.';
