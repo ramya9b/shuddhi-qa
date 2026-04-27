@@ -7429,6 +7429,64 @@ function renderOutput() {
 }
 
 // Post-process the rendered output — apply metadata table styling
+
+// ── initSectionCollapse (inline — guaranteed same-block scope) ────
+function initSectionCollapse(container) {
+  if (!container) return;
+  container.querySelectorAll('h2, h3').forEach(function(h) {
+    if (h.dataset.collapsible) return;
+    h.dataset.collapsible = '1';
+    h.style.cursor = 'pointer';
+    h.style.userSelect = 'none';
+    var chevron = document.createElement('span');
+    chevron.textContent = ' ▾';
+    chevron.style.cssText = 'font-size:11px;color:var(--text3);transition:transform .2s;margin-left:8px';
+    h.appendChild(chevron);
+    var siblings = [], next = h.nextElementSibling;
+    while (next && ['H2','H3'].indexOf(next.tagName) === -1) {
+      siblings.push(next);
+      next = next.nextElementSibling;
+    }
+    if (siblings.length) {
+      var wrap = document.createElement('div');
+      wrap.className = 'section-collapse-wrap';
+      h.parentNode.insertBefore(wrap, siblings[0]);
+      siblings.forEach(function(s) { wrap.appendChild(s); });
+      h.addEventListener('click', function() {
+        var hidden = wrap.style.display === 'none';
+        wrap.style.display = hidden ? '' : 'none';
+        chevron.style.transform = hidden ? '' : 'rotate(-90deg)';
+      });
+    }
+  });
+}
+
+// ── addCopySingleButtons (inline) ─────────────────────────────────
+function addCopySingleButtons(container) {
+  if (!container) return;
+  container.querySelectorAll('table tbody tr').forEach(function(row) {
+    if (row.querySelector('.copy-row-btn')) return;
+    var lastCell = row.querySelector('td:last-child');
+    if (!lastCell) return;
+    var btn = document.createElement('button');
+    btn.className = 'copy-row-btn';
+    btn.title = 'Copy row';
+    btn.textContent = '📋';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:.5';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var cells = Array.from(row.querySelectorAll('td')).slice(0,-1).map(function(td){return td.innerText.trim();});
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(cells.join('	')).then(function() {
+          btn.textContent = '✓';
+          setTimeout(function(){btn.textContent='📋';}, 1500);
+        });
+      }
+    });
+    lastCell.appendChild(btn);
+  });
+}
+
 function applyMetadataStyling(container) {
   if (!container) return;
 
@@ -10231,7 +10289,7 @@ function handleProviderRateLimit(provider) {
 
 
 <script>
-// ── initSectionCollapse ───────────────────────────────────────────
+// ── initSectionCollapse (also defined in main block) ────────────
 function initSectionCollapse(container) {
   if (!container) return;
   container.querySelectorAll('h2, h3').forEach(h => {
@@ -10260,7 +10318,7 @@ function initSectionCollapse(container) {
   });
 }
 
-// ── addCopySingleButtons ─────────────────────────────────────────
+// ── addCopySingleButtons (also defined in main block) ───────────
 function addCopySingleButtons(container) {
   if (!container) return;
   container.querySelectorAll('table tbody tr').forEach(row => {
