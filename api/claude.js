@@ -17,11 +17,29 @@ export const config = { runtime: 'edge' };
 
 // ── Model mapping per provider ──────────────────────────────────
 const MODELS = {
-  claude: 'claude-sonnet-4-6',
-  gemini: 'gemini-2.0-flash',        // Primary — GA Jan 2025
-  geminiAlt: 'gemini-1.5-flash',     // Fallback — broader key support
-  groq:   'llama-3.3-70b-versatile',
+  claude:      'claude-sonnet-4-6',
+  gemini:      'gemini-2.0-flash',        // Primary (GA Jan 2025)
+  geminiExp:   'gemini-2.0-flash-exp',    // Experimental (broader key support)
+  geminiAlt:   'gemini-1.5-flash',        // Stable fallback (v1 API)
+  geminiPro:   'gemini-1.5-pro',          // High quality fallback
+  groq:        'llama-3.3-70b-versatile',
 };
+
+// Gemini API versions per model
+const GEMINI_API_VERSION = {
+  'gemini-2.0-flash':     'v1beta',
+  'gemini-2.0-flash-exp': 'v1beta',
+  'gemini-1.5-flash':     'v1',      // v1 is more stable for 1.5 models
+  'gemini-1.5-pro':       'v1',
+};
+
+// Ordered list of Gemini models to try on failure
+const GEMINI_MODEL_CHAIN = [
+  MODELS.gemini,
+  MODELS.geminiExp,
+  MODELS.geminiAlt,
+  MODELS.geminiPro,
+];
 
 // ── Resolve which provider + key to use ────────────────────────
 function resolveProvider(requestedProvider) {
@@ -70,9 +88,12 @@ function buildUpstreamRequest(provider, key, body) {
     };
     // Add system instruction separately (supported in Gemini 1.5+)
     if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
-    const alt = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
+    const geminiModel = body.geminiModel || MODELS.gemini;
+    const apiVersion  = GEMINI_API_VERSION[geminiModel] || 'v1beta';
+    const endpoint    = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
+    const separator   = stream ? '&' : '?';
     return {
-      url: `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.gemini}:${alt}${stream?'&':'?'}key=${key}`,
+      url: `https://generativelanguage.googleapis.com/${apiVersion}/models/${geminiModel}:${endpoint}${separator}key=${key}`,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(geminiBody),
     };
@@ -224,31 +245,38 @@ export default async function handler(req) {
       try { errJson = JSON.parse(errText); } catch(e) {}
       const detail = errJson?.error?.message || errJson?.message || errText.substring(0, 200);
 
-      // RC3: Gemini 404 or model-quota error → retry with gemini-1.5-flash
-      if (provider === 'gemini' && (response.status === 404 ||
-          (response.status === 429 && detail && detail.includes('quota')) ||
-          (response.status === 400 && detail && detail.includes('not found')))) {
-        console.log('[Gemini] Retrying with gemini-1.5-flash fallback model...');
-        const altUrl = upstream.url.replace(MODELS.gemini, MODELS.geminiAlt);
-        const altResponse = await fetch(altUrl, {
-          method: 'POST',
-          headers: upstream.headers,
-          body: upstream.body,
-        });
-        if (altResponse.ok) {
-          const isStream = forwardBody.stream === true;
-          if (isStream) {
-            const streamBody = normalizeStream(provider, altResponse.body);
-            return new Response(streamBody, {
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+      // Gemini model chain fallback — try each model in order on 404/quota errors
+      const isModelError = provider === 'gemini' && (
+        response.status === 404 ||
+        (response.status === 400 && detail && (detail.includes('not found') || detail.includes('model'))) ||
+        (response.status === 429 && detail && detail.includes('quota'))
+      );
+
+      if (isModelError) {
+        // Walk the model chain until one works
+        for (const fallbackModel of GEMINI_MODEL_CHAIN.slice(1)) {
+          const apiVer  = GEMINI_API_VERSION[fallbackModel] || 'v1beta';
+          const ep      = forwardBody.stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
+          const sep     = forwardBody.stream ? '&' : '?';
+          const altUrl  = `https://generativelanguage.googleapis.com/${apiVer}/models/${fallbackModel}:${ep}${sep}key=${key}`;
+          console.log('[Gemini] Model fallback: ' + fallbackModel + ' (' + apiVer + ')');
+          const altResp = await fetch(altUrl, { method:'POST', headers:upstream.headers, body:upstream.body });
+          if (altResp.ok) {
+            const isStream = forwardBody.stream === true;
+            if (isStream) {
+              return new Response(normalizeStream(provider, altResp.body), {
+                status: 200, headers: { ...corsHeaders, 'Content-Type':'text/event-stream', 'Cache-Control':'no-cache' },
+              });
+            }
+            const norm = await normalizeResponse(provider, altResp);
+            return new Response(JSON.stringify({ ...norm, _provider: fallbackModel }), {
+              status: 200, headers: { ...corsHeaders, 'Content-Type':'application/json' },
             });
           }
-          const normalized = await normalizeResponse(provider, altResponse);
-          return new Response(JSON.stringify({ ...normalized, _provider: 'gemini-1.5-flash' }), {
-            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          const altErr = await altResp.text().catch(()=>'');
+          console.warn('[Gemini] ' + fallbackModel + ' also failed: HTTP ' + altResp.status + ' ' + altErr.substring(0,100));
         }
+        // All models failed — fall through to normal error handling
       }
 
       let msg = `${provider} API error ${response.status}: ${detail || 'Unknown error'}`;
@@ -277,7 +305,18 @@ export default async function handler(req) {
         msg = `${provider} rate limit (resets in ~${waitSecs}s). Switching to ${nextHint}.`;
       }
       if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
-      if (response.status === 404) msg = `${provider} model/endpoint not found. URL: ${upstream.url.substring(0, 80)}`;
+      if (response.status === 404) {
+        const isGeminiModel = provider === 'gemini' && detail && detail.includes('model');
+        if (isGeminiModel) {
+          msg = `Gemini model not found. Model tried: ${MODELS.gemini}. `
+              + `This usually means the model is not available for your API key project. `
+              + `Try: 1) Enable Gemini API at console.cloud.google.com, `
+              + `2) Get a fresh key from aistudio.google.com, `
+              + `3) The app will auto-try gemini-1.5-flash as fallback.`;
+        } else {
+          msg = `${provider} endpoint not found (404). Full URL: ${upstream.url}`;
+        }
+      }
       if (response.status === 403) {
         const isApiNotEnabled = detail && (detail.includes('API_NOT_ENABLED') || detail.includes('not been used') || detail.includes('disabled'));
         if (isApiNotEnabled) {
