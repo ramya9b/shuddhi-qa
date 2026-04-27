@@ -7356,7 +7356,10 @@ Make the output production-ready and specific to ${platform}. Use real field nam
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       const status = response.status;
-      let msg = err.error?.message || `API error ${status}`;
+      // Show full error detail from proxy — not just error code
+      const errDetail = err.error || err.message || err.detail || '';
+      let msg = typeof errDetail === 'string' ? errDetail : JSON.stringify(errDetail);
+      if (!msg || msg === '{}') msg = 'API error ' + status;
       if (status === 529) msg = 'Claude is currently overloaded. Please wait 30 seconds and try again.';
       if (status === 429) {
         const curProvider = getActiveProvider();
