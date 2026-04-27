@@ -4669,6 +4669,37 @@ header::after { display: none !important; }
   }
   .pill-status.ok  { background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25); }
   .pill-status.off { background:var(--surface2);color:var(--text3);border:1px solid var(--border); }
+  /* ── Steps popup — one step per line ─────────────────────── */
+  .tg-step-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text2);
+  }
+  .tg-step-line:last-child { border-bottom: none; padding-bottom: 0; }
+  .tg-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--d365, #0078D4);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tg-step-text {
+    flex: 1;
+    word-break: break-word;
+  }
 </style>
 </head>
 <body>
@@ -5862,7 +5893,7 @@ header::after { display: none !important; }
               <span style="font-size:15px">🏢</span>
               <span id="adoOrgDisplay" style="font-size:13.5px;font-weight:700;
                     color:var(--text);font-family:'Plus Jakarta Sans',sans-serif">
-                Loading…
+                —
               </span>
             </div>
             <span class="ado-hint">
@@ -5967,22 +5998,33 @@ header::after { display: none !important; }
             <div class="child-node">└ 📂 Negative Test Cases</div>
           </div>
 
-          <!-- Default Assigned To -->
+          <!-- Default Assigned To — text input with ADO format hint -->
           <div class="ado-field">
-            <label style="display:flex;align-items:center;gap:8px">
-              Default Assigned To
-              <span id="adoUsersLoadingBadge" style="display:none;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">Loading users…</span>
-              <span id="adoUsersCount" style="display:none;font-size:10px;background:rgba(0,120,212,.1);border:1px solid rgba(0,120,212,.25);color:var(--d365);padding:1px 7px;border-radius:6px;font-family:'JetBrains Mono',monospace"></span>
+            <label style="display:flex;align-items:center;justify-content:space-between">
+              <span>Assigned To <span class="ado-optional">(optional)</span></span>
+              <button onclick="adoClearAssignedTo()"
+                style="font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--border2);
+                       background:var(--surface2);color:var(--text3);cursor:pointer;transition:all .15s"
+                onmouseover="this.style.color='var(--error)';this.style.borderColor='var(--error)'"
+                onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border2)'">
+                ✕ Clear
+              </button>
             </label>
-            <select id="adoAssignedToSelect"
-              style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
-                     padding:9px 12px;color:var(--text);font-size:13px;width:100%;cursor:pointer;outline:none;
-                     -webkit-appearance:none;appearance:none;
-                     background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22%3E%3Cpath d=%22M1 1l5 5 5-5%22 stroke=%22%234E5A6B%22 stroke-width=%221.5%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E');
-                     background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
-              <option value="">— Use AI-generated roles (default) —</option>
-            </select>
-            <span class="ado-hint">Overrides the "Assigned To" column for all pushed test cases. Leave blank to use AI-generated role names.</span>
+            <input type="text" id="adoAssignedToSelect"
+              placeholder="e.g. ramya@alphavariance.com  or  Ramya Uy"
+              autocomplete="off"
+              style="width:100%;background:var(--surface);border:1.5px solid var(--border2);
+                     border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;
+                     outline:none;transition:border-color .15s;
+                     font-family:'Plus Jakarta Sans',sans-serif"
+              oninput="adoSaveAssignedTo(this.value)"
+              onfocus="this.style.borderColor='var(--d365)'"
+              onblur="this.style.borderColor='var(--border2)'" />
+            <span class="ado-hint" style="line-height:1.6">
+              Enter your <strong>ADO email</strong> or <strong>display name</strong> exactly as it appears in Azure DevOps.<br>
+              Leave blank to push test cases as <strong>Unassigned</strong>.<br>
+              <span style="color:var(--d365);font-weight:600">✓ Saved between sessions</span> — enter once, remembered forever.
+            </span>
           </div>
 
           <!-- Area / Iteration -->
@@ -8708,6 +8750,7 @@ let adoSelectedPlanId = null;
 let adoRootSuiteId = null;
 
 function adoGoToStep(n) {
+  if (n === 2) setTimeout(adoRestoreAssignedTo, 100);
   [1,2,3].forEach(i => {
     document.getElementById(`adoPanel${i}`).classList.toggle('visible', i === n);
     const ind = document.getElementById(`adoStep${i}Indicator`);
@@ -8813,48 +8856,116 @@ async function adoRequest(method, url, _pat, body = null) {
 
 // On modal open — check if ADO_PAT is configured via Vercel env
 async function initADOModal() {
-  const errEl = document.getElementById('adoConnectError');
-  errEl.style.display = 'none';
+  const errEl   = document.getElementById('adoConnectError');
+  const display = document.getElementById('adoOrgDisplay');
+  const hint    = document.getElementById('adoOrgHintText');
+  const orgInput= document.getElementById('adoOrgTextInput');
+
+  if (errEl)   errEl.style.display = 'none';
+  if (display) display.textContent = '⏳ Checking…';
+
   try {
     const res = await fetch('/api/status');
-    if (res.ok) {
-      const { adoKey, adoOrg, adoProject } = await res.json();
-      if (adoKey) {
-        document.getElementById('adoPatManualRow').style.display = 'none';
-        document.getElementById('adoPatEnvRow').style.display    = 'flex';
-      }
-      if (adoOrg) {
-        // Show org from env in display elements
-        document.getElementById('adoOrg').value = adoOrg;
-        window.__configuredOrg = adoOrg;
-        const display = document.getElementById('adoOrgDisplay');
-        if (display) display.textContent = adoOrg;
-        const badge = document.getElementById('adoOrgEnvBadge');
-        if (badge) badge.style.display = 'inline';
-        const hint = document.getElementById('adoOrgHintText');
-        if (hint) hint.textContent = adoOrg;
+    if (!res.ok) throw new Error('Status check failed: HTTP ' + res.status);
 
-        // Projects may already be loaded — check if adoProjectSelect has options
-        const sel = document.getElementById('adoProjectSelect');
-        const hasProjects = sel && sel.options.length > 1;
-        if (hasProjects) {
-          document.getElementById('adoProjectFieldRow').style.display = 'block';
-          if (adoProject) {
-            sel.value = adoProject;
-            onProjectSelectChange();
-          }
-        } else {
-          // Load projects for this org
-          await autoLoadProjectsFromEnv(adoOrg, adoProject);
-        }
-        if (adoOrg && adoProject) {
-          document.getElementById('adoLoadPlansRow').style.display = 'block';
-          // Auto-load users in background
-          loadADOUsers(adoOrg, adoProject);
+    const data = await res.json();
+    const { adoKey = false, adoOrg = '', adoProject = '' } = data;
+
+    // ── PAT status ────────────────────────────────────────────────
+    if (adoKey) {
+      const manualRow = document.getElementById('adoPatManualRow');
+      const envRow    = document.getElementById('adoPatEnvRow');
+      if (manualRow) manualRow.style.display = 'none';
+      if (envRow)    envRow.style.display    = 'flex';
+    } else {
+      if (display) display.textContent = 'PAT not configured';
+      if (errEl) {
+        errEl.textContent = '⚠️ ADO_PAT / DEVOPS_PAT not set in Vercel Environment Variables. ' +
+                            'Add it in Vercel → Project Settings → Environment Variables.';
+        errEl.style.display = '';
+      }
+      return;
+    }
+
+    // ── Organisation ─────────────────────────────────────────────
+    const org = adoOrg || window.__adoDefaultOrg ||
+                (typeof localStorage !== 'undefined' ? localStorage.getItem('shuddhi-ado-default-org') || '' : '');
+
+    if (org) {
+      // Org from env/saved — show read-only display
+      document.getElementById('adoOrg').value = org;
+      window.__configuredOrg = org;
+      if (display) display.textContent = org;
+      if (hint)    hint.textContent    = org;
+      const badge = document.getElementById('adoOrgEnvBadge');
+      if (badge)   badge.style.display = 'inline';
+
+      // Show manual text input too (pre-filled) so user can change if needed
+      if (orgInput) { orgInput.value = org; }
+
+      // Load projects automatically
+      const sel = document.getElementById('adoProjectSelect');
+      const hasProjects = sel && sel.options.length > 1;
+      if (!hasProjects) {
+        await autoLoadProjectsFromEnv(org, adoProject);
+      } else {
+        document.getElementById('adoProjectFieldRow').style.display = 'block';
+        if (adoProject) { sel.value = adoProject; onProjectSelectChange(); }
+      }
+      if (org && adoProject) {
+        document.getElementById('adoLoadPlansRow').style.display = 'block';
+      }
+    } else {
+      // No org configured — show manual entry
+      if (display) display.textContent = 'Not configured';
+      if (hint)    hint.textContent    = '{org}';
+
+      // Show the manual org text input
+      const manualOrgRow = document.getElementById('adoManualOrgRow');
+      if (manualOrgRow) {
+        manualOrgRow.style.display = 'block';
+      } else {
+        // Inject a fallback input if row not present
+        const orgSection = document.getElementById('adoOrgProjectRow');
+        if (orgSection && !document.getElementById('adoManualOrgInjected')) {
+          const div = document.createElement('div');
+          div.id = 'adoManualOrgInjected';
+          div.className = 'ado-field';
+          div.style.marginTop = '12px';
+          div.innerHTML = `<label>Enter Organisation Name</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="adoOrgTextInputVisible" placeholder="e.g. RSATwithAzure"
+                style="flex:1;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;
+                       padding:9px 12px;color:var(--text);font-size:13px;outline:none;
+                       font-family:'Plus Jakarta Sans',sans-serif"
+                onfocus="this.style.borderColor='var(--d365)'"
+                onblur="this.style.borderColor='var(--border2)'"
+                oninput="document.getElementById('adoOrg').value=this.value;
+                         document.getElementById('adoOrgHintText').textContent=this.value||'{org}';"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();loadProjectsFromInput();}"/>
+              <button onclick="loadProjectsFromInput()" id="adoLoadProjBtn2"
+                style="padding:9px 14px;border-radius:8px;border:1.5px solid var(--d365);
+                       background:rgba(91,95,239,.07);color:var(--d365);font-size:13px;
+                       font-weight:600;cursor:pointer;white-space:nowrap">
+                Load Projects →
+              </button>
+            </div>
+            <div style="font-size:11.5px;color:var(--text3);margin-top:4px">
+              💡 To pre-configure, add <code style="background:var(--surface2);padding:1px 6px;
+              border-radius:4px;font-family:monospace">DEVOPS_ORG</code> = your org name in Vercel env vars
+            </div>`;
+          orgSection.insertBefore(div, orgSection.firstChild);
         }
       }
     }
-  } catch(e) { /* offline */ }
+  } catch(e) {
+    if (display) display.textContent = 'Error loading';
+    if (errEl) {
+      errEl.textContent = '❌ Failed to load configuration: ' + e.message +
+                          '. Check your network and Vercel deployment.';
+      errEl.style.display = '';
+    }
+  }
 }
 
 // Alias so button onclick works
@@ -9355,17 +9466,15 @@ async function createADOTestCase(org, project, _pat, tc, areaPath, iterPath) {
   const module   = document.getElementById('module').value   || '';
   const ops = [
     { op:'add', path:'/fields/System.Title',                       value: tc.title },
-    { op:'add', path:'/fields/System.AssignedTo',
-      // Use override user from dropdown or manual input, else use AI-generated role
-      value: (document.getElementById('adoAssignedToSelect')?.value
-           || window.__manualAssignedTo
-           || tc.assignedTo) },
     { op:'add', path:'/fields/System.State',                       value: 'Design' },
     { op:'add', path:'/fields/Microsoft.VSTS.Common.Priority',     value: tc.priority },
     { op:'add', path:'/fields/Microsoft.VSTS.TCM.Steps',           value: buildStepsXML(tc.steps) },
     { op:'add', path:'/fields/System.Description',                 value: `${platform} — ${module} | Auto-generated by ERP Test Generator` },
     { op:'add', path:'/fields/System.Tags',                        value: `auto-generated; ${platform}; ${module}`.replace(/\s+/g,'-') }
   ];
+  // Conditionally add Assigned To — only if user provided a valid ADO identity
+  const assignedToVal = (document.getElementById('adoAssignedToSelect')?.value || '').trim();
+  if (assignedToVal) ops.push({ op:'add', path:'/fields/System.AssignedTo', value: assignedToVal });
   if (areaPath) ops.push({ op:'add', path:'/fields/System.AreaPath',      value: areaPath });
   if (iterPath) ops.push({ op:'add', path:'/fields/System.IterationPath', value: iterPath });
   // adoRequest proxy handles auth — PAT stays in Vercel env
@@ -9427,7 +9536,7 @@ function downloadADOCSV() {
     return [
       'Test Case',
       tc.title,
-      tc.assignedTo,
+      // assignedTo omitted,
       'Design',
       csvPrio,
       areaPath,
@@ -9769,11 +9878,19 @@ function inferPriority(title) {
 // ── Build a single TC table row ───────────────────────────────────
 function buildTGRow(tc) {
   const raw = tc.stepsRaw || '';
-  const stepsArr = raw.split(/;\s*(?=\d+\.)/).filter(Boolean);
+  // Split on semicolons before numbers, or plain semicolons, or newlines
+  const stepsArr = raw
+    .split(/;\s*(?=\d+\.)|\n/)
+    .map(s => s.trim())
+    .filter(Boolean);
   const cnt = Math.max(stepsArr.length, (raw.match(/\d+\./g)||[]).length, 1);
-  const stepsHtml = stepsArr.map((s,i) =>
-    `<div style="padding:2px 0"><strong style="color:var(--d365);font-size:11px">${i+1}.</strong> ${s.replace(/^\d+\.\s*/,'').trim()}</div>`
-  ).join('');
+  const stepsHtml = stepsArr.map((s, i) => {
+    const text = s.replace(/^\d+\.\s*/, '').trim();
+    return '<div class="tg-step-line">' +
+      '<span class="tg-step-num">' + (i + 1) + '</span>' +
+      '<span class="tg-step-text">' + text + '</span>' +
+    '</div>';
+  }).join('');
   const sel = tgSelectedIds.has(tc.id);
   return `<tr class="${sel?'tg-selected':''}" data-tc-id="${tc.id}" data-type="${tc.type}">
     <td class="tg-col-cb" style="text-align:center">
@@ -9827,10 +9944,31 @@ function tgRemoveRow(id, btn) {
 function tgToggleSteps(chip) {
   const popup = chip.nextElementSibling;
   if (!popup) return;
-  const open = popup.style.display === 'block';
-  popup.style.display = open ? 'none' : 'block';
+  const isOpen = popup.style.display === 'block';
+
+  // Accordion: close ALL other open popups first
+  document.querySelectorAll('.tg-steps-popup').forEach(p => {
+    if (p !== popup && p.style.display === 'block') {
+      p.style.display = 'none';
+      const c = p.previousElementSibling;
+      if (c) {
+        c.classList.remove('open');
+        const a = c.querySelector('.chip-arr');
+        if (a) a.textContent = '▾';
+      }
+    }
+  });
+
+  // Toggle clicked popup
+  popup.style.display = isOpen ? 'none' : 'block';
+  chip.classList.toggle('open', !isOpen);
   const arr = chip.querySelector('.chip-arr');
-  if (arr) arr.textContent = open ? '▾' : '▴';
+  if (arr) arr.textContent = isOpen ? '▾' : '▴';
+
+  // Smooth scroll into view if opening
+  if (!isOpen) {
+    setTimeout(() => popup.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+  }
 }
 function updateBulkBar() {
   const bar = document.getElementById('bulkActionBar');
@@ -10528,6 +10666,32 @@ function buildTGRequirementRow(el) {
   '</div>';
   const progressBar = document.getElementById('tg-progress-bar');
   if (progressBar) progressBar.after(row); else el.prepend(row);
+}
+</script>
+
+
+<script>
+// ── Assigned To — save/load/clear ────────────────────────────────
+const ADO_ASSIGNED_KEY = 'shuddhi-ado-assigned-to';
+
+function adoSaveAssignedTo(val) {
+  try { localStorage.setItem(ADO_ASSIGNED_KEY, val || ''); } catch(e) {}
+}
+
+function adoClearAssignedTo() {
+  const input = document.getElementById('adoAssignedToSelect');
+  if (input) input.value = '';
+  try { localStorage.removeItem(ADO_ASSIGNED_KEY); } catch(e) {}
+}
+
+// Auto-restore saved value when Step 2 is shown
+function adoRestoreAssignedTo() {
+  const input = document.getElementById('adoAssignedToSelect');
+  if (!input || input.value) return;  // already has value, don't overwrite
+  try {
+    const saved = localStorage.getItem(ADO_ASSIGNED_KEY) || '';
+    if (saved) input.value = saved;
+  } catch(e) {}
 }
 </script>
 
