@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-// autoLoadProjectsFromEnv — duplicate removed, using version below
+
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -4647,6 +4647,28 @@ header::after { display: none !important; }
   #appSidebar.collapsed .sb-collapse-strip-label { display: none; }
   #appSidebar.collapsed .sb-collapse-strip-icon  { transform: rotate(180deg); }
   #appSidebar.collapsed .sb-collapse-strip:hover { color: var(--indigo, #5B5FEF); }
+  /* ── Provider pills ─────────────────────────────────────────── */
+  .provider-pill {
+    display:flex;align-items:center;gap:10px;
+    padding:10px 14px;border-radius:10px;
+    border:1.5px solid var(--border2);background:var(--surface);
+    cursor:pointer;text-align:left;transition:all .15s;
+    font-family:'Plus Jakarta Sans',sans-serif;flex:1;min-width:140px;
+  }
+  .provider-pill:hover { border-color:var(--indigo);background:rgba(91,95,239,.03); }
+  .provider-pill.active {
+    border-color:var(--indigo);background:rgba(91,95,239,.06);
+    box-shadow:0 0 0 3px rgba(91,95,239,.12);
+  }
+  .pill-icon { font-size:20px;flex-shrink:0; }
+  .pill-name { font-size:13px;font-weight:700;color:var(--text); }
+  .pill-sub  { font-size:10.5px;color:var(--text3);margin-top:1px; }
+  .pill-status {
+    margin-left:auto;font-size:10px;padding:2px 8px;border-radius:20px;
+    font-weight:700;font-family:'JetBrains Mono',monospace;flex-shrink:0;
+  }
+  .pill-status.ok  { background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25); }
+  .pill-status.off { background:var(--surface2);color:var(--text3);border:1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -4817,7 +4839,11 @@ header::after { display: none !important; }
   <!-- ════════════════════════════════════════════════════════════
        SETTINGS MODAL
        ════════════════════════════════════════════════════════════ -->
-  <div class="ado-overlay" id="settingsOverlay" onclick="closeSettings()" style="display:none"></div>
+  <!-- Mobile nav drawer (used by openMobileNav/closeMobileNav) -->
+<div id="mobileNavOverlay" class="ado-overlay" onclick="closeMobileNav()" style="display:none"></div>
+<div id="mobileNavDrawer" style="display:none"></div>
+
+<div class="ado-overlay" id="settingsOverlay" onclick="closeSettings()" style="display:none"></div>
   <div class="settings-modal" id="settingsModal" role="dialog" aria-modal="true" aria-label="Settings">
 
     <div class="settings-header">
@@ -4842,62 +4868,133 @@ header::after { display: none !important; }
     <!-- ── Panel: Claude AI ── -->
     <div class="settings-panel" id="spanel-claude">
       <div class="settings-section">
-        <div class="settings-section-title">Claude API Key</div>
-        <div class="settings-section-desc">Required to generate test cases. Get your key from <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></div>
+        <div class="settings-section-title">AI Provider</div>
+        <div class="settings-section-desc">Choose which AI generates test cases. Each provider needs its own API key in Vercel.</div>
       </div>
 
-      <!-- Status card -->
-      <div class="settings-status-card" id="claudeStatusCard">
-        <div class="settings-status-row">
-          <div class="settings-status-icon" id="claudeStatusIcon">⏳</div>
-          <div style="flex:1">
-            <div class="settings-status-label" id="claudeStatusLabel">Checking configuration…</div>
-            <div class="settings-status-sub"  id="claudeStatusSub"></div>
+      <!-- Provider selector pills -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px" id="providerPills">
+        <button class="provider-pill" id="pill-claude"   onclick="selectProvider('claude')"
+          data-key="CLAUDE_API_KEY" data-url="https://console.anthropic.com">
+          <span class="pill-icon">🤖</span>
+          <div>
+            <div class="pill-name">Claude</div>
+            <div class="pill-sub">Anthropic · Sonnet 4.6</div>
           </div>
-          <button class="settings-test-btn" id="claudeTestBtn" onclick="testClaudeConnection()" style="display:none">Test Connection</button>
-        </div>
+          <span class="pill-status" id="pill-status-claude">—</span>
+        </button>
+        <button class="provider-pill" id="pill-gemini"  onclick="selectProvider('gemini')"
+          data-key="GEMINI_API_KEY" data-url="https://aistudio.google.com">
+          <span class="pill-icon">✦</span>
+          <div>
+            <div class="pill-name">Gemini</div>
+            <div class="pill-sub">Google · Flash 2.0 · Free</div>
+          </div>
+          <span class="pill-status" id="pill-status-gemini">—</span>
+        </button>
+        <button class="provider-pill" id="pill-groq"    onclick="selectProvider('groq')"
+          data-key="GROQ_API_KEY" data-url="https://console.groq.com">
+          <span class="pill-icon">⚡</span>
+          <div>
+            <div class="pill-name">Groq</div>
+            <div class="pill-sub">Llama 3.3 70B · Free · Fast</div>
+          </div>
+          <span class="pill-status" id="pill-status-groq">—</span>
+        </button>
       </div>
 
-      <!-- Manual key entry (shown when env var not set) -->
-      <div id="claudeManualSection">
-        <div class="settings-field-label">API Key <span style="color:var(--text3)">(enter manually if not set via Vercel)</span></div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <input type="password" id="settingsApiKey" placeholder="sk-ant-api03-..." autocomplete="off"
-            style="flex:1;background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:border-color .15s"
-            oninput="syncApiKey(this.value)" onfocus="this.style.borderColor='var(--d365)'" onblur="this.style.borderColor='var(--border2)'"/>
-          <button class="settings-test-btn" onclick="testClaudeConnection()">Test</button>
+      <!-- Active provider detail card -->
+      <div id="activeProviderCard" style="border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:16px">
+        <div style="padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);
+                    display:flex;align-items:center;gap:10px">
+          <span id="activeProviderIcon" style="font-size:20px">🤖</span>
+          <div style="flex:1">
+            <div style="font-size:13.5px;font-weight:800;color:var(--text)" id="activeProviderName">Claude</div>
+            <div style="font-size:11.5px;color:var(--text3)" id="activeProviderModel">claude-sonnet-4-6</div>
+          </div>
+          <span id="activeProviderBadge" style="font-size:10px;padding:3px 10px;border-radius:20px;
+                font-weight:700;font-family:'JetBrains Mono',monospace;
+                background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25)">
+            ACTIVE
+          </span>
         </div>
-        <div class="settings-hint">💡 For production: add <code>CLAUDE_API_KEY</code> as a Vercel Environment Variable — the key stays server-side and this input disappears.</div>
-      </div>
-
-      <!-- Vercel setup guide (shown when env var IS set) -->
-      <div id="claudeVercelSection" style="display:none">
-        <div class="settings-field-label">Vercel Environment Variable</div>
-        <div class="settings-env-row">
-          <span class="settings-env-name">CLAUDE_API_KEY</span>
-          <span class="settings-env-val">sk-ant-api03-••••••••••••••••</span>
-          <div class="conn-badge ok">Configured ✓</div>
+        <div style="padding:12px 16px">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px" id="activeProviderDesc">
+            Set <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace">CLAUDE_API_KEY</code> in Vercel Environment Variables.
+          </div>
+          <!-- Env var row -->
+          <div id="activeEnvRow" style="display:flex;align-items:center;gap:10px;
+               padding:10px 12px;background:var(--surface2);border-radius:8px;
+               border:1px solid var(--border);margin-bottom:10px">
+            <code style="font-family:'JetBrains Mono',monospace;font-size:13px;
+                         font-weight:700;color:var(--indigo)" id="activeEnvKey">CLAUDE_API_KEY</code>
+            <div style="flex:1;font-size:11px;letter-spacing:2px;color:var(--text3)">••••••••••••••••••</div>
+            <span id="activeEnvStatus" style="font-size:10px;padding:2px 9px;border-radius:20px;
+                  font-weight:700;font-family:'JetBrains Mono',monospace">Not set</span>
+          </div>
+          <!-- Manual key input (when not in env) -->
+          <div id="manualKeyRow" style="display:none">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="password" id="settingsApiKey" placeholder="Paste API key here…"
+                autocomplete="off"
+                style="flex:1;background:var(--surface);border:1.5px solid var(--border2);
+                       border-radius:8px;padding:9px 12px;color:var(--text);
+                       font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;
+                       transition:border-color .15s"
+                oninput="syncApiKey(this.value)"
+                onfocus="this.style.borderColor='var(--d365)'"
+                onblur="this.style.borderColor='var(--border2)'"/>
+              <button class="settings-test-btn" onclick="testClaudeConnection()">Test</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--text3);margin-top:6px;line-height:1.5"
+                 id="activeProviderGetKey">
+              Get your free key at <a id="activeProviderLink" href="https://console.anthropic.com"
+              target="_blank" rel="noopener" style="color:var(--indigo)">console.anthropic.com</a>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="settings-test-btn" id="claudeTestBtn"
+              onclick="testClaudeConnection()"
+              style="flex:1;padding:9px;display:none">
+              🔌 Test Connection
+            </button>
+            <button onclick="saveProviderChoice()"
+              style="flex:1;padding:9px;border-radius:9px;border:none;
+                     background:linear-gradient(135deg,var(--indigo),var(--violet));
+                     color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+                     font-family:'Plus Jakarta Sans',sans-serif">
+              ✅ Use This Provider
+            </button>
+          </div>
         </div>
-        <div class="settings-hint">🔒 Key is stored server-side in Vercel. The browser never sees it. Requests are proxied through <code>/api/claude</code>.</div>
       </div>
 
       <!-- Test result -->
       <div class="settings-test-result" id="claudeTestResult" style="display:none"></div>
 
-      <!-- Setup steps (collapsible) -->
+      <!-- Vercel setup guide -->
       <details class="settings-guide">
-        <summary>How to set up in Vercel →</summary>
+        <summary>How to add a key in Vercel →</summary>
         <ol class="settings-steps">
-          <li>Go to <strong>console.anthropic.com</strong> → API Keys → Create Key</li>
-          <li>Copy the <code>sk-ant-api03-...</code> key</li>
-          <li>Open your <strong>Vercel Dashboard</strong> → This Project → Settings</li>
-          <li>Click <strong>Environment Variables</strong> → Add New</li>
-          <li>Name: <code>CLAUDE_API_KEY</code> &nbsp;|&nbsp; Value: paste your key</li>
-          <li>Set to <strong>Production</strong> + Preview → Save</li>
-          <li>Run <code>vercel deploy --prod</code> — input disappears, 🔐 badge appears</li>
+          <li>Get your free API key from the provider link above</li>
+          <li>Open <strong>Vercel Dashboard</strong> → This Project → Settings → Environment Variables</li>
+          <li>Click <strong>Add New</strong> → Name: <code id="guideEnvKey">CLAUDE_API_KEY</code> → paste value</li>
+          <li>Set to <strong>Production</strong> → Save → run <code>vercel --prod --force</code></li>
+          <li>Switch provider anytime from this Settings panel — no Vercel changes needed!</li>
         </ol>
       </details>
+
+      <!-- Provider comparison -->
+      <details class="settings-guide" style="margin-top:8px">
+        <summary>Provider comparison →</summary>
+        <div style="padding:10px 16px 14px;font-size:12.5px;color:var(--text2);line-height:1.6">
+          <strong>Claude</strong> (Anthropic) — Best quality for complex QA reasoning. Paid.<br>
+          <strong>Gemini Flash</strong> (Google) — 1M tokens/day free. Very capable. Recommended free option.<br>
+          <strong>Groq/Llama</strong> — Fastest streaming. 500K tokens/day free. Great for quick TC generation.
+        </div>
+      </details>
     </div>
+
 
     <!-- ── Panel: Azure DevOps ── -->
     <div class="settings-panel" id="spanel-ado" style="display:none">
@@ -5007,6 +5104,9 @@ header::after { display: none !important; }
         </span>
         <!-- Hidden inputs kept for JS compatibility -->
         <input type="hidden" id="settingsAdoOrg"/>
+        <input type="hidden" id="settingsLoadProjLabel"/>
+        <input type="hidden" id="settingsLoadProjBtn"/>
+        <input type="hidden" id="settingsAdoOrgSelect"/>
       </div>
 
       <!-- Project dropdown -->
@@ -5034,7 +5134,7 @@ header::after { display: none !important; }
       <!-- Test Connection -->
       <div id="settingsAdoTestRow" style="display:none;margin-top:14px">
         <button class="settings-test-btn" style="width:100%;padding:11px;border-radius:9px"
-          onclick="testADOConnection()">
+          id="adoTestBtn" onclick="testADOConnection()">
           🔷 Test Connection
         </button>
         <div id="settingsSaveConfirm" style="display:none"></div>
@@ -5044,6 +5144,7 @@ header::after { display: none !important; }
       <div style="display:none" id="settingsAdoLoadOrgsRow"></div>
       <div style="display:none" id="settingsLoadOrgsLabel"></div>
       <div style="display:none" id="settingsOrgLoadingBadgeDup"></div>
+      <div style="display:none" id="adoAssignedManualRow"></div>
     </div>
 
     
@@ -5230,6 +5331,19 @@ header::after { display: none !important; }
         <div class="spinner" id="bulkSpinner"></div>
         <span id="bulkGenLabel">⚡ Generate for All Documents</span>
       </button>
+      <!-- Bulk progress bar (shown during generation) -->
+      <div id="bulkProgressWrap" style="display:none;margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span id="bulkProgressLabel" style="font-size:12px;color:var(--text2)">Generating…</span>
+          <button id="bulkStopBtn" onclick="stopBulkGenerate()"
+            style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--error);
+                   background:rgba(220,38,38,.06);color:var(--error);cursor:pointer">⏹ Stop</button>
+        </div>
+        <div style="height:6px;background:var(--surface2);border-radius:4px;overflow:hidden">
+          <div id="bulkProgressFill" style="height:100%;background:var(--grad);border-radius:4px;
+               width:0%;transition:width .3s ease"></div>
+        </div>
+      </div>
       <div id="bulkResults" style="margin-top:12px;display:none"></div>
     </div>
   </div>
@@ -5801,6 +5915,7 @@ header::after { display: none !important; }
 
         <!-- Hidden values + error display -->
         <input type="hidden" id="adoOrg"/>
+        <input type="hidden" id="adoOrgTextInput"/><!-- stub for JS compat -->
         <input type="hidden" id="adoProject"/>
         <div id="adoPatStatus" style="display:none"></div>
         <div id="adoConnectError"
@@ -7182,8 +7297,9 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       headers: { 'Content-Type': 'application/json' },
       signal: activeAbortController.signal,
       body: JSON.stringify({
-        ...(apiKey ? { apiKey } : {}),   // only include if user provided one
-        model: 'claude-sonnet-4-6',
+        ...(apiKey ? { apiKey } : {}),
+        provider: getActiveProvider(),     // tell proxy which AI to use
+        model: 'claude-sonnet-4-6',        // proxy maps to correct model
         max_tokens: 8192,
         stream: true,
         system: systemPrompt,
@@ -8014,7 +8130,7 @@ renderHistory();
     const { claudeKey, adoKey, adoOrg = '', adoProject = '' } = await res.json();
 
     // Apply to both the API bar and the settings modal
-    applySettingsStatus(claudeKey, adoKey);
+    applySettingsStatus(claudeKey, adoKey, data.geminiKey, data.groqKey, data.aiProvider);
 
     if (claudeKey) {
       window.__claudeKeyConfigured = true;
@@ -8296,6 +8412,7 @@ async function runBulkGenerate() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...(apiKey ? { apiKey } : {}),
+          provider: getActiveProvider(),
           model: 'claude-sonnet-4-6',
           max_tokens: 3000,
           system: `You are a senior QA Engineer for ${platform}. Generate test cases ONLY in English in this exact table format:
@@ -8547,10 +8664,10 @@ async function initADOModal() {
 
 // Alias so button onclick works
 
-// validateAndLoadOrgs — removed (single-org setup)
+
 
 async function onOrgSelectChange() {
-  const orgSel  = document.getElementById('adoOrgSelect');
+  const orgSel  = document.getElementById('adoOrgTextInput') || document.getElementById('adoOrg');
   const org     = orgSel?.value?.trim() || '';
   const hintEl  = document.getElementById('adoOrgHintText');
   const projRow = document.getElementById('adoProjectFieldRow');
@@ -9235,7 +9352,7 @@ function applySettingsStatus(claudeKey, adoKey) {
     adoLabel.textContent = 'ADO_PAT configured via Vercel Environment Variable';
     adoLabel.style.color = '#00875a';
     adoSub.textContent   = 'ADO requests are proxied through /api/ado — PAT never reaches the browser.';
-    // Test Connection button removed from settings
+    
     // if (adoTestBtn) { adoTestBtn.style.display = 'block'; }
     if (adoVercel)   { adoVercel.style.display  = 'flex'; }
     if (adoMissing)  { adoMissing.style.display = 'none'; }
@@ -9273,6 +9390,7 @@ async function testClaudeConnection() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...(apiKey ? { apiKey } : {}),
+        provider:   getActiveProvider(),
         model:      'claude-sonnet-4-6',
         max_tokens: 10,
         stream:     false,
@@ -9303,7 +9421,7 @@ async function testClaudeConnection() {
     if (btn) btn.disabled = false;
   }
 }
-// autoLoadProjectsFromEnv — see definition below
+
 
 
 
@@ -9612,7 +9730,7 @@ document.addEventListener('keydown', e => {
 
 
 
-// settingsValidateAndLoadOrgs removed — single-org mode (uses settingsAutoLoadProjects)
+
 
 // When org selected in settings — load projects for that org
 async function settingsOnOrgChange() {
@@ -9824,10 +9942,7 @@ async function settingsLoadProjects() {
     </div>
   </div>
 
-<script>
-// Platform & Module selector is now rendered directly in the sidebar
-// (platformGrid and moduleField elements live inside #sbPlatformSection)
-</script>
+<!-- Platform & Module selector rendered in sidebar -->
 
 <script>
 // ── Auto-sync: clicking a tab sets the matching output format ──
@@ -11156,7 +11271,7 @@ async function checkJiraSettingsStatus() {
 // ITEM 3: ADO Iteration Path auto-fill from active sprint
 // ═══════════════════════════════════════════════════════════════
 async function loadCurrentSprint() {
-  const org     = document.getElementById('adoOrg')?.value.trim()     || document.getElementById('adoOrgSelect')?.value.trim() || '';
+  const org     = document.getElementById('adoOrg')?.value.trim()     || document.getElementById('adoOrgTextInput')?.value.trim() || '';
   const project = document.getElementById('adoProject')?.value.trim() || document.getElementById('adoProjectSelect')?.value.trim() || '';
   const statusEl = document.getElementById('sprintLoadStatus');
   const btn      = document.getElementById('loadSprintBtn');
@@ -12357,7 +12472,7 @@ function switchArtifactTab(tabKey, btn) {
     tgPage = 1;
     renderTGTable();
     // Also sync the tgTabs if visible
-    // tgTabs removed — outer artifactTabs handles active state
+    
     const syncTab = null;
     if (syncTab) syncTab.classList.add('active');
     return;
@@ -12539,6 +12654,138 @@ async function loadProjectsIntoSettings(org) {
     projSel.disabled  = false;
     projSel.innerHTML = '<option value="">Failed to load</option>';
   }
+}
+</script>
+
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// MULTI-PROVIDER AI SWITCHER
+// ══════════════════════════════════════════════════════════════════
+// Read saved provider on load
+let _activeProvider = (() => {
+  try { return localStorage.getItem('shuddhi-ai-provider') || 'claude'; } catch(e) { return 'claude'; }
+})();
+
+const PROVIDER_META = {
+  claude: {
+    name:'Claude', icon:'🤖', model:'claude-sonnet-4-6', envKey:'CLAUDE_API_KEY',
+    url:'https://console.anthropic.com', urlLabel:'console.anthropic.com',
+    desc:'Best quality for complex QA reasoning. Paid per token.',
+    color:'var(--indigo)'
+  },
+  gemini: {
+    name:'Gemini', icon:'✦', model:'gemini-2.0-flash', envKey:'GEMINI_API_KEY',
+    url:'https://aistudio.google.com', urlLabel:'aistudio.google.com',
+    desc:'1M tokens/day free. Get key at Google AI Studio → Get API Key.',
+    color:'#0369A1'
+  },
+  groq: {
+    name:'Groq', icon:'⚡', model:'llama-3.3-70b-versatile', envKey:'GROQ_API_KEY',
+    url:'https://console.groq.com', urlLabel:'console.groq.com',
+    desc:'500K tokens/day free. Fastest streaming. Llama 3.3 70B.',
+    color:'#7C3AED'
+  },
+};
+
+// Get current active provider for API calls
+function getActiveProvider() { return _activeProvider || 'claude'; }
+
+// Save provider choice without re-rendering
+function saveProviderChoice() {
+  try { localStorage.setItem('shuddhi-ai-provider', _activeProvider); } catch(e) {}
+  const meta = PROVIDER_META[_activeProvider] || {};
+  showToast('✅ ' + (meta.name||_activeProvider) + ' set as active provider', meta.icon||'✅');
+  // Update badge
+  const badge = document.getElementById('activeProviderBadge');
+  if (badge) { badge.textContent = 'ACTIVE'; badge.style.opacity='1'; }
+}
+
+function selectProvider(provider, save = true) {
+  _activeProvider = provider;
+  const meta = PROVIDER_META[provider];
+  if (!meta) return;
+  // Persist choice in localStorage — survives page refresh, no Vercel change needed
+  if (save) {
+    try { localStorage.setItem('shuddhi-ai-provider', provider); } catch(e) {}
+    showToast('Switched to ' + meta.name + ' (' + meta.model + ')', meta.icon);
+  }
+
+  // Update pills
+  document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('pill-' + provider)?.classList.add('active');
+
+  // Update active card
+  document.getElementById('activeProviderIcon').textContent  = meta.icon;
+  document.getElementById('activeProviderName').textContent  = meta.name;
+  document.getElementById('activeProviderModel').textContent = meta.model;
+  document.getElementById('activeProviderDesc').innerHTML    =
+    'Set <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-family:\'JetBrains Mono\',monospace">' +
+    meta.envKey + '</code> in Vercel Environment Variables.';
+  document.getElementById('activeEnvKey').textContent = meta.envKey;
+  document.getElementById('activeProviderLink').href  = meta.url;
+  document.getElementById('activeProviderLink').textContent = meta.urlLabel;
+  document.getElementById('guideEnvKey').textContent = meta.envKey;
+
+  // Check if key is configured
+  const keyMap = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey };
+  const hasKey = keyMap[provider];
+  const statusEl = document.getElementById('activeEnvStatus');
+  if (hasKey) {
+    statusEl.textContent = 'Configured ✓';
+    statusEl.style.cssText = 'font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25)';
+    document.getElementById('manualKeyRow').style.display = 'none';
+    document.getElementById('claudeTestBtn').style.display = 'block';
+  } else {
+    statusEl.textContent = 'Not configured';
+    statusEl.style.cssText = 'font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:rgba(220,38,38,.08);color:#DC2626;border:1px solid rgba(220,38,38,.2)';
+    document.getElementById('manualKeyRow').style.display = 'block';
+    document.getElementById('claudeTestBtn').style.display = 'none';
+  }
+}
+
+// Called by applySettingsStatus with data from /api/status
+function applyProviderStatus(claudeKey, geminiKey, groqKey, activeProvider) {
+  window.__claudeKey = claudeKey;
+  window.__geminiKey = geminiKey;
+  window.__groqKey   = groqKey;
+
+  // Update pill statuses
+  const pills = { claude: claudeKey, gemini: geminiKey, groq: groqKey };
+  Object.entries(pills).forEach(([p, hasKey]) => {
+    const el = document.getElementById('pill-status-' + p);
+    if (!el) return;
+    if (hasKey) {
+      el.textContent = '✓ Set';
+      el.className = 'pill-status ok';
+    } else {
+      el.textContent = '— Not set';
+      el.className = 'pill-status off';
+    }
+  });
+
+  // Priority: user's saved choice > env var > first available key
+  let savedProvider = '';
+  try { savedProvider = localStorage.getItem('shuddhi-ai-provider') || ''; } catch(e) {}
+  const provider = savedProvider || activeProvider || (claudeKey ? 'claude' : geminiKey ? 'gemini' : groqKey ? 'groq' : 'claude');
+  selectProvider(provider, false); // false = don't save again / no toast on load
+
+  // Update the header dot
+  const dot = document.getElementById('claudeKeyDot');
+  const label = document.getElementById('claudeKeyDotLabel');
+  const hasAny = claudeKey || geminiKey || groqKey;
+  if (dot) {
+    dot.style.background = hasAny ? 'var(--success, #10B981)' : 'var(--error, #EF4444)';
+    dot.title = hasAny ? 'AI: ' + provider + ' active' : 'No AI key configured';
+  }
+  if (label) label.textContent = hasAny ? provider.charAt(0).toUpperCase()+provider.slice(1) : 'No AI';
+}
+
+// Hook into the existing applySettingsStatus
+const _origApplySettings = typeof applySettingsStatus === 'function' ? applySettingsStatus : null;
+function applySettingsStatus(claudeKey, adoKey, geminiKey, groqKey, activeProvider) {
+  if (_origApplySettings) _origApplySettings(claudeKey, adoKey);
+  applyProviderStatus(claudeKey, geminiKey || false, groqKey || false, activeProvider || '');
 }
 </script>
 
