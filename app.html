@@ -8959,6 +8959,10 @@ let adoLoadedPlans = [];   // cache of fetched test plans
 let adoSelectedPlanId = null;
 let adoRootSuiteId = null;
 
+window.adoClearAssignedTo   = adoClearAssignedTo;
+window.adoSaveAssignedTo    = adoSaveAssignedTo;
+window.adoRestoreAssignedTo = adoRestoreAssignedTo;
+
 function adoGoToStep(n) {
   if (n === 2) setTimeout(adoRestoreAssignedTo, 100);
   [1,2,3].forEach(i => {
@@ -9894,6 +9898,8 @@ async function loadProjectsFromInput() {
     if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
   }
 }
+
+window.loadProjectsFromInput = typeof loadProjectsFromInput !== 'undefined' ? loadProjectsFromInput : window.loadProjectsFromInput;
 </script>
 
 <script>
@@ -9999,6 +10005,8 @@ async function testClaudeConnection() {
     if (btn) { btn.disabled = false; btn.textContent = '🔌 Test Connection'; }
   }
 }
+
+window.testClaudeConnection = typeof testClaudeConnection !== 'undefined' ? testClaudeConnection : window.testClaudeConnection;
 </script>
 
 <script>
@@ -10584,6 +10592,15 @@ function closeMobileSidebar(){
   runProviderDiagnostics();
 }
 
+function populateAboutStatus() {
+  var version  = document.getElementById('aboutVersion');
+  var provider = document.getElementById('aboutProvider');
+  if (version)  version.textContent  = 'v2.0';
+  if (provider) provider.textContent = typeof getActiveProvider === 'function' ? getActiveProvider() : '—';
+  runProviderDiagnostics();
+}
+window.populateAboutStatus = populateAboutStatus;
+
 async function runProviderDiagnostics() {
   const el = document.getElementById('providerDiagResults');
   if (!el) return;
@@ -10756,6 +10773,85 @@ async function loadProjectsIntoSettings(org){
   }
 }
 
+
+// ── Expose ALL functions to window global scope ───────────────────
+// Fixes ReferenceError for inline onclick handlers across all blocks
+(function exposeGlobals() {
+  var toExpose = {
+    // Provider & Settings
+    selectProvider: typeof selectProvider !== 'undefined' ? selectProvider : null,
+    getActiveProvider: typeof getActiveProvider !== 'undefined' ? getActiveProvider : null,
+    saveProviderChoice: typeof saveProviderChoice !== 'undefined' ? saveProviderChoice : null,
+    applyProviderStatus: typeof applyProviderStatus !== 'undefined' ? applyProviderStatus : null,
+    populateAboutStatus: typeof populateAboutStatus !== 'undefined' ? populateAboutStatus : null,
+    runProviderDiagnostics: typeof runProviderDiagnostics !== 'undefined' ? runProviderDiagnostics : null,
+    // TC View
+    switchArtifactTab: typeof switchArtifactTab !== 'undefined' ? switchArtifactTab : null,
+    updateArtifactTabCounts: typeof updateArtifactTabCounts !== 'undefined' ? updateArtifactTabCounts : null,
+    renderTGTable: typeof renderTGTable !== 'undefined' ? renderTGTable : null,
+    buildTGTabsAndTable: typeof buildTGTabsAndTable !== 'undefined' ? buildTGTabsAndTable : null,
+    setTGFilter: typeof setTGFilter !== 'undefined' ? setTGFilter : null,
+    tgToggleSelect: typeof tgToggleSelect !== 'undefined' ? tgToggleSelect : null,
+    tgSelectAll: typeof tgSelectAll !== 'undefined' ? tgSelectAll : null,
+    tgSelectSection: typeof tgSelectSection !== 'undefined' ? tgSelectSection : null,
+    tgCopyRow: typeof tgCopyRow !== 'undefined' ? tgCopyRow : null,
+    tgRemoveRow: typeof tgRemoveRow !== 'undefined' ? tgRemoveRow : null,
+    tgGoPage: typeof tgGoPage !== 'undefined' ? tgGoPage : null,
+    updateBulkBar: typeof updateBulkBar !== 'undefined' ? updateBulkBar : null,
+    renderTestGenView: typeof renderTestGenView !== 'undefined' ? renderTestGenView : null,
+    // Sidebar
+    toggleSidebar: typeof toggleSidebar !== 'undefined' ? toggleSidebar : null,
+    toggleMobileSidebar: typeof toggleMobileSidebar !== 'undefined' ? toggleMobileSidebar : null,
+    closeMobileSidebar: typeof closeMobileSidebar !== 'undefined' ? closeMobileSidebar : null,
+    // ADO
+    saveADODefaults: typeof saveADODefaults !== 'undefined' ? saveADODefaults : null,
+    testADOConnection: typeof testADOConnection !== 'undefined' ? testADOConnection : null,
+    settingsOnProjectChange: typeof settingsOnProjectChange !== 'undefined' ? settingsOnProjectChange : null,
+    settingsAutoLoadProjects: typeof settingsAutoLoadProjects !== 'undefined' ? settingsAutoLoadProjects : null,
+    // Output
+    buildOutputStats: typeof buildOutputStats !== 'undefined' ? buildOutputStats : null,
+    buildOutputToolbar: typeof buildOutputToolbar !== 'undefined' ? buildOutputToolbar : null,
+    initStepsChips: typeof initStepsChips !== 'undefined' ? initStepsChips : null,
+    initBulkSelect: typeof initBulkSelect !== 'undefined' ? initBulkSelect : null,
+    initPagination: typeof initPagination !== 'undefined' ? initPagination : null,
+    // Gaps
+    parseRequirementGaps: typeof parseRequirementGaps !== 'undefined' ? parseRequirementGaps : null,
+    updateGapsTab: typeof updateGapsTab !== 'undefined' ? updateGapsTab : null,
+    renderGapsPanel: typeof renderGapsPanel !== 'undefined' ? renderGapsPanel : null,
+    // Misc
+    handleProviderRateLimit: typeof handleProviderRateLimit !== 'undefined' ? handleProviderRateLimit : null,
+    syncApiKey: typeof syncApiKey !== 'undefined' ? syncApiKey : null,
+    parseStepsArr: typeof parseStepsArr !== 'undefined' ? parseStepsArr : null,
+    buildTGRow: typeof buildTGRow !== 'undefined' ? buildTGRow : null
+  };
+  Object.keys(toExpose).forEach(function(k) {
+    if (toExpose[k] !== null) window[k] = toExpose[k];
+  });
+})();
+
+// ── Window global assignments — fixes ReferenceError in onclick handlers ──
+(function(){
+  var expose={
+    selectProvider:selectProvider, getActiveProvider:getActiveProvider,
+    saveProviderChoice:saveProviderChoice, applyProviderStatus:applyProviderStatus,
+    populateAboutStatus:populateAboutStatus, runProviderDiagnostics:runProviderDiagnostics,
+    switchArtifactTab:switchArtifactTab, updateArtifactTabCounts:updateArtifactTabCounts,
+    renderTGTable:renderTGTable, buildTGTabsAndTable:buildTGTabsAndTable,
+    setTGFilter:setTGFilter, tgToggleSelect:tgToggleSelect, tgSelectAll:tgSelectAll,
+    tgSelectSection:tgSelectSection, tgCopyRow:tgCopyRow, tgRemoveRow:tgRemoveRow,
+    tgGoPage:tgGoPage, updateBulkBar:updateBulkBar, renderTestGenView:renderTestGenView,
+    toggleSidebar:toggleSidebar, toggleMobileSidebar:toggleMobileSidebar,
+    closeMobileSidebar:closeMobileSidebar, saveADODefaults:saveADODefaults,
+    testADOConnection:testADOConnection, settingsOnProjectChange:settingsOnProjectChange,
+    settingsAutoLoadProjects:settingsAutoLoadProjects,
+    buildOutputStats:buildOutputStats, buildOutputToolbar:buildOutputToolbar,
+    initStepsChips:initStepsChips, initBulkSelect:initBulkSelect, initPagination:initPagination,
+    parseRequirementGaps:parseRequirementGaps, updateGapsTab:updateGapsTab,
+    renderGapsPanel:renderGapsPanel, handleProviderRateLimit:handleProviderRateLimit,
+    syncApiKey:syncApiKey, parseStepsArr:parseStepsArr, buildTGRow:buildTGRow
+  };
+  for(var k in expose){if(typeof expose[k]==='function') window[k]=expose[k];}
+})();
 </script>
 
 <script>
@@ -10849,6 +10945,12 @@ async function testJiraConnection() {
   }
 }
 
+window.loadJiraSettings        = loadJiraSettings;
+window.saveJiraSettings        = saveJiraSettings;
+window.checkJiraSettingsStatus = checkJiraSettingsStatus;
+window.testJiraConnection      = testJiraConnection;
+window.handleProviderRateLimit = handleProviderRateLimit;
+
 // ═══════════════════════════════════════════════════════════════
 // AUTO-SWITCH TO GROQ — when Claude/Gemini limits hit
 // ═══════════════════════════════════════════════════════════════
@@ -10907,6 +11009,11 @@ function handleProviderRateLimit(provider) {
   showToast('All providers hit rate limits. Groq resets every ~1 min — try again shortly.', '⏱');
   return null;
 }
+
+window.loadJiraSettings        = typeof loadJiraSettings        !== 'undefined' ? loadJiraSettings        : window.loadJiraSettings;
+window.saveJiraSettings        = typeof saveJiraSettings        !== 'undefined' ? saveJiraSettings        : window.saveJiraSettings;
+window.checkJiraSettingsStatus = typeof checkJiraSettingsStatus !== 'undefined' ? checkJiraSettingsStatus : window.checkJiraSettingsStatus;
+window.testJiraConnection      = typeof testJiraConnection      !== 'undefined' ? testJiraConnection      : window.testJiraConnection;
 </script>
 
 
@@ -11047,6 +11154,10 @@ function adoRestoreAssignedTo() {
     if (saved) input.value = saved;
   } catch(e) {}
 }
+
+window.adoClearAssignedTo   = typeof adoClearAssignedTo   !== 'undefined' ? adoClearAssignedTo   : window.adoClearAssignedTo;
+window.adoSaveAssignedTo    = typeof adoSaveAssignedTo    !== 'undefined' ? adoSaveAssignedTo    : window.adoSaveAssignedTo;
+window.adoRestoreAssignedTo = typeof adoRestoreAssignedTo !== 'undefined' ? adoRestoreAssignedTo : window.adoRestoreAssignedTo;
 </script>
 
 
@@ -11154,6 +11265,7 @@ function updateFlowCharCount(textarea) {
   }
 }
 
+window.updateFlowCharCount = updateFlowCharCount;
 // Called in generate() — soft-cap long inputs with user notice
 function checkAndTrimFlow(flow) {
   if (!flow || flow.length <= 6000) return flow;
