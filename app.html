@@ -2885,19 +2885,18 @@ header::after { display: none !important; }
   .tg-steps-chip.open .chip-arr { transform:rotate(180deg); }
   .tg-steps-popup {
     display: none;
-    position: fixed;       /* fixed so it escapes table overflow clipping */
+    position: fixed;
     z-index: 9999;
-    min-width: 320px;
-    max-width: 460px;
-    width: max-content;
+    min-width: 340px;
+    max-width: 500px;
+    max-height: 320px;        /* cap height — scroll if many steps */
+    overflow-y: auto;
+    overflow-x: hidden;
     background: var(--surface);
     border: 1.5px solid var(--border2);
     border-radius: 12px;
-    padding: 6px 0;
-    box-shadow: 0 12px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04);
-    font-size: 12.5px;
-    color: var(--text2);
-    overflow: hidden;
+    padding: 4px 0;
+    box-shadow: 0 12px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
   }
   .tg-steps-popup.open { display: block; }
   td.steps-td { position: relative; overflow: visible !important; }
@@ -4684,30 +4683,33 @@ header::after { display: none !important; }
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 8px 14px;
+    padding: 7px 14px;
     border-bottom: 1px solid var(--border);
-    line-height: 1.55;
+    line-height: 1.5;
+    min-height: 36px;         /* prevents circles from compressing into each other */
   }
-  .tg-step-line:last-child { border-bottom: none; }
+  .tg-step-line:last-child { border-bottom: none; padding-bottom: 8px; }
   .tg-step-num {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 22px;
+    width: 22px;              /* explicit width prevents squeezing */
     height: 22px;
     border-radius: 50%;
     background: var(--indigo, #5B5FEF);
     color: #fff;
     font-size: 10px;
     font-weight: 800;
-    flex-shrink: 0;
-    margin-top: 1px;
+    flex-shrink: 0;           /* NEVER shrink the circle */
+    margin-top: 2px;
     font-family: 'JetBrains Mono', monospace;
   }
   .tg-step-text {
     flex: 1;
     font-size: 12.5px;
     color: var(--text2);
+    word-break: break-word;
     word-break: break-word;
   }
 </style>
@@ -9937,11 +9939,28 @@ function inferPriority(title) {
 // ── Build a single TC table row ───────────────────────────────────
 function buildTGRow(tc) {
   const raw = tc.stepsRaw || '';
-  // Split on semicolons before numbers, or plain semicolons, or newlines
-  const stepsArr = raw
-    .split(/;\s*(?=\d+\.)|\n/)
-    .map(s => s.trim())
-    .filter(Boolean);
+  // Comprehensive step splitting — handles all AI output formats
+  let stepsArr = [];
+  if (/\d+\./.test(raw)) {
+    // Has numbered steps — split on semicolon+number OR newline+number
+    stepsArr = raw
+      .split(/;\s*(?=\d+\.)|\n\s*(?=\d+\.)/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    // If only 1 result but raw has multiple numbers, try splitting on number patterns
+    if (stepsArr.length === 1) {
+      stepsArr = raw
+        .split(/(?<=\.)\s+(?=\d+\.)/)  // "1. text 2. text" — split on ". N."
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+  } else {
+    // No numbers — split on semicolons or newlines
+    stepsArr = raw
+      .split(/;|\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
   const cnt = Math.max(stepsArr.length, (raw.match(/\d+\./g)||[]).length, 1);
   const stepsHtml = stepsArr.map((s, i) => {
     const text = s.replace(/^\d+\.\s*/, '').trim();
@@ -10034,14 +10053,27 @@ function tgToggleSteps(chip) {
     const arr = chip.querySelector('.chip-arr');
     if (arr) arr.textContent = '▴';
 
-    // Position popup below the chip using fixed coords
-    const rect = chip.getBoundingClientRect();
-    const popupW = 360;
-    const viewW  = window.innerWidth;
+    // Position popup — below chip by default, flip above if near viewport bottom
+    const rect    = chip.getBoundingClientRect();
+    const popupW  = 380;
+    const popupH  = 320; // max-height from CSS
+    const viewW   = window.innerWidth;
+    const viewH   = window.innerHeight;
+
+    // Horizontal: align left of chip, prevent right overflow
     let left = rect.left;
-    // Prevent right overflow
-    if (left + popupW > viewW - 12) left = viewW - popupW - 12;
-    popup.style.top  = (rect.bottom + 6) + 'px';
+    if (left + popupW > viewW - 12) left = Math.max(8, viewW - popupW - 12);
+
+    // Vertical: show below chip; flip above if not enough room below
+    const spaceBelow = viewH - rect.bottom - 8;
+    const spaceAbove = rect.top - 8;
+    let top;
+    if (spaceBelow >= Math.min(popupH, 120) || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 6;  // below chip
+    } else {
+      top = Math.max(8, rect.top - Math.min(popupH, spaceAbove) - 6); // above chip
+    }
+    popup.style.top  = top + 'px';
     popup.style.left = left + 'px';
 
     // Close popup when clicking outside
