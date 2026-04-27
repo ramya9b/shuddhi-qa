@@ -18,7 +18,8 @@ export const config = { runtime: 'edge' };
 // ── Model mapping per provider ──────────────────────────────────
 const MODELS = {
   claude: 'claude-sonnet-4-6',
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-2.0-flash',        // Primary — GA Jan 2025
+  geminiAlt: 'gemini-1.5-flash',     // Fallback — broader key support
   groq:   'llama-3.3-70b-versatile',
 };
 
@@ -222,6 +223,34 @@ export default async function handler(req) {
       let errJson = {};
       try { errJson = JSON.parse(errText); } catch(e) {}
       const detail = errJson?.error?.message || errJson?.message || errText.substring(0, 200);
+
+      // RC3: Gemini 404 or model-quota error → retry with gemini-1.5-flash
+      if (provider === 'gemini' && (response.status === 404 ||
+          (response.status === 429 && detail && detail.includes('quota')) ||
+          (response.status === 400 && detail && detail.includes('not found')))) {
+        console.log('[Gemini] Retrying with gemini-1.5-flash fallback model...');
+        const altUrl = upstream.url.replace(MODELS.gemini, MODELS.geminiAlt);
+        const altResponse = await fetch(altUrl, {
+          method: 'POST',
+          headers: upstream.headers,
+          body: upstream.body,
+        });
+        if (altResponse.ok) {
+          const isStream = forwardBody.stream === true;
+          if (isStream) {
+            const streamBody = normalizeStream(provider, altResponse.body);
+            return new Response(streamBody, {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+            });
+          }
+          const normalized = await normalizeResponse(provider, altResponse);
+          return new Response(JSON.stringify({ ...normalized, _provider: 'gemini-1.5-flash' }), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       let msg = `${provider} API error ${response.status}: ${detail || 'Unknown error'}`;
       if (response.status === 400) {
         // Detect Anthropic account usage cap — treat as switchable rate limit
@@ -249,7 +278,17 @@ export default async function handler(req) {
       }
       if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
       if (response.status === 404) msg = `${provider} model/endpoint not found. URL: ${upstream.url.substring(0, 80)}`;
-      if (response.status === 403) msg = `${provider} API key does not have permission. Check key scopes.`;
+      if (response.status === 403) {
+        const isApiNotEnabled = detail && (detail.includes('API_NOT_ENABLED') || detail.includes('not been used') || detail.includes('disabled'));
+        if (isApiNotEnabled) {
+          // Treat as switchable — key exists but wrong Google Cloud project
+          return new Response(JSON.stringify({
+            error: `gemini API not enabled on this key's Google Cloud project. Go to console.cloud.google.com → APIs → Enable "Generative Language API". OR get a fresh key from aistudio.google.com.`,
+            switchProvider: true
+          }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        msg = `${provider} API key does not have permission (403): ${detail}`;
+      }
       return new Response(JSON.stringify({ error: msg, detail }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
