@@ -7461,6 +7461,8 @@ function initSectionCollapse(container) {
   });
 }
 
+window.initSectionCollapse=initSectionCollapse;
+
 // ── addCopySingleButtons (inline) ─────────────────────────────────
 function addCopySingleButtons(container) {
   if (!container) return;
@@ -7541,8 +7543,8 @@ function applyMetadataStyling(container) {
     });
   });
   // Additional passes — all in one function, no recursion
-  initSectionCollapse(container);
-  addCopySingleButtons(container);
+  (window.initSectionCollapse||function(){})(container);
+  (window.addCopySingleButtons||function(){})(container);
 }
 
 function finalizeOutput(elapsed, platform, module) {
@@ -10341,6 +10343,8 @@ function addCopySingleButtons(container) {
     lastCell.appendChild(btn);
   });
 }
+
+window.addCopySingleButtons=addCopySingleButtons;
 
 // ── buildTGProgressBar ────────────────────────────────────────────
 function buildTGProgressBar(el) {
