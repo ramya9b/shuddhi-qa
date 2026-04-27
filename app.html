@@ -9425,5 +9425,54 @@ async function autoLoadProjectsFromEnv(org, presetProject) {
 function autoLoadProjectsForOrg(org, preset) { return autoLoadProjectsFromEnv(org, preset); }
 </script>
 
+
+<script>
+// ── Test AI provider connection ───────────────────────────────────
+async function testClaudeConnection() {
+  const resultEl = document.getElementById('claudeTestResult');
+  const btn      = document.getElementById('claudeTestBtn');
+  const provider = getActiveProvider();
+  const meta     = (typeof PROVIDER_META !== 'undefined' && PROVIDER_META[provider]) || { name: provider };
+
+  if (!resultEl) return;
+  resultEl.style.display = 'block';
+  resultEl.className     = 'settings-test-result';
+  resultEl.textContent   = '⏳ Testing ' + meta.name + ' connection…';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Testing…'; }
+
+  try {
+    const apiKey = (typeof window !== 'undefined' && window.apiKey) || '';
+    const res = await fetch('/api/claude', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...(apiKey ? { apiKey } : {}),
+        provider:   provider,
+        model:      'claude-sonnet-4-6',
+        max_tokens: 16,
+        stream:     false,
+        messages:   [{ role: 'user', content: 'Reply with the single word: connected' }]
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      resultEl.className   = 'settings-test-result err';
+      resultEl.textContent = '❌ ' + (data.error || 'Error ' + res.status);
+    } else {
+      const text = data.content?.[0]?.text || data.choices?.[0]?.message?.content || '';
+      resultEl.className   = 'settings-test-result ok';
+      resultEl.textContent = '✅ ' + meta.name + ' connected — response: "' + text.trim().substring(0,30) + '"';
+    }
+  } catch(e) {
+    resultEl.className   = 'settings-test-result err';
+    resultEl.textContent = '❌ Network error: ' + e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔌 Test Connection'; }
+  }
+}
+</script>
+
 </body>
 </html>
