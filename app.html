@@ -7089,6 +7089,11 @@ function stopBulkGenerate() {
 }
 
 async function generate() {
+  // Reset provider failure state on every manual generate click
+  if (typeof _failedProviders !== 'undefined') {
+    _failedProviders.clear();
+    console.log('[Provider] Failure list cleared — fresh generate attempt');
+  }
   const apiKey = document.getElementById('apiKey').value.trim();
   const platform = document.getElementById('platform').value;
   const module = document.getElementById('module').value;
@@ -7376,20 +7381,29 @@ Make the output production-ready and specific to ${platform}. Use real field nam
           switched = handleProviderRateLimit(curProvider);
         }
         if (switched) {
-          // Clear the error bar before retrying so it doesn't flash
+          // NO auto-retry — user clicks Generate again after switch
+          // This prevents infinite loops when multiple providers fail
           hideError();
-          setTimeout(() => {
-            const btn = document.getElementById('genBtn');
-            if (btn && !btn.disabled) btn.click();
-          }, 1000);
-          msg = `${curProvider} limit reached — switching to ${switched}. Retrying…`;
+          const switchedMeta = (typeof PROVIDER_META !== 'undefined' && PROVIDER_META[switched]) || { name: switched };
+          msg = `${curProvider} limit reached — switched to ${switchedMeta.name}. Click Generate to retry.`;
+          // Show a persistent banner (not just toast) so user sees it clearly
+          showError(msg);
+          // Re-enable the generate button so user can click
+          const btn2 = document.getElementById('genBtn');
+          if (btn2) {
+            btn2.disabled  = false;
+            btn2.classList.remove('loading');
+          }
+          const stopBtn2 = document.getElementById('stopBtn');
+          if (stopBtn2) stopBtn2.style.display = 'none';
+          return; // stop generate(), do not throw
         } else {
-          // All providers exhausted — give user actionable options
+          // All providers exhausted
+          const nextReset = new Date(Date.now() + 65000);
           msg = [
-            '⚠️ All AI providers are currently unavailable:',
-            '• Claude: locked until May 1, 2026',
-            '• Gemini & Groq: rate limits reached',
-            'Groq resets every ~1 minute. Try again shortly, or wait for May 1 for Claude.'
+            '⚠️ All AI providers unavailable right now.',
+            'Groq resets in ~1 min — try again shortly.',
+            'Claude access resumes May 1, 2026.'
           ].join(' ');
         }
       }
@@ -10630,14 +10644,7 @@ function _resetFailedProviders() {
 function handleProviderRateLimit(provider) {
   // Mark current provider as failed for this session
   _failedProviders.add(provider);
-
-  // Enforce max retry limit to prevent infinite loops
-  _autoRetryCount++;
-  if (_autoRetryCount > MAX_AUTO_RETRIES) {
-    _autoRetryCount = 0;
-    _failedProviders.clear();
-    return null; // stop retrying — show error to user
-  }
+  console.log('[Provider] Failed:', provider, '| Session failures:', [..._failedProviders]);
 
   // Schedule automatic reset after 65s (Groq rate limit window)
   clearTimeout(_failedResetTimer);
@@ -10658,7 +10665,7 @@ function handleProviderRateLimit(provider) {
 
     const meta = PROVIDER_META[next] || { name: next, icon: '⚡' };
     showToast(
-      `⚡ ${provider} limit → switching to ${meta.name} (attempt ${_autoRetryCount}/${MAX_AUTO_RETRIES})`,
+      `⚡ ${provider} limit reached — switched to ${meta.name}. Click Generate ↑`,
       meta.icon
     );
     console.log(`[Provider] ${provider} failed → trying ${next} (retry ${_autoRetryCount})`);
