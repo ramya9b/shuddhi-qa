@@ -7360,8 +7360,20 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       if (status === 529) msg = 'Claude is currently overloaded. Please wait 30 seconds and try again.';
       if (status === 429) {
         const curProvider = getActiveProvider();
-        if (typeof handleProviderRateLimit === 'function') handleProviderRateLimit(curProvider);
-        msg = (err.error || 'Rate limit reached on ' + curProvider + ' — switched to next provider. Try generating again.');
+        let switched = null;
+        if (typeof handleProviderRateLimit === 'function') {
+          switched = handleProviderRateLimit(curProvider);
+        }
+        if (switched) {
+          // Auto-retry with new provider after short delay
+          setTimeout(() => {
+            const btn = document.getElementById('genBtn');
+            if (btn && !btn.disabled) btn.click();
+          }, 800);
+          msg = `${curProvider} rate limit — auto-switched to ${switched}. Retrying…`;
+        } else {
+          msg = `Rate limit reached on all providers. Groq resets every ~1 min — try again shortly.`;
+        }
       }
       if (status === 401) msg = 'Invalid API key — check Settings → AI Provider.';
       throw new Error(msg);
@@ -10581,15 +10593,28 @@ async function testJiraConnection() {
 // ═══════════════════════════════════════════════════════════════
 // Check on each generate if current provider hits 429 → auto-suggest switch
 function handleProviderRateLimit(provider) {
-  const next = provider === 'claude' ? 'gemini' :
-               provider === 'gemini' ? 'groq'   : null;
-  if (!next) return;
-  const meta = PROVIDER_META[next] || {};
-  const hasKey = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey }[next];
-  if (hasKey) {
-    showToast(`⚡ Auto-switching to ${meta.name} (limit reached on ${provider})`, meta.icon||'⚡');
-    selectProvider(next, true);
+  // Full circular chain: claude → gemini → groq → claude
+  const chain = ['claude', 'gemini', 'groq'];
+  const keys  = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey };
+  const currentIdx = chain.indexOf(provider);
+
+  // Try each next provider in order (skip unavailable keys)
+  for (let offset = 1; offset <= chain.length; offset++) {
+    const next = chain[(currentIdx + offset) % chain.length];
+    if (next === provider) continue; // full circle, none available
+    if (keys[next]) {
+      const meta = PROVIDER_META[next] || { name: next, icon: '⚡' };
+      showToast(
+        `⚡ ${provider} limit reached → switching to ${meta.name}`,
+        meta.icon
+      );
+      selectProvider(next, true);
+      return next; // return new provider so caller can auto-retry
+    }
   }
+  // No other provider has a key — show helpful message
+  showToast('All providers hit rate limits. Groq resets every ~1 min — try again shortly.', '⏱');
+  return null;
 }
 </script>
 
