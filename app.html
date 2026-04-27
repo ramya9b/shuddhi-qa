@@ -4961,7 +4961,7 @@ header::after { display: none !important; }
 
       <!-- Provider selector pills -->
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px" id="providerPills">
-        <button class="provider-pill" id="pill-claude"   onclick="selectProvider('claude')"
+        <button class="provider-pill" id="pill-claude"   data-provider="claude"
           data-key="CLAUDE_API_KEY" data-url="https://console.anthropic.com">
           <span class="pill-icon">🤖</span>
           <div>
@@ -4970,7 +4970,7 @@ header::after { display: none !important; }
           </div>
           <span class="pill-status" id="pill-status-claude">—</span>
         </button>
-        <button class="provider-pill" id="pill-gemini"  onclick="selectProvider('gemini')"
+        <button class="provider-pill" id="pill-gemini"  data-provider="gemini"
           data-key="GEMINI_API_KEY" data-url="https://aistudio.google.com">
           <span class="pill-icon">✦</span>
           <div>
@@ -4979,7 +4979,7 @@ header::after { display: none !important; }
           </div>
           <span class="pill-status" id="pill-status-gemini">—</span>
         </button>
-        <button class="provider-pill" id="pill-groq"    onclick="selectProvider('groq')"
+        <button class="provider-pill" id="pill-groq"    data-provider="groq"
           data-key="GROQ_API_KEY" data-url="https://console.groq.com">
           <span class="pill-icon">⚡</span>
           <div>
@@ -5025,14 +5025,14 @@ header::after { display: none !important; }
           </div>
           <!-- Action row -->
           <div style="display:flex;gap:8px">
-            <button onclick="testClaudeConnection()" id="claudeTestBtn"
+            <button id="claudeTestBtn"
               style="flex:1;padding:10px;border-radius:9px;background:var(--surface2);
                      border:1.5px solid var(--border2);color:var(--text2);font-size:13px;
                      font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
                      transition:all .14s">
               🔌 Test Connection
             </button>
-            <button onclick="saveProviderChoice()"
+            <button id="saveProviderBtn"
               style="flex:1;padding:10px;border-radius:9px;border:none;
                      background:linear-gradient(135deg,var(--indigo),var(--violet));
                      color:#fff;font-size:13px;font-weight:700;cursor:pointer;
@@ -11273,6 +11273,106 @@ function checkAndTrimFlow(flow) {
   showToast('Input trimmed to 6,000 chars to fit AI token limits. Full text preserved in textarea.', '✂️');
   return trimmed;
 }
+</script>
+
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CONSOLIDATED EVENT INIT — Replaces all problematic inline onclicks
+// Runs after ALL script blocks are parsed and executed.
+// Functions are guaranteed to exist by this point.
+// ══════════════════════════════════════════════════════════════════
+(function initEventBindings() {
+  // Helper: safe call — logs if function missing instead of crashing
+  function safe(fnName, args) {
+    return function(e) {
+      var fn = window[fnName];
+      if (typeof fn === 'function') {
+        fn.apply(null, typeof args === 'function' ? args(e) : args || []);
+      } else {
+        console.error('[EventInit] ' + fnName + ' not found on window');
+      }
+    };
+  }
+
+  // ── Provider pills ─────────────────────────────────────────────
+  document.querySelectorAll('.provider-pill[data-provider]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var provider = this.getAttribute('data-provider');
+      if (typeof selectProvider === 'function') selectProvider(provider);
+      else if (typeof window.selectProvider === 'function') window.selectProvider(provider);
+      else console.error('[EventInit] selectProvider not defined');
+    });
+  });
+
+  // ── Test Connection button ─────────────────────────────────────
+  var testBtn = document.getElementById('claudeTestBtn');
+  if (testBtn) {
+    testBtn.addEventListener('click', function() {
+      if (typeof testClaudeConnection === 'function') testClaudeConnection();
+      else if (typeof window.testClaudeConnection === 'function') window.testClaudeConnection();
+      else console.error('[EventInit] testClaudeConnection not defined');
+    });
+  }
+
+  // ── Save Provider button ───────────────────────────────────────
+  var saveBtn = document.getElementById('saveProviderBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function() {
+      if (typeof saveProviderChoice === 'function') saveProviderChoice();
+      else if (typeof window.saveProviderChoice === 'function') window.saveProviderChoice();
+    });
+  }
+
+  // ── Settings icon button ───────────────────────────────────────
+  var settingsBtn = document.getElementById('settingsIconBtn');
+  if (settingsBtn) {
+    // Add secondary safety handler (primary onclick="openSettings()" stays)
+    settingsBtn.addEventListener('click', function() {
+      if (typeof populateAboutStatus !== 'function') {
+        // Manually trigger what openSettings() would call
+        if (typeof runProviderDiagnostics === 'function') runProviderDiagnostics();
+      }
+    });
+  }
+
+  // ── Expose ALL critical functions to window (final safety net) ─
+  var criticalFns = [
+    'selectProvider','getActiveProvider','saveProviderChoice','applyProviderStatus',
+    'populateAboutStatus','runProviderDiagnostics','testClaudeConnection',
+    'switchArtifactTab','updateArtifactTabCounts','renderTGTable','setTGFilter',
+    'tgToggleSelect','tgSelectAll','tgSelectSection','tgCopyRow','tgRemoveRow',
+    'tgGoPage','tgToggleRow','tgRowClick','tgCopySteps','tgToggleSteps',
+    'toggleSidebar','toggleMobileSidebar','closeMobileSidebar',
+    'loadProjectsFromInput','autoLoadProjectsFromEnv',
+    'saveADODefaults','settingsOnProjectChange','testADOConnection',
+    'loadJiraSettings','saveJiraSettings','testJiraConnection','checkJiraSettingsStatus',
+    'adoClearAssignedTo','adoSaveAssignedTo','adoRestoreAssignedTo',
+    'buildOutputStats','buildOutputToolbar','initStepsChips','initBulkSelect','initPagination',
+    'parseRequirementGaps','updateGapsTab','renderGapsPanel',
+    'handleProviderRateLimit','syncApiKey','parseStepsArr',
+    'buildTGRow','buildTGTabsAndTable','renderTestGenView',
+    'updateFlowCharCount','checkAndTrimFlow',
+    'initSectionCollapse','addCopySingleButtons',
+    'openSettings','closeSettings','switchSettingsTab',
+    'adoGoToStep','initADOModal','loadADOTestPlans','pushToADOFull'
+  ];
+
+  criticalFns.forEach(function(name) {
+    if (typeof window[name] === 'undefined') {
+      try {
+        // eslint-disable-next-line no-eval
+        var fn = eval('typeof ' + name + ' !== "undefined" ? ' + name + ' : null');
+        if (fn && typeof fn === 'function') {
+          window[name] = fn;
+          console.log('[EventInit] Exposed:', name);
+        }
+      } catch(e) { /* Not yet defined — OK */ }
+    }
+  });
+
+  console.log('[EventInit] All event bindings complete');
+})();
 </script>
 
 </body>
