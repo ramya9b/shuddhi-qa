@@ -10229,5 +10229,117 @@ function handleProviderRateLimit(provider) {
 }
 </script>
 
+
+<script>
+// ── initSectionCollapse ───────────────────────────────────────────
+function initSectionCollapse(container) {
+  if (!container) return;
+  container.querySelectorAll('h2, h3').forEach(h => {
+    if (h.dataset.collapsible) return;
+    h.dataset.collapsible = '1';
+    h.style.cursor = 'pointer';
+    h.style.userSelect = 'none';
+    const chevron = document.createElement('span');
+    chevron.textContent = ' ▾';
+    chevron.style.cssText = 'font-size:11px;color:var(--text3);transition:transform .2s;margin-left:8px';
+    h.appendChild(chevron);
+    const siblings = [];
+    let next = h.nextElementSibling;
+    while (next && !['H2','H3'].includes(next.tagName)) { siblings.push(next); next = next.nextElementSibling; }
+    if (siblings.length) {
+      const wrap = document.createElement('div');
+      wrap.className = 'section-collapse-wrap';
+      h.parentNode.insertBefore(wrap, siblings[0]);
+      siblings.forEach(s => wrap.appendChild(s));
+      h.addEventListener('click', () => {
+        const isHidden = wrap.style.display === 'none';
+        wrap.style.display = isHidden ? '' : 'none';
+        chevron.style.transform = isHidden ? '' : 'rotate(-90deg)';
+      });
+    }
+  });
+}
+
+// ── addCopySingleButtons ─────────────────────────────────────────
+function addCopySingleButtons(container) {
+  if (!container) return;
+  container.querySelectorAll('table tbody tr').forEach(row => {
+    if (row.querySelector('.copy-row-btn')) return;
+    const lastCell = row.querySelector('td:last-child');
+    if (!lastCell) return;
+    const btn = document.createElement('button');
+    btn.className = 'copy-row-btn';
+    btn.title = 'Copy row';
+    btn.textContent = '📋';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:.5;transition:opacity .15s';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const cells = [...row.querySelectorAll('td')].slice(0,-1).map(td => td.innerText.trim());
+      navigator.clipboard && navigator.clipboard.writeText(cells.join('	')).then(() => {
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = '📋'; }, 1500);
+      });
+    });
+    lastCell.appendChild(btn);
+  });
+}
+
+// ── buildTGProgressBar ────────────────────────────────────────────
+function buildTGProgressBar(el) {
+  if (!el || document.getElementById('tg-progress-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'tg-progress-bar';
+  bar.style.cssText = 'display:flex;align-items:center;padding:12px 20px;gap:0;border-bottom:1px solid var(--border);background:var(--surface2)';
+  const steps = [{l:'Input',s:'done'},{l:'Generate',s:'done'},{l:'Review',s:'active'},{l:'Push',s:'todo'}];
+  bar.innerHTML = steps.map((s,i) => {
+    const col = s.s==='done'?'#10B981':s.s==='active'?'var(--indigo,#5B5FEF)':'transparent';
+    const bdr = s.s==='todo'?'2px solid var(--border2)':'none';
+    const fc  = s.s==='todo'?'var(--text3)':'#fff';
+    const lc  = s.s==='done'?'#10B981':s.s==='active'?'var(--indigo,#5B5FEF)':'var(--text3)';
+    const lnc = s.s==='done'?'#10B981':'var(--border)';
+    return '<div style="display:flex;align-items:center;gap:7px">' +
+      '<div style="width:26px;height:26px;border-radius:50%;background:'+col+';border:'+bdr+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:'+fc+';">' +
+        (s.s==='done'?'&#10003;':String(i+1)) + '</div>' +
+      '<span style="font-size:12px;font-weight:600;color:'+lc+'">'+s.l+'</span>' +
+      (i<steps.length-1?'<div style="width:32px;height:2px;border-radius:2px;background:'+lnc+';margin:0 6px"></div>':'') +
+    '</div>';
+  }).join('');
+  el.prepend(bar);
+}
+
+// ── buildTGRequirementRow ─────────────────────────────────────────
+function buildTGRequirementRow(el) {
+  if (!el || document.getElementById('tg-req-row')) return;
+  const row = document.createElement('div');
+  row.id = 'tg-req-row';
+  row.style.cssText = 'padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface)';
+  const platform = document.getElementById('platform')?.value || '';
+  const module   = document.getElementById('module')?.value   || '';
+  const flowText = (document.getElementById('flowDesc')?.value || '').substring(0, 120);
+  const total  = tgAllTCs.length;
+  const byType = (t) => tgAllTCs.filter(tc=>tc.type===t).length;
+  const stat   = (n,v,c) => '<div style="text-align:center;min-width:44px"><div style="font-size:20px;font-weight:800;color:'+c+';font-family:monospace">'+v+'</div><div style="font-size:9.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">'+n+'</div></div>';
+  row.innerHTML = '<div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
+    '<div style="flex:1;min-width:200px">' +
+      '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Requirement / User Story</div>' +
+      '<div style="font-size:13px;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + (flowText||'&mdash;') + '</div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap">' +
+        (platform?'<span><b style="color:var(--text2)">Platform:</b> '+platform+'</span>':'') +
+        (module  ?'<span><b style="color:var(--text2)">Module:</b> '  +module  +'</span>':'') +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;flex-shrink:0">' +
+      stat('Total TCs', total,           'var(--indigo,#5B5FEF)') +
+      stat('E2E',       byType('E2E'),   '#0891B2') +
+      stat('Negative',  byType('Negative'), '#EF4444') +
+      stat('Field Valid.', byType('Field Valid.'), '#10B981') +
+      stat('Integration',  byType('Integration'),  '#8B5CF6') +
+    '</div>' +
+  '</div>';
+  const progressBar = document.getElementById('tg-progress-bar');
+  if (progressBar) progressBar.after(row); else el.prepend(row);
+}
+</script>
+
 </body>
 </html>
