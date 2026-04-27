@@ -7248,7 +7248,9 @@ async function generate() {
 
   // Provider-aware key validation — pass if ANY provider key is configured
   const _activeP = typeof getActiveProvider === 'function' ? getActiveProvider() : 'claude';
-  const _hasKey  = window.__claudeKeyConfigured ||
+  // If /api/status was unreachable (Vercel cold start), allow attempt — backend will validate
+  const _hasKey  = window.__statusCheckFailed ||
+                   window.__claudeKeyConfigured ||
                    window.__claudeKey  || window.__geminiKey || window.__groqKey || apiKey;
   if (!_hasKey) {
     const _pName = { claude:'Claude', gemini:'Gemini', groq:'Groq' }[_activeP] || _activeP;
@@ -8546,9 +8548,23 @@ renderHistory();
 
 // ── Check Vercel env var configuration on load ────────────────
 (async function checkEnvStatus() {
+  // Retry up to 3 times with backoff — handles cold-start delays on Vercel
+  let res, attempt = 0;
+  while (attempt < 3) {
+    try {
+      res = await fetch('/api/status');
+      if (res.ok) break;
+    } catch(e) { /* network error */ }
+    attempt++;
+    if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
+  }
+  // If status endpoint unreachable, set a permissive flag so Generate isn't blocked
+  if (!res || !res.ok) {
+    window.__statusCheckFailed = true;
+    console.warn('[Status] /api/status unreachable after', attempt, 'attempts — using permissive mode');
+    return;
+  }
   try {
-    const res = await fetch('/api/status');
-    if (!res.ok) return; // running locally without Vercel dev — show inputs as-is
     const res_data = await res.json();
     const { claudeKey, adoKey, adoOrg = '', adoProject = '',
             geminiKey = false, groqKey = false, aiProvider = '' } = res_data;
