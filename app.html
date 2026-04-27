@@ -6186,6 +6186,241 @@ header::after { display: none !important; }
 <div class="toast" id="toast"></div>
 
 <script>
+// ════════════════════════════════════════════════════════════════════
+// PROVIDER MANAGER — Single source of truth for all AI provider state
+// Injected at the TOP of Block 1 so it's available to ALL code.
+// All legacy variables (_activeProvider, window.__groqKey etc.) are
+// redirected through this manager for full backward compatibility.
+// ════════════════════════════════════════════════════════════════════
+
+const ProviderManager = (function() {
+  'use strict';
+
+  // ── Internal state ───────────────────────────────────────────────
+  const LS_KEY    = 'shuddhi-ai-provider';
+  const PROVIDERS = ['groq', 'gemini', 'claude']; // priority order
+
+  const PROVIDER_CONFIG = {
+    groq:   { name:'Groq',   icon:'⚡', model:'llama-3.3-70b-versatile', envKey:'GROQ_API_KEY',   rpmFree:30,  dailyFree:14400 },
+    gemini: { name:'Gemini', icon:'✦', model:'gemini-2.0-flash',        envKey:'GEMINI_API_KEY',  rpmFree:15,  dailyFree:1500  },
+    claude: { name:'Claude', icon:'🤖', model:'claude-sonnet-4-6',       envKey:'CLAUDE_API_KEY',  rpmFree:null,dailyFree:null  },
+  };
+
+  const _state = {
+    active:     null,          // string: 'groq'|'gemini'|'claude'
+    keys:       {},            // { groq:bool, gemini:bool, claude:bool }
+    failed:     new Set(),     // providers failed this generate() session
+    cooldown:   {},            // { provider: timestampMs }
+    generating: false,         // global _isGenerating guard
+    initialized: false,
+  };
+
+  // ── Initialization ───────────────────────────────────────────────
+  function init(statusData) {
+    // Called once on page load with /api/status response
+    _state.keys = {
+      claude: !!statusData.claudeKey,
+      gemini: !!statusData.geminiKey,
+      groq:   !!statusData.groqKey,
+    };
+
+    // Priority: localStorage > env AI_PROVIDER > first available key
+    let saved = '';
+    try { saved = localStorage.getItem(LS_KEY) || ''; } catch(e) {}
+    const envProvider = (statusData.aiProvider || '').toLowerCase();
+    const firstAvail  = PROVIDERS.find(p => _state.keys[p]) || 'groq';
+
+    _state.active = (saved && _state.keys[saved] ? saved : null)
+                 || (envProvider && _state.keys[envProvider] ? envProvider : null)
+                 || firstAvail;
+    _state.initialized = true;
+
+    // Backward-compat: sync legacy window flags
+    _syncLegacyFlags();
+    console.log('[ProviderManager] Initialized. Active:', _state.active, '| Keys:', _state.keys);
+    return _api;
+  }
+
+  // ── Core getters ─────────────────────────────────────────────────
+  function getActive()    { return _state.active || 'groq'; }
+  function getConfig(p)   { return PROVIDER_CONFIG[p || _state.active] || PROVIDER_CONFIG.groq; }
+  function hasKey(p)      { return !!_state.keys[p || _state.active]; }
+  function isInitialized(){ return _state.initialized; }
+  function hasAnyKey()    { return PROVIDERS.some(p => _state.keys[p]); }
+
+  // ── Activation ───────────────────────────────────────────────────
+  function setActive(provider, save) {
+    if (!PROVIDER_CONFIG[provider]) {
+      console.warn('[ProviderManager] Unknown provider:', provider);
+      return;
+    }
+    _state.active = provider;
+    if (save !== false) {
+      try { localStorage.setItem(LS_KEY, provider); } catch(e) {}
+    }
+    _syncLegacyFlags();
+    console.log('[ProviderManager] Active provider set to:', provider);
+    return _api;
+  }
+
+  // ── Session state (per generate() call) ─────────────────────────
+  function resetSession() {
+    _state.failed.clear();
+    Object.keys(_state.cooldown).forEach(k => delete _state.cooldown[k]);
+    console.log('[ProviderManager] Session state reset');
+  }
+
+  function markFailed(provider) {
+    _state.failed.add(provider);
+    const cooldownMs = { groq:65000, gemini:62000, claude:120000 }[provider] || 65000;
+    _state.cooldown[provider] = Date.now() + cooldownMs;
+    console.log('[ProviderManager]', provider, 'marked failed. Cooldown:', Math.round(cooldownMs/1000)+'s');
+  }
+
+  function isCoolingDown(provider) {
+    const cd = _state.cooldown[provider];
+    return cd && Date.now() < cd;
+  }
+
+  function getMinCooldownSecs() {
+    const now = Date.now();
+    const waits = Object.values(_state.cooldown).map(t => Math.max(0, Math.ceil((t - now)/1000)));
+    return waits.length ? Math.min(...waits) : 0;
+  }
+
+  // ── Fallback resolver ────────────────────────────────────────────
+  function getNextProvider(currentProvider) {
+    // Returns next available provider, or null if all exhausted
+    const ordered = [
+      currentProvider || _state.active,
+      ...PROVIDERS.filter(p => p !== (currentProvider || _state.active))
+    ];
+    return ordered.find(p =>
+      _state.keys[p] &&
+      !_state.failed.has(p) &&
+      !isCoolingDown(p)
+    ) || null;
+  }
+
+  function getOrderedProviders() {
+    // All providers with keys, active first, skipping failed/cooling
+    const active = _state.active;
+    return [active, ...PROVIDERS.filter(p => p !== active)]
+      .filter(p => _state.keys[p] && !_state.failed.has(p) && !isCoolingDown(p));
+  }
+
+  // ── Generate guard ───────────────────────────────────────────────
+  function startGenerate() {
+    if (_state.generating) return false;
+    _state.generating = true;
+    resetSession();
+    return true;
+  }
+
+  function endGenerate() {
+    _state.generating = false;
+  }
+
+  function isGenerating() { return _state.generating; }
+
+  // ── Backward-compat: sync legacy window/module vars ─────────────
+  function _syncLegacyFlags() {
+    window.__activeProvider          = _state.active;
+    window.__claudeKey               = !!_state.keys.claude;
+    window.__geminiKey               = !!_state.keys.gemini;
+    window.__groqKey                 = !!_state.keys.groq;
+    window.__claudeKeyConfigured     = !!_state.keys.claude;
+  }
+
+  // ── Status string for UI ─────────────────────────────────────────
+  function getStatusSummary() {
+    return {
+      active:   _state.active,
+      keys:     Object.assign({}, _state.keys),
+      failed:   [..._state.failed],
+      cooldowns: Object.fromEntries(
+        Object.entries(_state.cooldown).map(([p,t]) => [p, Math.max(0, Math.ceil((t-Date.now())/1000))])
+      ),
+    };
+  }
+
+  // ── Public API ───────────────────────────────────────────────────
+  const _api = {
+    init, getActive, getConfig, hasKey, isInitialized, hasAnyKey,
+    setActive, resetSession, markFailed, isCoolingDown, getMinCooldownSecs,
+    getNextProvider, getOrderedProviders,
+    startGenerate, endGenerate, isGenerating,
+    getStatusSummary,
+    // Convenience aliases matching legacy API
+    CONFIGS: PROVIDER_CONFIG,
+    PRIORITY: PROVIDERS,
+  };
+
+  return _api;
+})();
+
+// ── _updateProviderUI: updates Settings panel when provider changes ──
+function _updateProviderUI(provider) {
+  const meta = ProviderManager.getConfig(provider) || {};
+  // Update pills
+  document.querySelectorAll('.provider-pill').forEach(function(p) {
+    p.classList.toggle('active', p.dataset.provider === provider || p.id === 'pill-' + provider);
+  });
+  // Update active card
+  var fields = {
+    activeProviderIcon:  meta.icon  || '',
+    activeProviderName:  meta.name  || provider,
+    activeProviderModel: meta.model || '',
+    activeEnvKey:        (meta.envKey || '') + (ProviderManager.hasKey(provider) ? ' · Vercel Env ✓' : ' · Not set'),
+    guideEnvKey:         meta.envKey || ''
+  };
+  Object.keys(fields).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = fields[id];
+  });
+  var statusIcon  = document.getElementById('activeKeyStatusIcon');
+  var statusLabel = document.getElementById('activeKeyStatusLabel');
+  var card        = document.getElementById('activeProviderCard');
+  var dot         = document.getElementById('claudeKeyDot');
+  var dotLabel    = document.getElementById('claudeKeyDotLabel');
+  var hasK        = ProviderManager.hasKey(provider);
+  if (statusIcon)  statusIcon.textContent  = hasK ? '✅' : '⚠️';
+  if (statusLabel) statusLabel.textContent = hasK ? 'API key configured in Vercel' : 'Key not found — add ' + (meta.envKey||'') + ' to Vercel env vars';
+  if (card)        card.style.borderColor  = hasK ? 'rgba(16,185,129,.3)' : 'rgba(220,38,38,.25)';
+  if (dot)         dot.style.background    = hasK ? 'var(--success,#10B981)' : 'var(--error,#EF4444)';
+  if (dotLabel)    dotLabel.textContent    = meta.name || provider;
+}
+window._updateProviderUI = _updateProviderUI;
+
+// ── Wire ProviderManager to window for global access ────────────────
+window.ProviderManager = ProviderManager;
+
+// ── Backward-compat shims — redirect legacy calls to ProviderManager ─
+// These ensure ALL existing code that calls getActiveProvider() etc.
+// continues to work exactly as before.
+function getActiveProvider()    { return ProviderManager.getActive(); }
+function selectProvider(p, save) {
+  ProviderManager.setActive(p, save);
+  // Update UI if the Settings panel is open
+  if (typeof _updateProviderUI === 'function') _updateProviderUI(p);
+}
+function handleProviderRateLimit(provider) {
+  ProviderManager.markFailed(provider);
+  const next = ProviderManager.getNextProvider(provider);
+  if (next) {
+    ProviderManager.setActive(next, true);
+    console.log('[Provider] Silent fallback:', provider, '→', next);
+  } else {
+    const wait = ProviderManager.getMinCooldownSecs();
+    console.warn('[Provider] All providers exhausted. Min wait:', wait+'s');
+  }
+  return next;
+}
+
+window.getActiveProvider     = getActiveProvider;
+window.selectProvider        = selectProvider;
+window.handleProviderRateLimit = handleProviderRateLimit;
+
 // ─── Module data ────────────────────────────────────────────
 const modules = {
   "D365 F&O": ["Accounts Payable","Accounts Receivable","General Ledger","Fixed Assets","Cash & Bank Management","Procurement & Sourcing","Sales & Marketing","Inventory Management","Production Control","Project Management","Human Resources","Budget Planning"],
@@ -7139,94 +7374,93 @@ function stopBulkGenerate() {
 // Internal provider fallback loop — tries each provider silently
 // Returns { reader, decoder } for streaming or throws if all fail
 // ══════════════════════════════════════════════════════════════════
+
 async function _callProviderWithFallback(requestBody) {
-  // Priority chain: groq (30 req/min free) > gemini (15 req/min) > claude
-  const chain    = ['groq', 'gemini', 'claude'];
-  const keys     = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey };
-  const active   = getActiveProvider();
-  const ordered  = [active, ...chain.filter(p => p !== active)];
-  const now = Date.now();
-  const toTry    = ordered.filter(p =>
-    keys[p] &&
-    !_failedProviders.has(p) &&
-    (!_providerCooldown[p] || now >= _providerCooldown[p]) // skip if in cooldown
-  );
+  // Uses ProviderManager as single source of truth
+  const toTry = ProviderManager.getOrderedProviders();
 
   if (!toTry.length) {
-    // All with keys have failed — reset and try anyway (Groq resets in ~1min)
-    _failedProviders.clear();
-    toTry.push(...ordered.filter(p => keys[p]));
+    // All configured providers exhausted or cooling down
+    ProviderManager.resetSession(); // allow retry after cooldown
+    const wait = ProviderManager.getMinCooldownSecs();
+    const msg  = wait > 5
+      ? 'All AI providers are rate-limited. Ready again in ~' + wait + 's — please wait a moment.'
+      : 'Unable to generate test cases right now. Please try again in a few moments.';
+    throw new Error(msg);
   }
 
   let lastErr = null;
+
   for (const provider of toTry) {
     try {
-      const body = { ...requestBody, provider };
+      console.log('[Fallback] Trying provider:', provider);
+
       const response = await fetch('/api/claude', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(Object.assign({}, requestBody, { provider }))
       });
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        const status = response.status;
-        const errText = err.error || err.detail || '';
-        const isLimit = status === 429 ||
-          (status === 400 && (errText.includes('usage limits') || errText.includes('regain access') || err.switchProvider));
+        const status   = response.status;
+        const errText  = err.error || err.detail || '';
+        const isLimit  = status === 429
+          || (status === 400 && (errText.includes('usage limits') || errText.includes('regain access') || err.switchProvider))
+          || (status === 403 && errText.includes('API_NOT_ENABLED'));
 
         if (isLimit) {
-          _failedProviders.add(provider);
-          console.log('[Provider] ' + provider + ' limit → trying next');
-          lastErr = new Error(provider + ' rate limited');
-          continue; // try next provider
+          ProviderManager.markFailed(provider);
+          console.warn('[Fallback]', provider, 'rate-limited (status ' + status + ') — trying next');
+          lastErr = new Error(provider + ' limit reached');
+          continue;
         }
-        // Non-retryable error
-        throw new Error(errText || 'API error ' + status);
+
+        // Non-retryable error — surface with clean message
+        const cleanErr = {
+          400: 'Request format error. Check input and try again.',
+          401: ProviderManager.getConfig(provider).envKey + ' API key invalid — check Vercel env vars.',
+          403: 'API key does not have permission. Check key scopes.',
+          404: 'Provider model not found. Check deployment configuration.',
+          500: 'Provider server error. Try again in a moment.',
+        }[status] || (errText || 'API error ' + status);
+        throw new Error(cleanErr);
       }
 
-      // Success — update active provider silently
-      if (provider !== active) {
-        _activeProvider = provider;
-        window.__activeProvider = provider;
-        try { localStorage.setItem('shuddhi-ai-provider', provider); } catch(e) {}
-        console.log('[Provider] Silently switched to', provider);
+      // SUCCESS — update active provider if we switched
+      if (provider !== ProviderManager.getActive()) {
+        ProviderManager.setActive(provider, true);
+        console.log('[Fallback] Silently switched to', provider);
       }
       return response;
 
     } catch(e) {
-      if (e.message.includes('rate limited') || e.message.startsWith('__PROVIDER_LIMIT__')) {
+      if (e.message.includes('limit reached')) {
         lastErr = e;
-        continue;
+        continue; // try next
       }
-      throw e; // non-rate-limit error — surface it
+      throw e; // non-retryable
     }
   }
 
-  // All providers exhausted
-  console.error('[Provider] All providers failed:', [..._failedProviders]);
-  // Calculate shortest cooldown remaining
-  const now2 = Date.now();
-  const cooldowns = Object.entries(_providerCooldown)
-    .filter(([p]) => keys[p])
-    .map(([p, t]) => Math.max(0, Math.ceil((t - now2) / 1000)));
-  const minWait = cooldowns.length ? Math.min(...cooldowns) : 60;
+  // All providers tried and failed
+  ProviderManager.resetSession();
+  const wait = ProviderManager.getMinCooldownSecs();
   throw new Error(
-    minWait > 5
-      ? 'All AI providers are rate-limited. Ready again in ~' + minWait + 's — please wait a moment and try again.'
-      : 'Unable to generate test cases right now. Please try again in a few moments.'
+    wait > 5
+      ? 'All AI providers are rate-limited. Ready again in ~' + wait + 's.'
+      : 'Unable to generate test cases right now. Please try again shortly.'
   );
 }
 
-let _isGenerating = false; // module-level guard — prevents concurrent generate() calls
 
 async function generate() {
-  // Guard: block concurrent calls (rapid double-click protection)
-  if (_isGenerating) {
+  // Guard via ProviderManager — replaces scattered _isGenerating flag
+  if (ProviderManager.isGenerating()) {
     console.log('[Generate] Blocked — already generating');
     return;
   }
-  _isGenerating = true;
+  if (!ProviderManager.startGenerate()) return;
 
   // Reset ALL provider state on every manual generate click
   if (typeof _failedProviders !== 'undefined') {
@@ -7246,16 +7480,11 @@ async function generate() {
   const integrations = document.getElementById('integrations').value.trim();
   const outputFormat = document.getElementById('outputFormat').value;
 
-  // Provider-aware key validation — pass if ANY provider key is configured
-  const _activeP = typeof getActiveProvider === 'function' ? getActiveProvider() : 'claude';
-  // If /api/status was unreachable (Vercel cold start), allow attempt — backend will validate
-  const _hasKey  = window.__statusCheckFailed ||
-                   window.__claudeKeyConfigured ||
-                   window.__claudeKey  || window.__geminiKey || window.__groqKey || apiKey;
-  if (!_hasKey) {
-    const _pName = { claude:'Claude', gemini:'Gemini', groq:'Groq' }[_activeP] || _activeP;
-    showError('No AI provider configured. Go to Settings → AI Provider and select ' + _pName + '.');
-    _isGenerating = false; return;
+  // Key validation via ProviderManager
+  if (!window.__statusCheckFailed && !ProviderManager.hasAnyKey() && !apiKey) {
+    const pName = ProviderManager.getConfig().name || 'a provider';
+    showError('No AI provider configured. Go to Settings → AI Provider and configure ' + pName + '.');
+    ProviderManager.endGenerate(); return;
   }
   if (!platform) { showError('Please select a platform.'); _isGenerating = false; return; }
   if (!flow && !extractedDocText) { showError('Please describe the business flow or upload a requirement document.'); _isGenerating = false; return; }
@@ -8569,13 +8798,11 @@ renderHistory();
     const { claudeKey, adoKey, adoOrg = '', adoProject = '',
             geminiKey = false, groqKey = false, aiProvider = '' } = res_data;
 
-    // Apply to both the API bar and the settings modal
-    applySettingsStatus(claudeKey, adoKey, geminiKey, groqKey, aiProvider);
+    // Initialize ProviderManager — single source of truth
+    ProviderManager.init({ claudeKey, geminiKey, groqKey, aiProvider });
 
-    // Set per-provider key flags used by getActiveProvider validation
-    window.__claudeKey  = !!claudeKey;
-    window.__geminiKey  = !!geminiKey;
-    window.__groqKey    = !!groqKey;
+    // Apply UI settings
+    applySettingsStatus(claudeKey, adoKey, geminiKey, groqKey, aiProvider);
 
     if (claudeKey) {
       window.__claudeKeyConfigured = true;
@@ -10714,7 +10941,8 @@ function selectProvider(provider,save=true){
   if(lbl) lbl.textContent=meta.name;
 }
 function applyProviderStatus(claudeKey,geminiKey,groqKey,activeProvider){
-  window.__claudeKey=claudeKey; window.__geminiKey=geminiKey; window.__groqKey=groqKey;
+  // ProviderManager.init() already set these — sync for legacy code
+  ProviderManager.init({ claudeKey, geminiKey: geminiKey||false, groqKey: groqKey||false, aiProvider: activeProvider||'' });
   const pills={claude:claudeKey,gemini:geminiKey,groq:groqKey};
   Object.entries(pills).forEach(([p,hasKey])=>{
     const el=document.getElementById('pill-status-'+p);
