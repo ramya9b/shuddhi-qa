@@ -4903,66 +4903,53 @@ header::after { display: none !important; }
         </button>
       </div>
 
-      <!-- Active provider detail card -->
-      <div id="activeProviderCard" style="border:1.5px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:16px">
-        <div style="padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);
-                    display:flex;align-items:center;gap:10px">
-          <span id="activeProviderIcon" style="font-size:20px">🤖</span>
+      <!-- Active provider card — keys from Vercel, no manual input needed -->
+      <div id="activeProviderCard" style="border:1.5px solid var(--border2);border-radius:12px;
+           overflow:hidden;margin-bottom:16px;transition:border-color .2s">
+        <!-- Header -->
+        <div style="padding:14px 16px;background:var(--surface2);border-bottom:1px solid var(--border);
+                    display:flex;align-items:center;gap:12px">
+          <span id="activeProviderIcon" style="font-size:22px">🤖</span>
           <div style="flex:1">
-            <div style="font-size:13.5px;font-weight:800;color:var(--text)" id="activeProviderName">Claude</div>
-            <div style="font-size:11.5px;color:var(--text3)" id="activeProviderModel">claude-sonnet-4-6</div>
+            <div style="font-size:14px;font-weight:800;color:var(--text)" id="activeProviderName">Claude</div>
+            <div style="font-size:11.5px;color:var(--text3);font-family:'JetBrains Mono',monospace"
+                 id="activeProviderModel">claude-sonnet-4-6</div>
           </div>
-          <span id="activeProviderBadge" style="font-size:10px;padding:3px 10px;border-radius:20px;
-                font-weight:700;font-family:'JetBrains Mono',monospace;
-                background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25)">
-            ACTIVE
+          <span id="activeProviderBadge"
+            style="font-size:10px;padding:3px 12px;border-radius:20px;font-weight:700;
+                   font-family:'JetBrains Mono',monospace;
+                   background:rgba(16,185,129,.1);color:#059669;
+                   border:1px solid rgba(16,185,129,.25)">
+            ✓ ACTIVE
           </span>
         </div>
-        <div style="padding:12px 16px">
-          <div style="font-size:12px;color:var(--text2);margin-bottom:10px" id="activeProviderDesc">
-            Set <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace">CLAUDE_API_KEY</code> in Vercel Environment Variables.
-          </div>
-          <!-- Env var row -->
-          <div id="activeEnvRow" style="display:flex;align-items:center;gap:10px;
-               padding:10px 12px;background:var(--surface2);border-radius:8px;
-               border:1px solid var(--border);margin-bottom:10px">
-            <code style="font-family:'JetBrains Mono',monospace;font-size:13px;
-                         font-weight:700;color:var(--indigo)" id="activeEnvKey">CLAUDE_API_KEY</code>
-            <div style="flex:1;font-size:11px;letter-spacing:2px;color:var(--text3)">••••••••••••••••••</div>
-            <span id="activeEnvStatus" style="font-size:10px;padding:2px 9px;border-radius:20px;
-                  font-weight:700;font-family:'JetBrains Mono',monospace">Not set</span>
-          </div>
-          <!-- Manual key input (when not in env) -->
-          <div id="manualKeyRow" style="display:none">
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="password" id="settingsApiKey" placeholder="Paste API key here…"
-                autocomplete="off"
-                style="flex:1;background:var(--surface);border:1.5px solid var(--border2);
-                       border-radius:8px;padding:9px 12px;color:var(--text);
-                       font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;
-                       transition:border-color .15s"
-                oninput="syncApiKey(this.value)"
-                onfocus="this.style.borderColor='var(--d365)'"
-                onblur="this.style.borderColor='var(--border2)'"/>
-              <button class="settings-test-btn" onclick="testClaudeConnection()">Test</button>
-            </div>
-            <div style="font-size:11.5px;color:var(--text3);margin-top:6px;line-height:1.5"
-                 id="activeProviderGetKey">
-              Get your free key at <a id="activeProviderLink" href="https://console.anthropic.com"
-              target="_blank" rel="noopener" style="color:var(--indigo)">console.anthropic.com</a>
+        <!-- Body -->
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <!-- Key status row — read-only, from Vercel -->
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;
+               background:var(--surface2);border-radius:9px;border:1px solid var(--border)">
+            <span style="font-size:14px" id="activeKeyStatusIcon">✅</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:var(--text)"
+                   id="activeKeyStatusLabel">API key configured in Vercel</div>
+              <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace"
+                   id="activeEnvKey">CLAUDE_API_KEY · Vercel Env ✓</div>
             </div>
           </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button class="settings-test-btn" id="claudeTestBtn"
-              onclick="testClaudeConnection()"
-              style="flex:1;padding:9px;display:none">
+          <!-- Action row -->
+          <div style="display:flex;gap:8px">
+            <button onclick="testClaudeConnection()" id="claudeTestBtn"
+              style="flex:1;padding:10px;border-radius:9px;background:var(--surface2);
+                     border:1.5px solid var(--border2);color:var(--text2);font-size:13px;
+                     font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
+                     transition:all .14s">
               🔌 Test Connection
             </button>
             <button onclick="saveProviderChoice()"
-              style="flex:1;padding:9px;border-radius:9px;border:none;
+              style="flex:1;padding:10px;border-radius:9px;border:none;
                      background:linear-gradient(135deg,var(--indigo),var(--violet));
                      color:#fff;font-size:13px;font-weight:700;cursor:pointer;
-                     font-family:'Plus Jakarta Sans',sans-serif">
+                     font-family:'Plus Jakarta Sans',sans-serif;transition:opacity .15s">
               ✅ Use This Provider
             </button>
           </div>
@@ -4977,9 +4964,9 @@ header::after { display: none !important; }
         <summary>How to add a key in Vercel →</summary>
         <ol class="settings-steps">
           <li>Get your free API key from the provider link above</li>
-          <li>Open <strong>Vercel Dashboard</strong> → This Project → Settings → Environment Variables</li>
-          <li>Click <strong>Add New</strong> → Name: <code id="guideEnvKey">CLAUDE_API_KEY</code> → paste value</li>
-          <li>Set to <strong>Production</strong> → Save → run <code>vercel --prod --force</code></li>
+          <li>Add key once: Vercel → Project → Settings → Environment Variables</li>
+          <li>Name: <code id="guideEnvKey">GEMINI_API_KEY</code> or <code>GROQ_API_KEY</code> → paste value → Save</li>
+          <li>Run <code>vercel --prod --force</code> to deploy</li>
           <li>Switch provider anytime from this Settings panel — no Vercel changes needed!</li>
         </ol>
       </details>
@@ -12727,21 +12714,19 @@ function selectProvider(provider, save = true) {
   document.getElementById('activeProviderLink').textContent = meta.urlLabel;
   document.getElementById('guideEnvKey').textContent = meta.envKey;
 
-  // Check if key is configured
+  // Update key status row — keys come from Vercel, just show status
   const keyMap = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey };
   const hasKey = keyMap[provider];
-  const statusEl = document.getElementById('activeEnvStatus');
-  if (hasKey) {
-    statusEl.textContent = 'Configured ✓';
-    statusEl.style.cssText = 'font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25)';
-    document.getElementById('manualKeyRow').style.display = 'none';
-    document.getElementById('claudeTestBtn').style.display = 'block';
-  } else {
-    statusEl.textContent = 'Not configured';
-    statusEl.style.cssText = 'font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:rgba(220,38,38,.08);color:#DC2626;border:1px solid rgba(220,38,38,.2)';
-    document.getElementById('manualKeyRow').style.display = 'block';
-    document.getElementById('claudeTestBtn').style.display = 'none';
-  }
+  const iconEl  = document.getElementById('activeKeyStatusIcon');
+  const lblEl   = document.getElementById('activeKeyStatusLabel');
+  const envEl   = document.getElementById('activeEnvKey');
+  const card    = document.getElementById('activeProviderCard');
+  if (iconEl)  iconEl.textContent  = hasKey ? '✅' : '⚠️';
+  if (lblEl)   lblEl.textContent   = hasKey
+    ? 'API key configured in Vercel'
+    : 'Key not found — add ' + (meta.envKey||'key') + ' to Vercel env vars';
+  if (envEl)   envEl.textContent   = (meta.envKey || '') + (hasKey ? ' · Vercel Env ✓' : ' · Not set');
+  if (card)    card.style.borderColor = hasKey ? 'rgba(16,185,129,.3)' : 'rgba(220,38,38,.25)';
 }
 
 // Called by applySettingsStatus with data from /api/status
