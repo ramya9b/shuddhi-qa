@@ -241,9 +241,11 @@ export default async function handler(req) {
         msg = `${provider} 400 Bad Request: ${detail || 'Invalid payload'}`;
       }
       if (response.status === 429) {
-        const nextMap = { claude:'Gemini', gemini:'Groq', groq:'Claude (resets in ~1 min)' };
-        const nextHint = nextMap[provider] || 'another provider';
-        msg = `${provider} rate limit reached. Auto-switching to ${nextHint}. Click Generate again.`;
+        const nextMap = { claude:'Gemini', gemini:'Groq', groq:'Gemini' };
+        const nextHint = nextMap[provider] || 'next provider';
+        const retryAfter = response.headers.get('retry-after') || response.headers.get('x-ratelimit-reset-requests');
+        const waitSecs = retryAfter ? parseInt(retryAfter) : 60;
+        msg = `${provider} rate limit (resets in ~${waitSecs}s). Switching to ${nextHint}.`;
       }
       if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
       if (response.status === 404) msg = `${provider} model/endpoint not found. URL: ${upstream.url.substring(0, 80)}`;

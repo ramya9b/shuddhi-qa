@@ -4975,7 +4975,7 @@ header::after { display: none !important; }
           <span class="pill-icon">✦</span>
           <div>
             <div class="pill-name">Gemini</div>
-            <div class="pill-sub">Google · Flash 2.0 · Free</div>
+            <div class="pill-sub">Google · Flash 2.0 · 15 req/min free</div>
           </div>
           <span class="pill-status" id="pill-status-gemini">—</span>
         </button>
@@ -5064,8 +5064,8 @@ header::after { display: none !important; }
         <summary>Provider comparison →</summary>
         <div style="padding:10px 16px 14px;font-size:12.5px;color:var(--text2);line-height:1.6">
           <strong>Claude</strong> (Anthropic) — Best quality for complex QA reasoning. Paid.<br>
-          <strong>Gemini Flash</strong> (Google) — 1M tokens/day free. Very capable. Recommended free option.<br>
-          <strong>Groq/Llama</strong> — Fastest streaming. 500K tokens/day free. Great for quick TC generation.
+          <strong>Gemini Flash</strong> (Google) — Free: 15 req/min, 1,500 req/day. Best quality output.<br>
+          <strong>Groq/Llama</strong> — Free: 30 req/min, 14,400 req/day. Fastest. Best for active sessions.
         </div>
       </details>
     </div>
@@ -7140,12 +7140,17 @@ function stopBulkGenerate() {
 // Returns { reader, decoder } for streaming or throws if all fail
 // ══════════════════════════════════════════════════════════════════
 async function _callProviderWithFallback(requestBody) {
-  const chain    = ['gemini', 'groq', 'claude'];
+  // Priority chain: groq (30 req/min free) > gemini (15 req/min) > claude
+  const chain    = ['groq', 'gemini', 'claude'];
   const keys     = { claude: window.__claudeKey, gemini: window.__geminiKey, groq: window.__groqKey };
   const active   = getActiveProvider();
-  // Put active provider first, then others
   const ordered  = [active, ...chain.filter(p => p !== active)];
-  const toTry    = ordered.filter(p => keys[p] && !_failedProviders.has(p));
+  const now = Date.now();
+  const toTry    = ordered.filter(p =>
+    keys[p] &&
+    !_failedProviders.has(p) &&
+    (!_providerCooldown[p] || now >= _providerCooldown[p]) // skip if in cooldown
+  );
 
   if (!toTry.length) {
     // All with keys have failed — reset and try anyway (Groq resets in ~1min)
@@ -7200,7 +7205,17 @@ async function _callProviderWithFallback(requestBody) {
 
   // All providers exhausted
   console.error('[Provider] All providers failed:', [..._failedProviders]);
-  throw new Error('Unable to generate test cases right now. All AI providers are temporarily unavailable. Please try again in a few minutes.');
+  // Calculate shortest cooldown remaining
+  const now2 = Date.now();
+  const cooldowns = Object.entries(_providerCooldown)
+    .filter(([p]) => keys[p])
+    .map(([p, t]) => Math.max(0, Math.ceil((t - now2) / 1000)));
+  const minWait = cooldowns.length ? Math.min(...cooldowns) : 60;
+  throw new Error(
+    minWait > 5
+      ? 'All AI providers are rate-limited. Ready again in ~' + minWait + 's — please wait a moment and try again.'
+      : 'Unable to generate test cases right now. Please try again in a few moments.'
+  );
 }
 
 let _isGenerating = false; // module-level guard — prevents concurrent generate() calls
@@ -10794,6 +10809,7 @@ async function testJiraConnection() {
 // Check on each generate if current provider hits 429 → auto-suggest switch
 // ── Provider failure tracker (session-level, resets after 60s) ───
 const _failedProviders  = new Set();
+const _providerCooldown = {}; // tracks when each provider can be retried
 let   _autoRetryCount   = 0;
 const MAX_AUTO_RETRIES  = 3;
 let   _failedResetTimer = null;
@@ -10805,9 +10821,11 @@ function _resetFailedProviders() {
 }
 
 function handleProviderRateLimit(provider) {
-  // Mark current provider as failed for this session
+  // Mark current provider as failed + set cooldown (Gemini=60s, Groq=65s)
   _failedProviders.add(provider);
-  console.log('[Provider] Failed:', provider, '| Session failures:', [..._failedProviders]);
+  const cooldownSecs = provider === 'gemini' ? 62 : provider === 'groq' ? 65 : 120;
+  _providerCooldown[provider] = Date.now() + (cooldownSecs * 1000);
+  console.log('[Provider] Failed:', provider, '| Cooldown:', cooldownSecs + 's | Next retry:', new Date(_providerCooldown[provider]).toLocaleTimeString());
 
   // Schedule automatic reset after 65s (Groq rate limit window)
   clearTimeout(_failedResetTimer);
