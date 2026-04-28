@@ -1121,7 +1121,7 @@
     transform: translateY(100px);
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 999;
+    z-index: 10100; /* FIX: raised above ado-modal(1001) & settings-modal(10001) */
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1129,6 +1129,43 @@
   }
 
   .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── ADO Push Banner — portal element, always above all modals ────── */
+  #adoPushBanner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    z-index: 10100;
+    min-width: 280px;
+    max-width: min(520px, 92vw);
+    padding: 12px 18px 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  #adoPushBanner.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #adoPushBanner.success { background:#ecfdf5; border:1.5px solid #6ee7b7; color:#065f46; border-left:4px solid #10b981; }
+  #adoPushBanner.error   { background:#fff1f2; border:1.5px solid #fca5a5; color:#991b1b; border-left:4px solid #ef4444; }
+  #adoPushBanner.info    { background:#eff6ff; border:1.5px solid #93c5fd; color:#1e3a8a; border-left:4px solid #3b82f6; }
+  #adoPushBanner.warning { background:#fffbeb; border:1.5px solid #fcd34d; color:#92400e; border-left:4px solid #f59e0b; }
+  #adoPushBanner-close {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    font-size: 15px; opacity: 0.5; padding: 0 0 0 6px; line-height: 1; color: inherit;
+  }
+  #adoPushBanner-close:hover { opacity: 1; }
 
   /* ── ADO Button ─────────────────────────────────── */
   .ado-btn { border-color: rgba(0,120,212,0.35) !important; color: var(--d365) !important; }
@@ -6245,6 +6282,13 @@ header::after { display: none !important; }
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- ADO Push Banner — portal element rendered on <body>, z-index 10100, always above all modals -->
+<div id="adoPushBanner" role="alert" aria-live="assertive" aria-atomic="true">
+  <span id="adoPushBanner-icon"></span>
+  <span id="adoPushBanner-msg"></span>
+  <button id="adoPushBanner-close" onclick="hideAdoBanner()" aria-label="Dismiss">✕</button>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════════
 // PROVIDER MANAGER — Single source of truth for all AI provider state
@@ -6791,6 +6835,46 @@ function showToast(msg, emoji = '\u2705') {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+/* ─── ADO Push Banner — always above all modals (z-index 10100) ─────────────
+ * showAdoBanner(msg, type, autoDismissMs)
+ *   type: 'success' | 'error' | 'info' | 'warning'
+ *   autoDismissMs: 0 = persistent; default 4500 for success, 0 for error
+ * ─────────────────────────────────────────────────────────────────────────── */
+(function() {
+  let _bannerTimer = null;
+
+  window.showAdoBanner = function(msg, type = 'info', autoDismissMs) {
+    const banner = document.getElementById('adoPushBanner');
+    const iconEl = document.getElementById('adoPushBanner-icon');
+    const msgEl  = document.getElementById('adoPushBanner-msg');
+    if (!banner || !iconEl || !msgEl) { showToast(msg); return; }
+
+    // Resolve icon
+    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+    iconEl.textContent = icons[type] || 'ℹ️';
+    msgEl.textContent  = msg;
+
+    // Apply type class
+    banner.className = 'show ' + type;
+
+    // Auto-dismiss: default 4.5s for success/info/warning, persistent for error
+    if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+    const delay = autoDismissMs !== undefined
+      ? autoDismissMs
+      : (type === 'error' ? 0 : 4500);
+    if (delay > 0) {
+      _bannerTimer = setTimeout(() => window.hideAdoBanner(), delay);
+    }
+  };
+
+  window.hideAdoBanner = function() {
+    const banner = document.getElementById('adoPushBanner');
+    if (!banner) return;
+    banner.classList.remove('show');
+    if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+  };
+})();
 
 function resetForm() {
   // ── ProviderManager state cleanup — unblocks any stuck generation ──
@@ -9372,6 +9456,8 @@ function closeADOModal() {
   adoPushCancelled = true;
   document.getElementById('adoModal').classList.remove('open');
   document.getElementById('adoOverlay').classList.remove('open');
+  // Hide the push banner when modal closes (cleanup)
+  if (typeof hideAdoBanner === 'function') hideAdoBanner();
 }
 
 function onPlanSelectChange() {
@@ -9605,6 +9691,7 @@ async function onOrgSelectChange() {
     }
 
     showToast(`${projects.length} project${projects.length!==1?'s':''} found in ${org}`, '🔷');
+    showAdoBanner(`${projects.length} project${projects.length!==1?'s':''} found in ${org}`, 'info');
 
     // Auto-select when only 1 project
     if (projects.length === 1) {
@@ -9689,6 +9776,7 @@ async function loadADOTestPlans() {
 
     updateADOTreePreview();
     showToast(`${adoLoadedPlans.length} test plan(s) in ${project}`, '\u2705');
+    showAdoBanner(`${adoLoadedPlans.length} test plan(s) loaded for ${project}`, 'success');
     adoGoToStep(2);
 
   } catch(e) {
@@ -9767,11 +9855,11 @@ async function pushToADOFull() {
   const areaPath  = document.getElementById('adoArea').value.trim();
   const iterPath  = document.getElementById('adoIteration').value.trim();
 
-  if (!planSel)                          { showToast('Select a Test Plan (or Create New)', '⚠️'); return; }
-  if (planSel === '__new__' && !newPlan) { showToast('Enter a name for the new Test Plan', '⚠️'); return; }
+  if (!planSel)                          { showToast('Select a Test Plan (or Create New)', '⚠️'); showAdoBanner('Select a Test Plan (or Create New)', 'warning'); return; }
+  if (planSel === '__new__' && !newPlan) { showToast('Enter a name for the new Test Plan', '⚠️'); showAdoBanner('Enter a name for the new Test Plan', 'warning'); return; }
 
   const testCases = parseTestCasesFromMarkdown();
-  if (!testCases.length) { showToast('No test cases found in output', '⚠️'); return; }
+  if (!testCases.length) { showToast('No test cases found in output', '⚠️'); showAdoBanner('No test cases found in output', 'error'); return; }
 
   // Switch to results panel
   adoGoToStep(3);
@@ -9933,6 +10021,7 @@ async function pushToADOFull() {
 
     document.getElementById('adoDoneNav').style.display = 'flex';
     showToast(`${successCount} test cases pushed to ADO Test Plan!`);
+    showAdoBanner(`${successCount} test cases pushed to ADO Test Plan!`, 'success');
 
   } catch(e) {
     addResult('❌', `Fatal error: ${e.message}`);
