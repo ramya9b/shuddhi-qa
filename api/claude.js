@@ -20,25 +20,24 @@ export const config = { runtime: 'edge' };
 // Older 1.x and 2.x models are deprecated for new accounts.
 // Preview models still use v1beta API endpoint.
 const MODELS = {
-  claude:        'claude-sonnet-4-6',
-  gemini:        'gemini-3-flash-preview',       // Primary: fast, low-cost
-  geminiPro:     'gemini-3.1-pro-preview',       // Fallback: high quality
-  geminiLite:    'gemini-3.1-flash-lite-preview',// Cheapest fallback
-  groq:          'llama-3.3-70b-versatile',
+  claude:      'claude-sonnet-4-6',
+  // Confirmed working from Google's own Python sample (user-verified)
+  gemini:      'gemini-3.1-pro-preview',         // PRIMARY: confirmed working
+  geminiLite:  'gemini-3.1-flash-lite-preview',  // Fallback: cost-efficient
+  geminiFlash: 'gemini-3-flash-preview',         // Last resort: status uncertain
+  groq:        'llama-3.3-70b-versatile',
 };
 
-// Gemini 3.x preview models use v1beta endpoint
 const GEMINI_API_VERSION = {
-  'gemini-3-flash-preview':        'v1beta',
   'gemini-3.1-pro-preview':        'v1beta',
   'gemini-3.1-flash-lite-preview': 'v1beta',
+  'gemini-3-flash-preview':        'v1beta',
 };
 
-// Try flash first (fast + cheap), pro for quality, lite as last resort
 const GEMINI_MODEL_CHAIN = [
   MODELS.gemini,
-  MODELS.geminiPro,
   MODELS.geminiLite,
+  MODELS.geminiFlash,
 ];
 
 // ── Resolve which provider + key to use ────────────────────────

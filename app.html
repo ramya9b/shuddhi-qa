@@ -9988,10 +9988,56 @@ async function createADOTestCase(org, project, _pat, tc, areaPath, iterPath) {
   // Conditionally add Assigned To — only if user provided a valid ADO identity
   const assignedToVal = (document.getElementById('adoAssignedToSelect')?.value || '').trim();
   if (assignedToVal) ops.push({ op:'add', path:'/fields/System.AssignedTo', value: assignedToVal });
-  if (areaPath) ops.push({ op:'add', path:'/fields/System.AreaPath',      value: areaPath });
-  if (iterPath) ops.push({ op:'add', path:'/fields/System.IterationPath', value: iterPath });
+
+  // ── AreaPath/IterationPath validation ─────────────────────────────
+  // ADO requires hierarchical path starting with project name.
+  // Examples: "MyProject", "MyProject\\Module1", "MyProject\\Team\\Sub"
+  // Auto-correct: if user typed just "Module1", prepend project to make "MyProject\\Module1"
+  // If empty/invalid, omit the field (uses project default)
+  function _normalizeAdoPath(path, projectName) {
+    if (!path || !projectName) return null;
+    const trimmed = path.trim();
+    if (!trimmed) return null;
+    // Already starts with project name
+    if (trimmed === projectName || trimmed.startsWith(projectName + '\\') || trimmed.startsWith(projectName + '/')) {
+      return trimmed.replace(/\//g, '\\'); // normalize forward slashes
+    }
+    // Doesn't start with project — prepend it
+    return projectName + '\\' + trimmed.replace(/^[\\\/]+/, '').replace(/\//g, '\\');
+  }
+
+  const validatedArea = _normalizeAdoPath(areaPath, project);
+  const validatedIter = _normalizeAdoPath(iterPath, project);
+  if (validatedArea) {
+    console.log('[ADO] Using AreaPath:', validatedArea);
+    ops.push({ op:'add', path:'/fields/System.AreaPath',      value: validatedArea });
+  }
+  if (validatedIter) {
+    console.log('[ADO] Using IterationPath:', validatedIter);
+    ops.push({ op:'add', path:'/fields/System.IterationPath', value: validatedIter });
+  }
   // adoRequest proxy handles auth — PAT stays in Vercel env
-  const data = await adoRequest('POST', url, null, ops);
+  let data;
+  try {
+    data = await adoRequest('POST', url, null, ops);
+  } catch(err) {
+    // Detect "Invalid tree name" — AreaPath or IterationPath doesn't exist in ADO
+    const msg = (err.message || '').toLowerCase();
+    const isPathError = msg.includes('tf401347') || msg.includes('invalid tree name') ||
+                        msg.includes('areapath') || msg.includes('iterationpath');
+    if (isPathError) {
+      console.warn('[ADO] Invalid Area/Iteration path — retrying without them. Original:', err.message);
+      // Strip AreaPath and IterationPath, retry with project defaults
+      const opsClean = ops.filter(op =>
+        op.path !== '/fields/System.AreaPath' &&
+        op.path !== '/fields/System.IterationPath'
+      );
+      data = await adoRequest('POST', url, null, opsClean);
+      console.log('[ADO] Retry succeeded with default project paths');
+    } else {
+      throw err;
+    }
+  }
   if (!data.id) throw new Error(data.message || 'Work item creation returned no ID');
   return data.id;
 }
