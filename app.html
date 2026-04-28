@@ -6207,13 +6207,16 @@ const ProviderManager = (function() {
   };
 
   const _state = {
-    active:     null,          // string: 'groq'|'gemini'|'claude'
-    keys:       {},            // { groq:bool, gemini:bool, claude:bool }
-    failed:     new Set(),     // providers failed this generate() session
-    cooldown:   {},            // { provider: timestampMs }
-    generating: false,         // global _isGenerating guard
-    initialized: false,
+    active:        null,
+    keys:          {},
+    failed:        new Set(),
+    cooldown:      {},
+    generating:    false,
+    initialized:   false,
+    switchCount:   0,           // NEW: tracks switches per session
+    triedProviders: new Set(),  // NEW: providers tried this session (never retry)
   };
+  const MAX_SWITCHES = 2; // try at most 3 providers total per generate()
 
   // ── Initialization ───────────────────────────────────────────────
   function init(statusData) {
@@ -6266,15 +6269,20 @@ const ProviderManager = (function() {
   // ── Session state (per generate() call) ─────────────────────────
   function resetSession() {
     _state.failed.clear();
+    _state.triedProviders.clear();
+    _state.switchCount = 0;
     Object.keys(_state.cooldown).forEach(k => delete _state.cooldown[k]);
     console.log('[ProviderManager] Session state reset');
   }
 
   function markFailed(provider) {
     _state.failed.add(provider);
+    _state.triedProviders.add(provider);
+    _state.switchCount++;
     const cooldownMs = { groq:65000, gemini:62000, claude:120000 }[provider] || 65000;
     _state.cooldown[provider] = Date.now() + cooldownMs;
-    console.log('[ProviderManager]', provider, 'marked failed. Cooldown:', Math.round(cooldownMs/1000)+'s');
+    console.log('[ProviderManager]', provider, 'failed. Switch', _state.switchCount + '/' + MAX_SWITCHES,
+                '| Cooldown:', Math.round(cooldownMs/1000) + 's');
   }
 
   function isCoolingDown(provider) {
@@ -6303,10 +6311,18 @@ const ProviderManager = (function() {
   }
 
   function getOrderedProviders() {
-    // All providers with keys, active first, skipping failed/cooling
+    // Hard stop: never try more than MAX_SWITCHES+1 providers per session
+    if (_state.switchCount > MAX_SWITCHES) {
+      console.warn('[ProviderManager] MAX_SWITCHES reached — stopping fallback chain');
+      return [];
+    }
     const active = _state.active;
     return [active, ...PROVIDERS.filter(p => p !== active)]
-      .filter(p => _state.keys[p] && !_state.failed.has(p) && !isCoolingDown(p));
+      .filter(p =>
+        _state.keys[p] &&
+        !_state.triedProviders.has(p) &&   // never retry a provider already tried
+        !isCoolingDown(p)
+      );
   }
 
   // ── Generate guard ───────────────────────────────────────────────
@@ -6351,9 +6367,10 @@ const ProviderManager = (function() {
     getNextProvider, getOrderedProviders,
     startGenerate, endGenerate, isGenerating,
     getStatusSummary,
-    // Convenience aliases matching legacy API
     CONFIGS: PROVIDER_CONFIG,
     PRIORITY: PROVIDERS,
+    _state,           // exposed for FIX 2 pre-marking
+    MAX_SWITCHES: 2,  // exposed for logging
   };
 
   return _api;
@@ -7392,8 +7409,11 @@ async function _callProviderWithFallback(requestBody) {
   let lastErr = null;
 
   for (const provider of toTry) {
+    // Mark as tried BEFORE the request — prevents re-entry on same provider
+    ProviderManager._state && ProviderManager._state.triedProviders.add(provider);
     try {
-      console.log('[Fallback] Trying provider:', provider);
+      console.log('[Fallback] Trying provider:', provider,
+                  '| switch', (ProviderManager._state?.switchCount||0) + '/' + (typeof MAX_SWITCHES !== 'undefined' ? MAX_SWITCHES : 2));
 
       const response = await fetch('/api/claude', {
         method:  'POST',
@@ -10826,7 +10846,8 @@ function populateAboutStatus() {
   if (provider) provider.textContent = typeof getActiveProvider === 'function' ? getActiveProvider() : '—';
   runProviderDiagnostics();
 }
-window.populateAboutStatus = populateAboutStatus;
+window.populateAboutStatus   = populateAboutStatus;
+window.runProviderDiagnostics = runProviderDiagnostics; // will be set after definition
 
 async function runProviderDiagnostics() {
   const el = document.getElementById('providerDiagResults');

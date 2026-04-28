@@ -262,10 +262,9 @@ export default async function handler(req) {
           '| URL:', upstream.url.replace(/key=[^&?]+/, 'key=REDACTED')
         );
 
-        const shouldTryChain = response.status === 404
-          || response.status === 400
-          || response.status === 403
-          || (response.status === 429 && detail.includes('quota'));
+        // Any non-2xx triggers the model chain for Gemini
+        // (401 = wrong key, 403 = API not enabled, 404 = model not found, 400 = payload)
+        const shouldTryChain = response.status >= 400;
 
         if (shouldTryChain) {
           for (const fallbackModel of GEMINI_MODEL_CHAIN.slice(1)) {
@@ -333,11 +332,15 @@ export default async function handler(req) {
         msg = `${provider} 400 Bad Request: ${detail || 'Invalid payload'}`;
       }
       if (response.status === 429) {
-        const nextMap = { claude:'Gemini', gemini:'Groq', groq:'Gemini' };
-        const nextHint = nextMap[provider] || 'next provider';
         const retryAfter = response.headers.get('retry-after') || response.headers.get('x-ratelimit-reset-requests');
-        const waitSecs = retryAfter ? parseInt(retryAfter) : 60;
-        msg = `${provider} rate limit (resets in ~${waitSecs}s). Switching to ${nextHint}.`;
+        const waitSecs   = retryAfter ? parseInt(retryAfter) : 60;
+        // Return switchProvider:true so frontend fallback chain can try next
+        // The frontend ProviderManager.MAX_SWITCHES prevents infinite loops
+        return new Response(JSON.stringify({
+          error: provider + ' rate limited (resets in ~' + waitSecs + 's)',
+          waitSecs,
+          switchProvider: true
+        }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
       if (response.status === 404) {
