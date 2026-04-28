@@ -6257,12 +6257,16 @@ const ProviderManager = (function() {
       console.warn('[ProviderManager] Unknown provider:', provider);
       return;
     }
+    const previous = _state.active;
     _state.active = provider;
     if (save !== false) {
       try { localStorage.setItem(LS_KEY, provider); } catch(e) {}
     }
     _syncLegacyFlags();
-    console.log('[ProviderManager] Active provider set to:', provider);
+    // Only log when actually changing — eliminates console noise
+    if (previous !== provider) {
+      console.log('[ProviderManager] Active provider:', previous || '(none)', '→', provider);
+    }
     return _api;
   }
 
@@ -7393,27 +7397,34 @@ function stopBulkGenerate() {
 // ══════════════════════════════════════════════════════════════════
 
 async function _callProviderWithFallback(requestBody) {
-  // Uses ProviderManager as single source of truth
+  const initialActive = ProviderManager.getActive();
   const toTry = ProviderManager.getOrderedProviders();
 
   if (!toTry.length) {
-    // All configured providers exhausted or cooling down
-    ProviderManager.resetSession(); // allow retry after cooldown
     const wait = ProviderManager.getMinCooldownSecs();
-    const msg  = wait > 5
-      ? 'All AI providers are rate-limited. Ready again in ~' + wait + 's — please wait a moment.'
-      : 'Unable to generate test cases right now. Please try again in a few moments.';
-    throw new Error(msg);
+    throw new Error(
+      wait > 5
+        ? 'AI providers temporarily unavailable. Try again in ~' + wait + ' seconds.'
+        : 'Unable to generate test cases. Please try again shortly.'
+    );
   }
+
+  console.log('[Fallback] Try list (max ' + toTry.length + '):', toTry.join(' → '));
 
   let lastErr = null;
 
-  for (const provider of toTry) {
-    // Mark as tried BEFORE the request — prevents re-entry on same provider
-    ProviderManager._state && ProviderManager._state.triedProviders.add(provider);
+  for (let i = 0; i < toTry.length; i++) {
+    const provider = toTry[i];
+
+    // Defensive: skip if already tried (should never happen with correct toTry)
+    if (ProviderManager._state.triedProviders.has(provider)) {
+      console.log('[Fallback] Skipping already-tried:', provider);
+      continue;
+    }
+    ProviderManager._state.triedProviders.add(provider);
+
     try {
-      console.log('[Fallback] Trying provider:', provider,
-                  '| switch', (ProviderManager._state?.switchCount||0) + '/' + (typeof MAX_SWITCHES !== 'undefined' ? MAX_SWITCHES : 2));
+      console.log('[Fallback] Attempt ' + (i+1) + '/' + toTry.length + ':', provider);
 
       const response = await fetch('/api/claude', {
         method:  'POST',
@@ -7421,55 +7432,60 @@ async function _callProviderWithFallback(requestBody) {
         body: JSON.stringify(Object.assign({}, requestBody, { provider }))
       });
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const status   = response.status;
-        const errText  = err.error || err.detail || '';
-        const isLimit  = status === 429
-          || (status === 400 && (errText.includes('usage limits') || errText.includes('regain access') || err.switchProvider))
-          || (status === 403 && errText.includes('API_NOT_ENABLED'));
-
-        if (isLimit) {
-          ProviderManager.markFailed(provider);
-          console.warn('[Fallback]', provider, 'rate-limited (status ' + status + ') — trying next');
-          lastErr = new Error(provider + ' limit reached');
-          continue;
+      if (response.ok) {
+        // SUCCESS — update active provider ONCE, then return
+        if (provider !== initialActive) {
+          ProviderManager.setActive(provider, true);
+          console.log('[Fallback] Active provider updated to:', provider);
         }
-
-        // Non-retryable error — surface with clean message
-        const cleanErr = {
-          400: 'Request format error. Check input and try again.',
-          401: ProviderManager.getConfig(provider).envKey + ' API key invalid — check Vercel env vars.',
-          403: 'API key does not have permission. Check key scopes.',
-          404: 'Provider model not found. Check deployment configuration.',
-          500: 'Provider server error. Try again in a moment.',
-        }[status] || (errText || 'API error ' + status);
-        throw new Error(cleanErr);
+        return response;
       }
 
-      // SUCCESS — update active provider if we switched
-      if (provider !== ProviderManager.getActive()) {
-        ProviderManager.setActive(provider, true);
-        console.log('[Fallback] Silently switched to', provider);
+      // Failed — parse error
+      const err = await response.json().catch(() => ({}));
+      const status  = response.status;
+      const errText = err.error || err.detail || '';
+      const isLimit = status === 429
+        || (status === 400 && (errText.includes('usage limits') || errText.includes('regain access') || err.switchProvider))
+        || (status === 403 && errText.includes('API_NOT_ENABLED'))
+        || err.switchProvider === true;
+
+      if (isLimit) {
+        // Mark failed but DO NOT call setActive — that would log noise
+        ProviderManager._state.failed.add(provider);
+        const cooldownMs = { groq:65000, gemini:62000, claude:120000 }[provider] || 65000;
+        ProviderManager._state.cooldown[provider] = Date.now() + cooldownMs;
+        console.warn('[Fallback] FAILED', provider + ':', status, '— trying next');
+        lastErr = new Error(provider + ' rate limited');
+        continue;
       }
-      return response;
+
+      // Non-retryable error — surface clean message
+      const cleanErr = {
+        400: 'Request format error. Check input and try again.',
+        401: ProviderManager.getConfig(provider).envKey + ' API key invalid.',
+        403: 'API key permission denied.',
+        404: 'Provider model not found.',
+        500: 'Provider server error. Try again in a moment.',
+      }[status] || (errText || 'API error ' + status);
+      throw new Error(cleanErr);
 
     } catch(e) {
-      if (e.message.includes('limit reached')) {
+      if (e.message && e.message.includes('rate limited')) {
         lastErr = e;
-        continue; // try next
+        continue;
       }
-      throw e; // non-retryable
+      throw e;
     }
   }
 
-  // All providers tried and failed
-  ProviderManager.resetSession();
+  // All providers exhausted
   const wait = ProviderManager.getMinCooldownSecs();
+  console.warn('[Fallback] All providers failed. Tried:', [...ProviderManager._state.triedProviders]);
   throw new Error(
     wait > 5
-      ? 'All AI providers are rate-limited. Ready again in ~' + wait + 's.'
-      : 'Unable to generate test cases right now. Please try again shortly.'
+      ? 'AI providers temporarily unavailable. Try again in ~' + wait + ' seconds.'
+      : 'Unable to generate test cases. All providers tried. Please try again shortly.'
   );
 }
 
@@ -10022,15 +10038,31 @@ function downloadADOCSV() {
 // SETTINGS MODAL
 // ════════════════════════════════════════════════════════════════
 
+// Fallback for when populateAboutStatus from Block 5 isn't available
+function _populateAboutStatusFallback() {
+  const ver = document.getElementById('aboutVersion');
+  const prov = document.getElementById('aboutProvider');
+  if (ver)  ver.textContent  = 'v2.0';
+  if (prov) prov.textContent = (typeof ProviderManager !== 'undefined' ? ProviderManager.getActive() : '—');
+  // Try to run diagnostics if available
+  try { if (typeof runProviderDiagnostics === 'function') runProviderDiagnostics(); }
+  catch(e) {}
+}
+
 function openSettings() {
   const modal   = document.getElementById('settingsModal');
   const overlay = document.getElementById('settingsOverlay');
   modal.style.display   = 'flex';
   overlay.style.display = 'block';
   setTimeout(() => modal.classList.add('open'), 10);
-  // Load runtime status + Jira settings on open
-  populateAboutStatus();
-  loadJiraSettings();
+  // Load runtime status + Jira settings on open — safe call with fallback
+  try {
+    if (typeof populateAboutStatus === 'function') populateAboutStatus();
+    else _populateAboutStatusFallback();
+  } catch(e) { console.warn('[Settings] populateAboutStatus failed:', e.message); }
+  try {
+    if (typeof loadJiraSettings === 'function') loadJiraSettings();
+  } catch(e) { console.warn('[Settings] loadJiraSettings failed:', e.message); }
   // Reset ADO connection test dropdowns
   document.getElementById('settingsAdoOrgRow').style.display = 'block';
   ['settingsAdoProjectRow','settingsAdoTestRow'].forEach(id => {
