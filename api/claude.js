@@ -17,28 +17,25 @@ export const config = { runtime: 'edge' };
 
 // ── Model mapping per provider ──────────────────────────────────
 const MODELS = {
-  claude:      'claude-sonnet-4-6',
-  gemini:      'gemini-2.0-flash',        // Primary (GA Jan 2025)
-  geminiExp:   'gemini-2.0-flash-exp',    // Experimental (broader key support)
-  geminiAlt:   'gemini-1.5-flash',        // Stable fallback (v1 API)
-  geminiPro:   'gemini-1.5-pro',          // High quality fallback
-  groq:        'llama-3.3-70b-versatile',
+  claude:    'claude-sonnet-4-6',
+  gemini:    'gemini-2.5-flash-preview-04-17', // Current GA model (Apr 2026)
+  geminiAlt: 'gemini-2.0-flash-lite',          // Lightweight fallback
+  geminiOld: 'gemini-1.5-flash',               // Legacy fallback (v1)
+  groq:      'llama-3.3-70b-versatile',
 };
 
 // Gemini API versions per model
 const GEMINI_API_VERSION = {
-  'gemini-2.0-flash':     'v1beta',
-  'gemini-2.0-flash-exp': 'v1beta',
-  'gemini-1.5-flash':     'v1',      // v1 is more stable for 1.5 models
-  'gemini-1.5-pro':       'v1',
+  'gemini-2.5-flash-preview-04-17': 'v1beta',
+  'gemini-2.0-flash-lite':          'v1beta',
+  'gemini-1.5-flash':               'v1',
 };
 
 // Ordered list of Gemini models to try on failure
 const GEMINI_MODEL_CHAIN = [
   MODELS.gemini,
-  MODELS.geminiExp,
   MODELS.geminiAlt,
-  MODELS.geminiPro,
+  MODELS.geminiOld,
 ];
 
 // ── Resolve which provider + key to use ────────────────────────
