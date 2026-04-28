@@ -6796,11 +6796,31 @@ function resetForm() {
   // ── ProviderManager state cleanup — unblocks any stuck generation ──
   try {
     if (typeof ProviderManager !== 'undefined') {
-      ProviderManager.endGenerate();   // release _isGenerating
-      ProviderManager.resetSession();  // clear failed/cooldowns/triedProviders
+      ProviderManager.endGenerate();
+      ProviderManager.resetSession();
       console.log('[Reset] ProviderManager state cleared');
     }
   } catch(e) { console.warn('[Reset] PM reset failed:', e.message); }
+
+  // ── Test case state cleanup ──
+  try {
+    if (typeof tgAllTCs !== 'undefined') tgAllTCs = [];
+    if (typeof tgSelectedIds !== 'undefined') tgSelectedIds.clear();
+    if (typeof tgPage !== 'undefined') tgPage = 1;
+    if (typeof tgFilter !== 'undefined') tgFilter = '';
+    if (typeof rawMarkdown !== 'undefined') rawMarkdown = '';
+
+    // Update tab counts to zero (re-renders all-0)
+    if (typeof updateArtifactTabCounts === 'function') {
+      updateArtifactTabCounts();
+    }
+    // Hide artifact area, show ready-to-generate state
+    const tgRoot = document.getElementById('testGenView');
+    if (tgRoot) tgRoot.innerHTML = '';
+    const ready = document.getElementById('readyToGenerate');
+    if (ready) ready.style.display = 'flex';
+    console.log('[Reset] Test case state + tab counts cleared');
+  } catch(e) { console.warn('[Reset] TC reset failed:', e.message); }
 
   // ── File & detection state ──
   clearFile();
@@ -11666,59 +11686,9 @@ window.adoRestoreAssignedTo = typeof adoRestoreAssignedTo !== 'undefined' ? adoR
 
 
 <script>
-// -- tgToggleRow - inline accordion expand ------------------------
-function tgToggleRow(id, btn) {
-  const expRow = document.getElementById('tgexp-' + id);
-  if (!expRow) return;
-  const isOpen = expRow.style.display !== 'none' && expRow.style.display !== '';
-  const arr    = btn ? btn.querySelector('.chip-arr') : null;
-
-  if (isOpen) {
-    expRow.style.display = 'none';
-    expRow.classList.remove('open');
-    if (btn) btn.classList.remove('open');
-    if (arr) arr.textContent = '\u25be';
-    const mainRow = document.querySelector('[data-tc-id="'+id+'"]');
-    if (mainRow) mainRow.classList.remove('row-expanded');
-  } else {
-    // Accordion: close others
-    document.querySelectorAll('.tg-exp-row.open').forEach(r => {
-      r.style.display = 'none';
-      r.classList.remove('open');
-      const prev = r.previousElementSibling;
-      if (prev) {
-        prev.classList.remove('row-expanded');
-        const pb = prev.querySelector('.tg-steps-chip');
-        if (pb) { pb.classList.remove('open'); const a=pb.querySelector('.chip-arr'); if(a) a.textContent='\u25be'; }
-      }
-    });
-    expRow.style.display = 'table-row';
-    expRow.classList.add('open');
-    if (btn) btn.classList.add('open');
-    if (arr) arr.textContent = '\u25b4';
-    const mainRow = document.querySelector('[data-tc-id="'+id+'"]');
-    if (mainRow) mainRow.classList.add('row-expanded');
-    setTimeout(() => expRow.scrollIntoView({ behavior:'smooth', block:'nearest' }), 60);
-  }
-}
-
-function tgRowClick(e, id) {
-  if (e.target.closest('button, input, a')) return;
-  const btn = document.querySelector('[data-tc-id="'+id+'"] .tg-steps-chip');
-  tgToggleRow(id, btn);
-}
-
-function tgCopySteps(id) {
-  const tc = tgAllTCs.find(t => t.id === id);
-  if (!tc) return;
-  const arr = (typeof parseStepsArr === 'function') ? parseStepsArr(tc.stepsRaw||'') : [];
-  const text = arr.map((s,i) => (i+1)+'. '+s.replace(/^\d+\.\s*/,'')).join('\n') || tc.stepsRaw;
-  navigator.clipboard?.writeText(text).then(() => showToast('Steps copied', String.fromCodePoint(0x1F4CB)));
-}
-
-// Legacy alias
-// tgToggleSteps stays as defined in main block (popup-based, matches rendered HTML)
-// Just expose to global scope for onclick handlers
+// Legacy block — duplicate tgToggleRow removed (used wrong selector pattern)
+// The working version is defined in main block (tgexp- vs data-tc-expand-for)
+// Keep window assignments as safety net for legacy onclick references
 window.tgToggleRow   = (typeof tgToggleRow   !== 'undefined') ? tgToggleRow   : window.tgToggleRow;
 window.tgRowClick    = (typeof tgRowClick    !== 'undefined') ? tgRowClick    : window.tgRowClick;
 window.tgCopySteps   = (typeof tgCopySteps   !== 'undefined') ? tgCopySteps   : window.tgCopySteps;
