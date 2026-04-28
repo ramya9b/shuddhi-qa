@@ -6,7 +6,7 @@ export async function GET(req) {
   const results = {};
 
   const providers = [
-    { name: 'gemini', key: process.env.GEMINI_API_KEY, testUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=', model: 'gemini-2.5-flash-preview-04-17' },
+    { name: 'gemini', key: process.env.GEMINI_API_KEY, testUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=', model: 'gemini-1.5-flash' },
     { name: 'groq',   key: process.env.GROQ_API_KEY,   testUrl: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
   ];
 

@@ -16,26 +16,25 @@
 export const config = { runtime: 'edge' };
 
 // ── Model mapping per provider ──────────────────────────────────
+// ── Stable Gemini models (GA, no preview/experimental) ─────────
+// All use v1 API — stable, available to all valid AI Studio keys
 const MODELS = {
-  claude:    'claude-sonnet-4-6',
-  gemini:    'gemini-2.5-flash-preview-04-17', // Current GA model (Apr 2026)
-  geminiAlt: 'gemini-2.0-flash-lite',          // Lightweight fallback
-  geminiOld: 'gemini-1.5-flash',               // Legacy fallback (v1)
-  groq:      'llama-3.3-70b-versatile',
+  claude:      'claude-sonnet-4-6',
+  gemini:      'gemini-1.5-flash',   // Primary: fast, free tier, GA (v1)
+  geminiPro:   'gemini-1.5-pro',     // Fallback: higher quality, GA (v1)
+  groq:        'llama-3.3-70b-versatile',
 };
 
-// Gemini API versions per model
+// All stable Gemini models use v1 (not v1beta)
 const GEMINI_API_VERSION = {
-  'gemini-2.5-flash-preview-04-17': 'v1beta',
-  'gemini-2.0-flash-lite':          'v1beta',
-  'gemini-1.5-flash':               'v1',
+  'gemini-1.5-flash': 'v1',
+  'gemini-1.5-pro':   'v1',
 };
 
-// Ordered list of Gemini models to try on failure
+// Try flash first (fast + free), then pro (quality fallback)
 const GEMINI_MODEL_CHAIN = [
   MODELS.gemini,
-  MODELS.geminiAlt,
-  MODELS.geminiOld,
+  MODELS.geminiPro,
 ];
 
 // ── Resolve which provider + key to use ────────────────────────
