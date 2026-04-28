@@ -5034,8 +5034,8 @@ header::after { display: none !important; }
           data-key="GEMINI_API_KEY" data-url="https://aistudio.google.com">
           <span class="pill-icon">✦</span>
           <div>
-            <div class="pill-name">Gemini</div>
-            <div class="pill-sub">Google · Flash 2.0 · 15 req/min free</div>
+            <div class="pill-name">Gemini 3.0 Flash</div>
+            <div class="pill-sub">Google · 15 req/min free</div>
           </div>
           <span class="pill-status" id="pill-status-gemini">—</span>
         </button>
@@ -5124,7 +5124,7 @@ header::after { display: none !important; }
         <summary>Provider comparison →</summary>
         <div style="padding:10px 16px 14px;font-size:12.5px;color:var(--text2);line-height:1.6">
           <strong>Claude</strong> (Anthropic) — Best quality for complex QA reasoning. Paid.<br>
-          <strong>Gemini Flash</strong> (Google) — Free: 15 req/min, 1,500 req/day. Best quality output.<br>
+          <strong>Gemini 3.0 Flash</strong> (Google) — Free: 15 req/min, 1,500 req/day. Best quality output.<br>
           <strong>Groq/Llama</strong> — Free: 30 req/min, 14,400 req/day. Fastest. Best for active sessions.
         </div>
       </details>
@@ -6262,7 +6262,7 @@ const ProviderManager = (function() {
 
   const PROVIDER_CONFIG = {
     groq:   { name:'Groq',   icon:'⚡', model:'llama-3.3-70b-versatile', envKey:'GROQ_API_KEY',   rpmFree:30,  dailyFree:14400 },
-    gemini: { name:'Gemini', icon:'✦', model:'gemini-2.0-flash',        envKey:'GEMINI_API_KEY',  rpmFree:15,  dailyFree:1500  },
+    gemini: { name:'Gemini 3.0 Flash', icon:'✦', model:'gemini-2.0-flash',        envKey:'GEMINI_API_KEY',  rpmFree:15,  dailyFree:1500  },
     claude: { name:'Claude', icon:'🤖', model:'claude-sonnet-4-6',       envKey:'CLAUDE_API_KEY',  rpmFree:null,dailyFree:null  },
   };
 
@@ -11196,7 +11196,7 @@ function saveADODefaults(){
 let _activeProvider=(()=>{try{return localStorage.getItem('shuddhi-ai-provider')||'claude';}catch(e){return 'claude';}})();
 const PROVIDER_META={
   claude:{name:'Claude',icon:'🤖',model:'claude-sonnet-4-6',envKey:'CLAUDE_API_KEY',url:'https://console.anthropic.com',urlLabel:'console.anthropic.com',color:'var(--indigo)'},
-  gemini:{name:'Gemini',icon:'✦',model:'gemini-2.0-flash',envKey:'GEMINI_API_KEY',url:'https://aistudio.google.com',urlLabel:'aistudio.google.com',color:'#0369A1'},
+  gemini:{name:'Gemini 3.0 Flash',icon:'✦',model:'gemini-2.0-flash',envKey:'GEMINI_API_KEY',url:'https://aistudio.google.com',urlLabel:'aistudio.google.com',color:'#0369A1'},
   groq:{name:'Groq',icon:'\u26A1',model:'llama-3.3-70b-versatile',envKey:'GROQ_API_KEY',url:'https://console.groq.com',urlLabel:'console.groq.com',color:'#7C3AED'},
 };
 function getActiveProvider(){
