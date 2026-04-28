@@ -7802,18 +7802,26 @@ Make the output production-ready and specific to ${platform}. Use real field nam
     let buffer = '';
     // DEF-004: Stream timeout — if no delta for 30s, abort
     let _streamLastActivity = Date.now();
+    let _streamCompleted    = false;
     const _streamTimeout = setInterval(() => {
+      if (_streamCompleted) {
+        clearInterval(_streamTimeout);
+        return;
+      }
       if (Date.now() - _streamLastActivity > 30000) {
         clearInterval(_streamTimeout);
-        reader.cancel();
+        try { reader.cancel(); } catch(e) {}
         console.warn('[Stream] No activity for 30s — aborting');
-        throw new Error('Generation timed out. Please try again.');
       }
     }, 5000);
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        _streamCompleted = true;
+        clearInterval(_streamTimeout);
+        break;
+      }
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
