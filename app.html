@@ -11522,17 +11522,12 @@ function tgCopySteps(id) {
 }
 
 // Legacy alias
-function tgToggleSteps(chip) {
-  const row = chip.closest('tr');
-  if (!row) return;
-  const id = row.dataset.tcId;
-  if (id) tgToggleRow(id, chip);
-}
-// Expose to global scope for onclick handlers in dynamic HTML
-window.tgToggleRow   = tgToggleRow;
-window.tgRowClick    = tgRowClick;
-window.tgCopySteps   = tgCopySteps;
-window.tgToggleSteps = tgToggleSteps;
+// tgToggleSteps stays as defined in main block (popup-based, matches rendered HTML)
+// Just expose to global scope for onclick handlers
+window.tgToggleRow   = (typeof tgToggleRow   !== 'undefined') ? tgToggleRow   : window.tgToggleRow;
+window.tgRowClick    = (typeof tgRowClick    !== 'undefined') ? tgRowClick    : window.tgRowClick;
+window.tgCopySteps   = (typeof tgCopySteps   !== 'undefined') ? tgCopySteps   : window.tgCopySteps;
+window.tgToggleSteps = (typeof tgToggleSteps !== 'undefined') ? tgToggleSteps : window.tgToggleSteps;
 </script>
 
 
