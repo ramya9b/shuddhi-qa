@@ -9631,7 +9631,7 @@ async function adoAddTCsToSuite(org, project, _pat, planId, suiteId, tcIds) {
 }
 
 // ── Section → suite name map ──────────────────────────────────
-const SECTION_SUITE_MAP = {
+var SECTION_SUITE_MAP = {
   'E2E': 'E2E Test Cases',
   'End-to-End': 'E2E Test Cases',
   'Field': 'Field Validation',
@@ -9640,9 +9640,17 @@ const SECTION_SUITE_MAP = {
 };
 
 function getSectionSuiteName(sectionTitle) {
+  // Inline map — no dependency on outer scope (TDZ-safe)
+  const SUITE_MAP = (typeof SECTION_SUITE_MAP !== 'undefined' && SECTION_SUITE_MAP) || {
+    'E2E':         'E2E Test Cases',
+    'End-to-End':  'E2E Test Cases',
+    'Field':       'Field Validation',
+    'Integration': 'Integration Tests',
+    'Negative':    'Negative Test Cases'
+  };
   const t = sectionTitle || '';
-  for (const [key, val] of Object.entries(SECTION_SUITE_MAP)) {
-    if (t.toLowerCase().includes(key.toLowerCase())) return val;
+  for (const key of Object.keys(SUITE_MAP)) {
+    if (t.toLowerCase().includes(key.toLowerCase())) return SUITE_MAP[key];
   }
   return t.substring(0, 31) || 'General';
 }
