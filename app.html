@@ -4867,6 +4867,13 @@ header::after { display: none !important; }
     overflow: hidden; line-height: 1.5;
   }
 </style>
+<!-- ── Theme: apply saved preference immediately (prevents FOUC) ── -->
+<script>
+(function() {
+  var saved = localStorage.getItem('shuddhi-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+</script>
 </head>
 <body>
 
@@ -12075,6 +12082,55 @@ function checkAndTrimFlow(flow) {
     localStorage.setItem(INSTALL_KEY, '1');
     console.log('[PWA] Running as installed app');
   }
+
+})();
+</script>
+
+<!-- ── Theme Toggle — full implementation ────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  var THEME_KEY  = 'shuddhi-theme';
+  var DARK_ICON  = '🌙';   // shown when theme is LIGHT  — click to go dark
+  var LIGHT_ICON = '☀️';   // shown when theme is DARK   — click to go light
+  var BTN_ID     = 'themeToggleBtn';
+
+  // ── Apply theme to <html> and persist ──────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+    syncIcon(theme);
+  }
+
+  // ── Update button icon + accessible label ──────────────────────────────
+  function syncIcon(theme) {
+    var btn = document.getElementById(BTN_ID);
+    if (!btn) return;
+    btn.textContent  = theme === 'dark' ? LIGHT_ICON : DARK_ICON;
+    btn.title        = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
+  // ── Public: called by onclick="toggleTheme()" ──────────────────────────
+  window.toggleTheme = function () {
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  };
+
+  // ── On load: sync icon to whatever theme was applied by the early script ─
+  document.addEventListener('DOMContentLoaded', function () {
+    var current = localStorage.getItem(THEME_KEY) || 'light';
+    syncIcon(current);
+  });
+
+  // ── Keyboard shortcut: Ctrl / Cmd + Shift + T ─────────────────────────
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
+      e.preventDefault();
+      window.toggleTheme();
+    }
+  });
 
 })();
 </script>
