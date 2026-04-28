@@ -2882,22 +2882,82 @@ header::after { display: none !important; }
   .tg-steps-chip:hover { background:rgba(99,102,241,.13); }
   .tg-steps-chip .chip-arr { font-size:9px; transition:transform .18s; }
   .tg-steps-chip.open .chip-arr { transform:rotate(180deg); }
-  .tg-steps-popup {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    min-width: 340px;
-    max-width: 500px;
-    max-height: 320px;        /* cap height — scroll if many steps */
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: var(--surface);
-    border: 1.5px solid var(--border2);
-    border-radius: 12px;
-    padding: 4px 0;
-    box-shadow: 0 12px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
+  /* Legacy popup — hidden by default in new UI */
+  .tg-steps-popup { display: none !important; }
+
+  /* ── Inline expand row (NEW) ──────────────────────────────────── */
+  .tg-row-main { cursor: pointer; transition: background .15s; }
+  .tg-row-main:hover { background: rgba(99,102,241,.04); }
+  .tg-row-main.tg-row-open { background: rgba(99,102,241,.06); }
+  .tg-row-main.tg-row-open .tg-steps-chip {
+    background: rgba(99,102,241,.18); border-color: rgba(99,102,241,.4);
   }
-  .tg-steps-popup.open { display: block; }
+  .tg-row-main.tg-row-open .chip-arr { transform: rotate(180deg); }
+
+  .tg-row-expanded td {
+    background: linear-gradient(180deg, rgba(99,102,241,.04), rgba(99,102,241,.02));
+    border-top: 0; padding: 0;
+  }
+  .tg-expand-cell { animation: tgExpandFade .25s ease-out; }
+  @keyframes tgExpandFade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tg-expand-content {
+    padding: 16px 24px 18px;
+    border-left: 3px solid var(--indigo, #6366F1);
+    margin: 4px 12px;
+  }
+  .tg-expand-grid {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px;
+  }
+  @media (max-width: 768px) {
+    .tg-expand-grid { grid-template-columns: 1fr; gap: 16px; }
+    .tg-expand-content { padding: 12px 14px; margin: 4px 6px; }
+  }
+  .tg-expand-section { min-width: 0; }
+  .tg-expand-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--text3); margin-bottom: 10px;
+  }
+  .tg-steps-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .tg-step-line {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12.5px; line-height: 1.55; color: var(--text2);
+  }
+  .tg-step-circle {
+    flex-shrink: 0;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(99,102,241,.12); color: var(--indigo, #6366F1);
+    font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .tg-step-text { padding-top: 2px; }
+  .tg-expected-full {
+    font-size: 13px; line-height: 1.6; color: var(--text);
+    background: var(--surface); padding: 12px 14px; border-radius: 8px;
+    border: 1px solid var(--border); white-space: pre-wrap;
+  }
+  .tg-copy-steps-btn {
+    margin-top: 12px; padding: 6px 14px; font-size: 11.5px;
+    border: 1px solid var(--border2); border-radius: 6px;
+    background: var(--surface); color: var(--text2); cursor: pointer;
+    transition: all .15s; font-family: 'JetBrains Mono', monospace;
+  }
+  .tg-copy-steps-btn:hover {
+    border-color: var(--indigo, #6366F1); color: var(--indigo, #6366F1);
+    background: rgba(99,102,241,.05);
+  }
+
+  /* Truncate long Expected text in main row */
+  .tg-exp-short {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; text-overflow: ellipsis;
+    font-size: 12.5px; color: var(--text2); line-height: 1.5;
+  }
   td.steps-td { position: relative; overflow: visible !important; }
 
   /* Expanded TC row (accordion) */
@@ -9248,9 +9308,10 @@ let adoLoadedPlans = [];   // cache of fetched test plans
 let adoSelectedPlanId = null;
 let adoRootSuiteId = null;
 
-window.adoClearAssignedTo   = adoClearAssignedTo;
-window.adoSaveAssignedTo    = adoSaveAssignedTo;
-window.adoRestoreAssignedTo = adoRestoreAssignedTo;
+// Functions defined later in Block 11 — assign safely
+window.adoClearAssignedTo   = (typeof adoClearAssignedTo   !== 'undefined') ? adoClearAssignedTo   : window.adoClearAssignedTo;
+window.adoSaveAssignedTo    = (typeof adoSaveAssignedTo    !== 'undefined') ? adoSaveAssignedTo    : window.adoSaveAssignedTo;
+window.adoRestoreAssignedTo = (typeof adoRestoreAssignedTo !== 'undefined') ? adoRestoreAssignedTo : window.adoRestoreAssignedTo;
 
 function adoGoToStep(n) {
   if (n === 2) setTimeout(adoRestoreAssignedTo, 100);
@@ -10503,27 +10564,53 @@ function buildTGRow(tc) {
     '</div>';
   }).join('');
   const sel = tgSelectedIds.has(tc.id);
-  return `<tr class="${sel?'tg-selected':''}" data-tc-id="${tc.id}" data-type="${tc.type}">
+  // Build numbered list HTML for inline expand row (reuse existing stepsArr)
+  const stepsListHtml = stepsArr.map((s, i) =>
+    '<div class="tg-step-line">' +
+      '<span class="tg-step-circle">' + (i+1) + '</span>' +
+      '<span class="tg-step-text">' + (s || '').replace(/^\d+\.\s*/, '') + '</span>' +
+    '</div>'
+  ).join('');
+
+  const mainRow = `<tr class="tg-row-main ${sel?'tg-selected':''}" data-tc-id="${tc.id}" data-type="${tc.type}">
     <td class="tg-col-cb" style="text-align:center">
       <input type="checkbox" class="tc-row-cb" ${sel?'checked':''}
         style="accent-color:var(--d365);cursor:pointer;width:13px;height:13px"
-        onchange="tgToggleSelect('${tc.id}',this.checked,this.closest('tr'))"/>
+        onchange="tgToggleSelect('${tc.id}',this.checked,this.closest('tr'));event.stopPropagation();"/>
     </td>
-    <td class="tg-col-id"><span class="tg-tc-id">${tc.id}</span></td>
-    <td class="tg-col-sc"><span class="tg-scenario">${tc.title}</span></td>
+    <td class="tg-col-id" onclick="tgRowClick(event,'${tc.id}')"><span class="tg-tc-id">${tc.id}</span></td>
+    <td class="tg-col-sc" onclick="tgRowClick(event,'${tc.id}')"><span class="tg-scenario">${tc.title}</span></td>
     <td class="tg-col-st steps-td">
-      <span class="tg-steps-chip" onclick="tgToggleSteps(this)">
+      <span class="tg-steps-chip" onclick="tgToggleRow('${tc.id}', this)">
         ${cnt} Step${cnt!==1?'s':''} <span class="chip-arr">&#9662;</span>
       </span>
-      <div class="tg-steps-popup">${stepsHtml||raw}</div>
     </td>
-    <td class="tg-col-exp" style="font-size:12.5px;color:var(--text2);line-height:1.5">${tc.expected||''}</td>
+    <td class="tg-col-exp tg-exp-short" onclick="tgRowClick(event,'${tc.id}')">${tc.expected||''}</td>
     <td class="tg-col-pri"><span class="tg-badge ${tc.priCls}">${tc.priority}</span></td>
     <td class="tg-col-act"><div class="tg-actions">
-      <button class="tg-act-btn" title="Copy" onclick="tgCopyRow('${tc.id}')">&#128203;</button>
-      <button class="tg-act-btn del" title="Remove" onclick="tgRemoveRow('${tc.id}',this)">&#128465;</button>
+      <button class="tg-act-btn" title="Copy" onclick="tgCopyRow('${tc.id}');event.stopPropagation();">&#128203;</button>
+      <button class="tg-act-btn del" title="Remove" onclick="tgRemoveRow('${tc.id}',this);event.stopPropagation();">&#128465;</button>
     </div></td>
   </tr>`;
+
+  const expandedRow = `<tr class="tg-row-expanded" data-tc-expand-for="${tc.id}" style="display:none">
+    <td colspan="7" class="tg-expand-cell">
+      <div class="tg-expand-content">
+        <div class="tg-expand-grid">
+          <div class="tg-expand-section">
+            <div class="tg-expand-label">📋 Test Steps</div>
+            <div class="tg-steps-list">${stepsListHtml || '<em style="color:var(--text3)">No steps</em>'}</div>
+          </div>
+          <div class="tg-expand-section">
+            <div class="tg-expand-label">✅ Expected Result</div>
+            <div class="tg-expected-full">${tc.expected || '<em style="color:var(--text3)">Not specified</em>'}</div>
+            <button class="tg-copy-steps-btn" onclick="tgCopySteps('${tc.id}')">📋 Copy Steps</button>
+          </div>
+        </div>
+      </div>
+    </td>
+  </tr>`;
+
   return mainRow + expandedRow;
 }
 
@@ -10553,6 +10640,68 @@ function tgRemoveRow(id, btn) {
   updateArtifactTabCounts();
   updateBulkBar();
 }
+// Inline expand row — replaces popup-based tgToggleSteps
+function tgToggleRow(id, btn) {
+  const expandRow = document.querySelector('[data-tc-expand-for="' + id + '"]');
+  const mainRow   = document.querySelector('tr[data-tc-id="' + id + '"]');
+  if (!expandRow) return;
+
+  const isOpen = expandRow.style.display !== 'none';
+
+  // Accordion: close all other open rows first
+  document.querySelectorAll('.tg-row-expanded').forEach(r => {
+    if (r !== expandRow && r.style.display !== 'none') {
+      r.style.display = 'none';
+      const prevId = r.dataset.tcExpandFor;
+      const prev = document.querySelector('tr[data-tc-id="' + prevId + '"]');
+      if (prev) {
+        prev.classList.remove('tg-row-open');
+        const pb = prev.querySelector('.tg-steps-chip');
+        if (pb) pb.classList.remove('open');
+      }
+    }
+  });
+
+  if (isOpen) {
+    expandRow.style.display = 'none';
+    if (mainRow) mainRow.classList.remove('tg-row-open');
+    if (btn) btn.classList.remove('open');
+  } else {
+    expandRow.style.display = '';
+    if (mainRow) {
+      mainRow.classList.add('tg-row-open');
+      // Smooth scroll into view if off-screen
+      setTimeout(() => {
+        const rect = expandRow.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight) {
+          expandRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
+    }
+    if (btn) btn.classList.add('open');
+  }
+}
+
+function tgRowClick(e, id) {
+  // Click anywhere on a row (except buttons/checkbox) toggles expand
+  if (e.target.closest('button, input, .tg-actions')) return;
+  const btn = document.querySelector('tr[data-tc-id="' + id + '"] .tg-steps-chip');
+  tgToggleRow(id, btn);
+}
+
+function tgCopySteps(id) {
+  const tc = (typeof tgAllTCs !== 'undefined') && tgAllTCs.find(t => t.id === id);
+  if (!tc) return;
+  const arr = (typeof parseStepsArr === 'function') ? parseStepsArr(tc.stepsRaw||'') : [];
+  const text = arr.map((s,i) => (i+1)+'. '+s.replace(/^\d+\.\s*/,'')).join('\n') || tc.stepsRaw;
+  navigator.clipboard?.writeText(text).then(() => showToast('Steps copied', String.fromCodePoint(0x1F4CB)));
+}
+
+window.tgToggleRow = tgToggleRow;
+window.tgRowClick  = tgRowClick;
+window.tgCopySteps = tgCopySteps;
+
+// Legacy popup-based tgToggleSteps — kept for any old onclick references
 function tgToggleSteps(chip) {
   const popup = chip.nextElementSibling;
   if (!popup) return;
@@ -11586,8 +11735,7 @@ function parseStepsArr(raw) {
     if (arr.length === 1)
       arr = raw.split(/\s+(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
   } else {
-    arr = raw.split(/;|
-/).map(function(s){return s.trim();}).filter(Boolean);
+    arr = raw.split(/[;\n]/).map(function(s){return s.trim();}).filter(Boolean);
   }
   return arr;
 }
