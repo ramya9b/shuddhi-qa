@@ -116,6 +116,15 @@ function buildUpstreamRequest(provider, key, body) {
   }
 }
 
+// ── Normalise from parsed JSON (for model chain fallback) ────────
+function normalizeFromJson(provider, json, model) {
+  if (provider === 'gemini') {
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return { content:[{ type:'text', text }], stop_reason:'end_turn', model: model || MODELS.gemini };
+  }
+  return json;
+}
+
 // ── Transform non-streaming response to Anthropic format ───────
 async function normalizeResponse(provider, response) {
   const data = await response.json();
@@ -242,37 +251,67 @@ export default async function handler(req) {
       const detail = errJson?.error?.message || errJson?.message || errText.substring(0, 200);
 
       // Gemini model chain fallback — try each model in order on 404/quota errors
-      const isModelError = provider === 'gemini' && (
-        response.status === 404 ||
-        (response.status === 400 && detail && (detail.includes('not found') || detail.includes('model'))) ||
-        (response.status === 429 && detail && detail.includes('quota'))
-      );
+      // ── GEMINI ERROR HANDLER with full diagnostics ─────────────────
+      // Logs actual status + error body so we can diagnose the real cause
+      // Tries every model in GEMINI_MODEL_CHAIN before switching to Groq
 
-      if (isModelError) {
-        // Walk the model chain until one works
-        for (const fallbackModel of GEMINI_MODEL_CHAIN.slice(1)) {
-          const apiVer  = GEMINI_API_VERSION[fallbackModel] || 'v1beta';
-          const ep      = forwardBody.stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
-          const sep     = forwardBody.stream ? '&' : '?';
-          const altUrl  = `https://generativelanguage.googleapis.com/${apiVer}/models/${fallbackModel}:${ep}${sep}key=${key}`;
-          console.log('[Gemini] Model fallback: ' + fallbackModel + ' (' + apiVer + ')');
-          const altResp = await fetch(altUrl, { method:'POST', headers:upstream.headers, body:upstream.body });
-          if (altResp.ok) {
-            const isStream = forwardBody.stream === true;
-            if (isStream) {
-              return new Response(normalizeStream(provider, altResp.body), {
-                status: 200, headers: { ...corsHeaders, 'Content-Type':'text/event-stream', 'Cache-Control':'no-cache' },
+      if (provider === 'gemini') {
+        console.error('[Gemini Debug] Status:', response.status,
+          '| Model:', upstream.url.match(/models\/([^:]+)/)?.[1] || MODELS.gemini,
+          '| Error:', detail.substring(0, 200),
+          '| URL:', upstream.url.replace(/key=[^&?]+/, 'key=REDACTED')
+        );
+
+        const shouldTryChain = response.status === 404
+          || response.status === 400
+          || response.status === 403
+          || (response.status === 429 && detail.includes('quota'));
+
+        if (shouldTryChain) {
+          for (const fallbackModel of GEMINI_MODEL_CHAIN.slice(1)) {
+            const apiVer = GEMINI_API_VERSION[fallbackModel] || 'v1';
+            const ep     = forwardBody.stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
+            const sep    = forwardBody.stream ? '&' : '?';
+            const altUrl = `https://generativelanguage.googleapis.com/${apiVer}/models/${fallbackModel}:${ep}${sep}key=${key}`;
+            console.log('[Gemini] Chain trying:', fallbackModel, '(' + apiVer + ')');
+            const altResp = await fetch(altUrl, { method: 'POST', headers: upstream.headers, body: upstream.body });
+            const altText = await altResp.text().catch(() => '');
+            console.log('[Gemini] Chain result:', fallbackModel, '→ HTTP', altResp.status, altText.substring(0, 150));
+            if (altResp.ok) {
+              // Non-streaming: parse the text we already consumed
+              if (forwardBody.stream !== true) {
+                let altJson = {};
+                try { altJson = JSON.parse(altText); } catch(e) {}
+                const text = altJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                return new Response(JSON.stringify({
+                  content: [{ type: 'text', text }],
+                  stop_reason: 'end_turn',
+                  model: fallbackModel,
+                  _provider: fallbackModel
+                }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              }
+              // Streaming: need a fresh request (we consumed the body with text())
+              const streamResp = await fetch(altUrl, { method: 'POST', headers: upstream.headers, body: upstream.body });
+              return new Response(normalizeStream(provider, streamResp.body), {
+                status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
               });
             }
-            const norm = await normalizeResponse(provider, altResp);
-            return new Response(JSON.stringify({ ...norm, _provider: fallbackModel }), {
-              status: 200, headers: { ...corsHeaders, 'Content-Type':'application/json' },
-            });
           }
-          const altErr = await altResp.text().catch(()=>'');
-          console.warn('[Gemini] ' + fallbackModel + ' also failed: HTTP ' + altResp.status + ' ' + altErr.substring(0,100));
+          // All models tried and failed → silent provider switch to Groq
+          console.warn('[Gemini] All models exhausted. Switching to next provider (Groq).');
+          return new Response(JSON.stringify({
+            error: 'gemini all models failed — switching to next provider',
+            detail: detail.substring(0, 200),
+            switchProvider: true
+          }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
-        // All models failed — fall through to normal error handling
+
+        // Non-retryable Gemini error (e.g. 401) → surface with clean message
+        // but still as switchable so Groq can be tried
+        return new Response(JSON.stringify({
+          error: `gemini error ${response.status}: ${detail.substring(0, 150)}`,
+          switchProvider: true
+        }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       let msg = `${provider} API error ${response.status}: ${detail || 'Unknown error'}`;
@@ -302,16 +341,8 @@ export default async function handler(req) {
       }
       if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
       if (response.status === 404) {
-        const isGeminiModel = provider === 'gemini' && detail && detail.includes('model');
-        if (isGeminiModel) {
-          msg = `Gemini model not found. Model tried: ${MODELS.gemini}. `
-              + `This usually means the model is not available for your API key project. `
-              + `Try: 1) Enable Gemini API at console.cloud.google.com, `
-              + `2) Get a fresh key from aistudio.google.com, `
-              + `3) The app will auto-try gemini-1.5-flash as fallback.`;
-        } else {
-          msg = `${provider} endpoint not found (404). Full URL: ${upstream.url}`;
-        }
+        // Non-Gemini 404 (Gemini handled above in model chain)
+        msg = `${provider} endpoint not found (404). Check model name and API version.`;
       }
       if (response.status === 403) {
         const isApiNotEnabled = detail && (detail.includes('API_NOT_ENABLED') || detail.includes('not been used') || detail.includes('disabled'));
