@@ -10870,15 +10870,7 @@ function closeMobileSidebar(){
 })();
 
 // ── Settings helpers ──────────────────────────────────────────────
-// diagnostics div injected into About panel on open(){
-  const version=document.getElementById('aboutVersion');
-  const provider=document.getElementById('aboutProvider');
-  if(version) version.textContent='v2.0';
-  if(provider) provider.textContent=typeof getActiveProvider==='function'?getActiveProvider():'—';
-  // Run live provider health check
-  runProviderDiagnostics();
-}
-
+// (diagnostics div injected into About panel on open)
 function populateAboutStatus() {
   var version  = document.getElementById('aboutVersion');
   var provider = document.getElementById('aboutProvider');
@@ -11497,8 +11489,7 @@ function tgCopySteps(id) {
   const tc = tgAllTCs.find(t => t.id === id);
   if (!tc) return;
   const arr = (typeof parseStepsArr === 'function') ? parseStepsArr(tc.stepsRaw||'') : [];
-  const text = arr.map((s,i) => (i+1)+'. '+s.replace(/^d+.s*/,'')).join('
-') || tc.stepsRaw;
+  const text = arr.map((s,i) => (i+1)+'. '+s.replace(/^\d+\.\s*/,'')).join('\n') || tc.stepsRaw;
   navigator.clipboard?.writeText(text).then(() => showToast('Steps copied', String.fromCodePoint(0x1F4CB)));
 }
 
@@ -11522,8 +11513,7 @@ function parseStepsArr(raw) {
   if (!raw) return [];
   var arr = [];
   if (/\d+\./.test(raw)) {
-    arr = raw.split(/;\s*(?=\d+\.)|
-\s*(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
+    arr = raw.split(/;\s*(?=\d+\.)|\n\s*(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
     if (arr.length === 1)
       arr = raw.split(/\s+(?=\d+\.)/).map(function(s){return s.trim();}).filter(Boolean);
   } else {
