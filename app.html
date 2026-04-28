@@ -15,7 +15,20 @@
 <meta name="twitter:title" content="Shuddhi QA — AI Test Case Generator"/>
 <meta name="twitter:description" content="Generate production-ready QA test cases for D365, Salesforce, Web Apps and Mobile."/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23E8A020'/><text y='.9em' font-size='72' x='12' fill='white'>श</text></svg>" type="image/svg+xml"/>
-<link rel="canonical" href="https://shuddhi-qa.vercel.app/"/>
+<link rel="canonical" href="https://shuddhi-qa.vercel.app/app"/>
+
+<!-- ── PWA ── -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#0B1F4A"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Shuddhi QA"/>
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png"/>
+<meta name="msapplication-TileColor" content="#E8A020"/>
+<meta name="msapplication-TileImage" content="/icons/icon-144x144.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
@@ -11927,6 +11940,142 @@ function checkAndTrimFlow(flow) {
   });
 
   console.log('[EventInit] All event bindings complete');
+})();
+</script>
+<!-- ── PWA: Install Banner ────────────────────────────────────────────────── -->
+<div id="pwaInstallBanner" style="display:none;position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%);z-index:10200;
+  background:linear-gradient(135deg,#132040,#0D2B5E);
+  border:1px solid rgba(8,145,178,.45);border-radius:14px;
+  padding:14px 18px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 8px 40px rgba(0,0,0,.55);
+  max-width:460px;width:calc(100vw - 48px);
+  animation:pwaBannerIn .4s cubic-bezier(.34,1.56,.64,1) both">
+  <style>
+    @keyframes pwaBannerIn {
+      from { opacity:0; transform:translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    }
+  </style>
+  <!-- Icon -->
+  <div style="width:44px;height:44px;border-radius:11px;flex-shrink:0;
+    background:linear-gradient(135deg,#0284C7,#0891B2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;box-shadow:0 4px 16px rgba(8,145,178,.35)">⚡</div>
+  <!-- Text -->
+  <div style="flex:1;min-width:0">
+    <div style="font-size:13px;font-weight:700;color:#F0F8FF;margin-bottom:3px">
+      Install Shuddhi QA
+    </div>
+    <div style="font-size:11.5px;color:#94A3B8;line-height:1.4">
+      Add to desktop · Opens instantly · Works offline
+    </div>
+  </div>
+  <!-- Buttons -->
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button id="pwaInstallBtn"
+      style="background:linear-gradient(135deg,#0284C7,#0891B2);
+        color:#fff;border:none;padding:8px 16px;border-radius:8px;
+        font-size:12px;font-weight:700;cursor:pointer;
+        box-shadow:0 3px 12px rgba(8,145,178,.4);transition:opacity .15s"
+      onmouseover="this.style.opacity='.85'"
+      onmouseout="this.style.opacity='1'">
+      Install
+    </button>
+    <button id="pwaDismissBtn"
+      style="background:transparent;color:#64748B;
+        border:1px solid rgba(255,255,255,.1);
+        padding:8px 11px;border-radius:8px;font-size:13px;cursor:pointer;
+        transition:color .15s"
+      onmouseover="this.style.color='#CBD5E1'"
+      onmouseout="this.style.color='#64748B'"
+      aria-label="Dismiss install prompt">✕</button>
+  </div>
+</div>
+
+<!-- ── PWA: Service Worker + Install Logic ───────────────────────────────── -->
+<script>
+(function() {
+  'use strict';
+
+  const DISMISSED_KEY = 'shuddhi-pwa-dismissed-app';
+  const INSTALL_KEY   = 'shuddhi-pwa-installed';
+  let   _prompt       = null;
+
+  // ── 1. Register service worker ──────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => {
+          console.log('[SW] Registered — scope:', reg.scope);
+          // Notify on new version available
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[SW] Update available — refresh to get new version');
+              }
+            });
+          });
+        })
+        .catch(err => console.warn('[SW] Registration failed:', err));
+    });
+  }
+
+  // ── 2. Capture install prompt ───────────────────────────────────────────
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _prompt = e;
+    // Show banner 4s after page load — not immediately, respects UX
+    if (!localStorage.getItem(DISMISSED_KEY) && !localStorage.getItem(INSTALL_KEY)) {
+      setTimeout(showBanner, 4000);
+    }
+  });
+
+  // ── 3. Show / hide banner ───────────────────────────────────────────────
+  function showBanner() {
+    const b = document.getElementById('pwaInstallBanner');
+    if (b) b.style.display = 'flex';
+  }
+  function hideBanner() {
+    const b = document.getElementById('pwaInstallBanner');
+    if (b) b.style.display = 'none';
+  }
+
+  // ── 4. Install button ───────────────────────────────────────────────────
+  document.getElementById('pwaInstallBtn').addEventListener('click', () => {
+    if (!_prompt) return;
+    _prompt.prompt();
+    _prompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        console.log('[PWA] Installed ✅');
+        localStorage.setItem(INSTALL_KEY, '1');
+      }
+      _prompt = null;
+      hideBanner();
+    });
+  });
+
+  // ── 5. Dismiss button ───────────────────────────────────────────────────
+  document.getElementById('pwaDismissBtn').addEventListener('click', () => {
+    hideBanner();
+    localStorage.setItem(DISMISSED_KEY, '1');
+  });
+
+  // ── 6. Auto-hide if already installed ──────────────────────────────────
+  window.addEventListener('appinstalled', () => {
+    hideBanner();
+    localStorage.setItem(INSTALL_KEY, '1');
+    console.log('[PWA] App installed via app.html');
+  });
+
+  // ── 7. Detect standalone mode (already installed) ──────────────────────
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) {
+    localStorage.setItem(INSTALL_KEY, '1');
+    console.log('[PWA] Running as installed app');
+  }
+
 })();
 </script>
 
