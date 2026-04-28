@@ -6733,6 +6733,15 @@ function showToast(msg, emoji = '\u2705') {
 }
 
 function resetForm() {
+  // ── ProviderManager state cleanup — unblocks any stuck generation ──
+  try {
+    if (typeof ProviderManager !== 'undefined') {
+      ProviderManager.endGenerate();   // release _isGenerating
+      ProviderManager.resetSession();  // clear failed/cooldowns/triedProviders
+      console.log('[Reset] ProviderManager state cleared');
+    }
+  } catch(e) { console.warn('[Reset] PM reset failed:', e.message); }
+
   // ── File & detection state ──
   clearFile();
 
@@ -7491,12 +7500,21 @@ async function _callProviderWithFallback(requestBody) {
 
 
 async function generate() {
-  // Guard via ProviderManager — replaces scattered _isGenerating flag
+  // Guard via ProviderManager — with stuck-flag detection
   if (ProviderManager.isGenerating()) {
-    console.log('[Generate] Blocked — already generating');
-    return;
+    // Detect stuck flag: if generating for >2 minutes, force-reset
+    const startedAt = ProviderManager._state.generateStartedAt || 0;
+    const stuckMs   = Date.now() - startedAt;
+    if (stuckMs > 120000) {
+      console.warn('[Generate] Detected stuck flag (>' + Math.round(stuckMs/1000) + 's) — force resetting');
+      ProviderManager.endGenerate();
+    } else {
+      console.log('[Generate] Blocked — already generating (' + Math.round(stuckMs/1000) + 's elapsed)');
+      return;
+    }
   }
   if (!ProviderManager.startGenerate()) return;
+  ProviderManager._state.generateStartedAt = Date.now();
 
   // Reset ALL provider state on every manual generate click
   if (typeof _failedProviders !== 'undefined') {
@@ -9547,10 +9565,12 @@ function onProjectSelectChange() {
     setTimeout(() => { if (typeof loadCurrentSprint === 'function') loadCurrentSprint(); }, 800);
   }
 
-  // Load ADO users in background when project selected
+  // Load ADO users in background when project selected (optional feature)
   if (project) {
     const org = document.getElementById('adoOrg').value.trim();
-    if (org) loadADOUsers(org, project);
+    if (org && typeof loadADOUsers === 'function') {
+      try { loadADOUsers(org, project); } catch(e) { console.warn('[ADO] loadADOUsers failed:', e.message); }
+    }
   }
 }
 
