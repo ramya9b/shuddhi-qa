@@ -19,6 +19,22 @@
 <meta name="twitter:image"       content="https://shuddhi-qa.vercel.app/og-preview.png"/>
 <link rel="canonical" href="https://shuddhi-qa.vercel.app/"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23E8A020'/><text y='.9em' font-size='68' x='10' fill='white'>श</text></svg>" type="image/svg+xml"/>
+
+<!-- ── PWA ── -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#E8A020" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#0b0d13" media="(prefers-color-scheme: dark)"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Shuddhi QA"/>
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png"/>
+<link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png"/>
+<meta name="msapplication-TileColor" content="#E8A020"/>
+<meta name="msapplication-TileImage" content="/icons/icon-144x144.png"/>
+<meta name="msapplication-config" content="none"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 /* ── Variables — Dark (default) ────────────────────────── */
@@ -1212,6 +1228,88 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeMobileDraw
 if (!localStorage.getItem('shuddhi-privacy')) {
   document.getElementById('privacyBanner').style.display = 'flex';
 }
+</script>
+<!-- ── PWA: Service Worker + Install Prompt ──────────────────────────────── -->
+<div id="pwaInstallBanner" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;
+  background:linear-gradient(135deg,#1c2230,#151923);border:1px solid rgba(232,162,32,.35);
+  border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:440px;width:calc(100vw - 48px)">
+  <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#E8A020,#C4851A);
+    display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">श</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:13px;font-weight:600;color:#F0EDE6;margin-bottom:2px">Install Shuddhi QA</div>
+    <div style="font-size:11.5px;color:#9AA3B2">Add to desktop for instant access — works offline too</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button id="pwaInstallBtn" onclick="triggerPWAInstall()" style="background:linear-gradient(135deg,#E8A020,#C4851A);
+      color:#0b0d13;border:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">
+      Install
+    </button>
+    <button onclick="dismissPWABanner()" style="background:transparent;color:#9AA3B2;border:1px solid rgba(255,255,255,.12);
+      padding:8px 12px;border-radius:8px;font-size:12px;cursor:pointer">✕</button>
+  </div>
+</div>
+
+<script>
+// ── Service Worker Registration ───────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        console.log('[SW] Registered:', reg.scope);
+        // Notify user of new version
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[SW] New version available');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[SW] Registration failed:', err));
+  });
+}
+
+// ── PWA Install Prompt ────────────────────────────────────────────────────────
+let _deferredPrompt = null;
+const INSTALL_DISMISSED_KEY = 'shuddhi-pwa-dismissed';
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  // Show banner only if not previously dismissed and not already installed
+  if (!localStorage.getItem(INSTALL_DISMISSED_KEY)) {
+    setTimeout(() => {
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.style.display = 'flex';
+    }, 3000); // show after 3s so it doesn't interrupt landing
+  }
+});
+
+function triggerPWAInstall() {
+  if (!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  _deferredPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') {
+      console.log('[PWA] User accepted install');
+      dismissPWABanner();
+    }
+    _deferredPrompt = null;
+  });
+}
+
+function dismissPWABanner() {
+  const banner = document.getElementById('pwaInstallBanner');
+  if (banner) banner.style.display = 'none';
+  localStorage.setItem(INSTALL_DISMISSED_KEY, '1');
+}
+
+// Hide banner if already installed as PWA
+window.addEventListener('appinstalled', () => {
+  dismissPWABanner();
+  console.log('[PWA] App installed successfully');
+});
 </script>
 </body>
 </html>

@@ -21,17 +21,20 @@ export const config = { runtime: 'edge' };
 // Preview models still use v1beta API endpoint.
 const MODELS = {
   claude:      'claude-sonnet-4-6',
-  // Confirmed working from Google's own Python sample (user-verified)
-  gemini:      'gemini-3.1-pro-preview',         // PRIMARY: confirmed working
-  geminiLite:  'gemini-3.1-flash-lite-preview',  // Fallback: cost-efficient
-  geminiFlash: 'gemini-3-flash-preview',         // Last resort: status uncertain
+  // Gemini stable models (April 2026)
+  // gemini-2.0-flash is DEPRECATED — shuts down June 1 2026
+  // gemini-3.1-pro-preview is expensive ($2/M) and overkill for test generation
+  // gemini-2.5-flash is the recommended stable model: $0.30/M, best quality/cost ratio
+  gemini:      'gemini-2.5-flash',              // PRIMARY: stable GA, $0.30/M input
+  geminiLite:  'gemini-2.5-flash-lite-preview', // FALLBACK: cheaper, $0.10/M input
+  geminiFlash: 'gemini-2.0-flash-lite',         // LAST RESORT: legacy, same endpoint format
   groq:        'llama-3.3-70b-versatile',
 };
 
 const GEMINI_API_VERSION = {
-  'gemini-3.1-pro-preview':        'v1beta',
-  'gemini-3.1-flash-lite-preview': 'v1beta',
-  'gemini-3-flash-preview':        'v1beta',
+  'gemini-2.5-flash':              'v1beta',
+  'gemini-2.5-flash-lite-preview': 'v1beta',
+  'gemini-2.0-flash-lite':         'v1beta',
 };
 
 const GEMINI_MODEL_CHAIN = [
@@ -265,9 +268,27 @@ export default async function handler(req) {
           '| URL:', upstream.url.replace(/key=[^&?]+/, 'key=REDACTED')
         );
 
-        // Any non-2xx triggers the model chain for Gemini
-        // (401 = wrong key, 403 = API not enabled, 404 = model not found, 400 = payload)
-        const shouldTryChain = response.status >= 400;
+        // ── True rate limit or quota — do NOT try the model chain (waste quota).
+        //    Return switchProvider immediately so the frontend tries Groq/Claude.
+        const isTrueRateLimit = response.status === 429
+          || (response.status === 400 && (detail.includes('quota') || detail.includes('RESOURCE_EXHAUSTED') || detail.includes('rate')));
+        if (isTrueRateLimit) {
+          const retryAfter = response.headers.get('retry-after') || '60';
+          const waitSecs   = parseInt(retryAfter) || 60;
+          console.warn('[Gemini] Rate limit / quota hit — switching to next provider immediately. Retry in ~' + waitSecs + 's');
+          return new Response(JSON.stringify({
+            error: 'Gemini free-tier rate limit reached (resets in ~' + waitSecs + 's) — switching to next provider',
+            waitSecs,
+            switchProvider: true,
+            provider: 'gemini',
+          }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // ── Model-not-found / API-disabled errors — try the model chain ──────
+        const shouldTryChain = response.status === 404
+          || response.status === 403
+          || (response.status === 400 && !detail.includes('quota'))
+          || response.status === 500;
 
         if (shouldTryChain) {
           for (const fallbackModel of GEMINI_MODEL_CHAIN.slice(1)) {
@@ -292,27 +313,28 @@ export default async function handler(req) {
                   _provider: fallbackModel
                 }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
               }
-              // Streaming: need a fresh request (we consumed the body with text())
+              // Streaming: fresh request (we consumed the body with text())
               const streamResp = await fetch(altUrl, { method: 'POST', headers: upstream.headers, body: upstream.body });
               return new Response(normalizeStream(provider, streamResp.body), {
                 status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
               });
             }
           }
-          // All models tried and failed → silent provider switch to Groq
-          console.warn('[Gemini] All models exhausted. Switching to next provider (Groq).');
+          // All models tried and failed → switch to next provider
+          console.warn('[Gemini] All models exhausted. Switching to next provider.');
           return new Response(JSON.stringify({
-            error: 'gemini all models failed — switching to next provider',
+            error: 'Gemini model unavailable — switching to next provider',
             detail: detail.substring(0, 200),
-            switchProvider: true
+            switchProvider: true,
+            provider: 'gemini',
           }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        // Non-retryable Gemini error (e.g. 401) → surface with clean message
-        // but still as switchable so Groq can be tried
+        // 401 / other non-retryable — surface as switchable
         return new Response(JSON.stringify({
-          error: `gemini error ${response.status}: ${detail.substring(0, 150)}`,
-          switchProvider: true
+          error: `Gemini error ${response.status}: ${detail.substring(0, 150)}`,
+          switchProvider: true,
+          provider: 'gemini',
         }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 

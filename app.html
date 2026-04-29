@@ -15,7 +15,20 @@
 <meta name="twitter:title" content="Shuddhi QA — AI Test Case Generator"/>
 <meta name="twitter:description" content="Generate production-ready QA test cases for D365, Salesforce, Web Apps and Mobile."/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23E8A020'/><text y='.9em' font-size='72' x='12' fill='white'>श</text></svg>" type="image/svg+xml"/>
-<link rel="canonical" href="https://shuddhi-qa.vercel.app/"/>
+<link rel="canonical" href="https://shuddhi-qa.vercel.app/app"/>
+
+<!-- ── PWA ── -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#0B1F4A"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Shuddhi QA"/>
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png"/>
+<meta name="msapplication-TileColor" content="#E8A020"/>
+<meta name="msapplication-TileImage" content="/icons/icon-144x144.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
@@ -1121,7 +1134,7 @@
     transform: translateY(100px);
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 999;
+    z-index: 10100; /* FIX: raised above ado-modal(1001) & settings-modal(10001) */
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1129,6 +1142,43 @@
   }
 
   .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── ADO Push Banner — portal element, always above all modals ────── */
+  #adoPushBanner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    z-index: 10100;
+    min-width: 280px;
+    max-width: min(520px, 92vw);
+    padding: 12px 18px 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  #adoPushBanner.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #adoPushBanner.success { background:#ecfdf5; border:1.5px solid #6ee7b7; color:#065f46; border-left:4px solid #10b981; }
+  #adoPushBanner.error   { background:#fff1f2; border:1.5px solid #fca5a5; color:#991b1b; border-left:4px solid #ef4444; }
+  #adoPushBanner.info    { background:#eff6ff; border:1.5px solid #93c5fd; color:#1e3a8a; border-left:4px solid #3b82f6; }
+  #adoPushBanner.warning { background:#fffbeb; border:1.5px solid #fcd34d; color:#92400e; border-left:4px solid #f59e0b; }
+  #adoPushBanner-close {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    font-size: 15px; opacity: 0.5; padding: 0 0 0 6px; line-height: 1; color: inherit;
+  }
+  #adoPushBanner-close:hover { opacity: 1; }
 
   /* ── ADO Button ─────────────────────────────────── */
   .ado-btn { border-color: rgba(0,120,212,0.35) !important; color: var(--d365) !important; }
@@ -4817,6 +4867,13 @@ header::after { display: none !important; }
     overflow: hidden; line-height: 1.5;
   }
 </style>
+<!-- ── Theme: apply saved preference immediately (prevents FOUC) ── -->
+<script>
+(function() {
+  var saved = localStorage.getItem('shuddhi-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+</script>
 </head>
 <body>
 
@@ -4840,9 +4897,6 @@ header::after { display: none !important; }
     <div class="sb-item active">
       <span class="sb-icon">✦</span><span>Generate Test Cases</span>
       <span class="sb-badge">v2.0</span>
-    </div>
-    <div class="sb-item" onclick="window.open('https://bugforgeai.vercel.app/','_blank')" title="Open BugForge AI">
-      <span class="sb-icon">🐛</span><span>BugForge AI ↗</span>
     </div>
 
 <div class="sb-group-label">Platform &amp; Module</div>
@@ -5034,8 +5088,8 @@ header::after { display: none !important; }
           data-key="GEMINI_API_KEY" data-url="https://aistudio.google.com">
           <span class="pill-icon">✦</span>
           <div>
-            <div class="pill-name">Gemini</div>
-            <div class="pill-sub">Google · Flash 2.0 · 15 req/min free</div>
+            <div class="pill-name">Gemini 2.5 Flash</div>
+            <div class="pill-sub">Google · 15 req/min free</div>
           </div>
           <span class="pill-status" id="pill-status-gemini">—</span>
         </button>
@@ -5124,7 +5178,7 @@ header::after { display: none !important; }
         <summary>Provider comparison →</summary>
         <div style="padding:10px 16px 14px;font-size:12.5px;color:var(--text2);line-height:1.6">
           <strong>Claude</strong> (Anthropic) — Best quality for complex QA reasoning. Paid.<br>
-          <strong>Gemini Flash</strong> (Google) — Free: 15 req/min, 1,500 req/day. Best quality output.<br>
+          <strong>Gemini 2.5 Flash</strong> (Google) — Free: 15 req/min, 1,500 req/day. Best quality output.<br>
           <strong>Groq/Llama</strong> — Free: 30 req/min, 14,400 req/day. Fastest. Best for active sessions.
         </div>
       </details>
@@ -6245,6 +6299,13 @@ header::after { display: none !important; }
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- ADO Push Banner — portal element rendered on <body>, z-index 10100, always above all modals -->
+<div id="adoPushBanner" role="alert" aria-live="assertive" aria-atomic="true">
+  <span id="adoPushBanner-icon"></span>
+  <span id="adoPushBanner-msg"></span>
+  <button id="adoPushBanner-close" onclick="hideAdoBanner()" aria-label="Dismiss">✕</button>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════════
 // PROVIDER MANAGER — Single source of truth for all AI provider state
@@ -6262,7 +6323,7 @@ const ProviderManager = (function() {
 
   const PROVIDER_CONFIG = {
     groq:   { name:'Groq',   icon:'⚡', model:'llama-3.3-70b-versatile', envKey:'GROQ_API_KEY',   rpmFree:30,  dailyFree:14400 },
-    gemini: { name:'Gemini', icon:'✦', model:'gemini-2.0-flash',        envKey:'GEMINI_API_KEY',  rpmFree:15,  dailyFree:1500  },
+    gemini: { name:'Gemini 2.5 Flash', icon:'✦', model:'gemini-2.5-flash',        envKey:'GEMINI_API_KEY',  rpmFree:15,  dailyFree:1500  },
     claude: { name:'Claude', icon:'🤖', model:'claude-sonnet-4-6',       envKey:'CLAUDE_API_KEY',  rpmFree:null,dailyFree:null  },
   };
 
@@ -6791,6 +6852,46 @@ function showToast(msg, emoji = '\u2705') {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+/* ─── ADO Push Banner — always above all modals (z-index 10100) ─────────────
+ * showAdoBanner(msg, type, autoDismissMs)
+ *   type: 'success' | 'error' | 'info' | 'warning'
+ *   autoDismissMs: 0 = persistent; default 4500 for success, 0 for error
+ * ─────────────────────────────────────────────────────────────────────────── */
+(function() {
+  let _bannerTimer = null;
+
+  window.showAdoBanner = function(msg, type = 'info', autoDismissMs) {
+    const banner = document.getElementById('adoPushBanner');
+    const iconEl = document.getElementById('adoPushBanner-icon');
+    const msgEl  = document.getElementById('adoPushBanner-msg');
+    if (!banner || !iconEl || !msgEl) { showToast(msg); return; }
+
+    // Resolve icon
+    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+    iconEl.textContent = icons[type] || 'ℹ️';
+    msgEl.textContent  = msg;
+
+    // Apply type class
+    banner.className = 'show ' + type;
+
+    // Auto-dismiss: default 4.5s for success/info/warning, persistent for error
+    if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+    const delay = autoDismissMs !== undefined
+      ? autoDismissMs
+      : (type === 'error' ? 0 : 4500);
+    if (delay > 0) {
+      _bannerTimer = setTimeout(() => window.hideAdoBanner(), delay);
+    }
+  };
+
+  window.hideAdoBanner = function() {
+    const banner = document.getElementById('adoPushBanner');
+    if (!banner) return;
+    banner.classList.remove('show');
+    if (_bannerTimer) { clearTimeout(_bannerTimer); _bannerTimer = null; }
+  };
+})();
 
 function resetForm() {
   // ── ProviderManager state cleanup — unblocks any stuck generation ──
@@ -7481,101 +7582,194 @@ function stopBulkGenerate() {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// ── Small delay helper (used between provider attempts) ─────────────────────
+function _delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+// ── Consecutive cross-session failure counter ────────────────────────────────
+// Increments when ALL providers fail. Resets on any success.
+// Used to surface "check your quota / billing" hint after repeated failures.
+var _consecutiveAllFailures = 0;
+const CONSECUTIVE_FAIL_THRESHOLD = 3;
+
 // Internal provider fallback loop — tries each provider silently
 // Returns { reader, decoder } for streaming or throws if all fail
 // ══════════════════════════════════════════════════════════════════
 
-async function _callProviderWithFallback(requestBody) {
-  const initialActive = ProviderManager.getActive();
+// ════════════════════════════════════════════════════════════════════════════
+// _callProviderWithFallback(requestBody, signal)
+//
+// Execution flow per generate() call:
+//   1. Build ordered provider list (active first, no repeats, no cooling-down)
+//   2. For each provider (max = number of providers, never infinite):
+//      a. Make ONE fetch attempt
+//      b. On 429 / quota / switchProvider:
+//         - Mark provider in cooldown
+//         - Show user-visible switch toast
+//         - Wait 2s before next attempt (prevents burst)
+//         - Continue to next provider
+//      c. On non-retryable error (401, bad request): surface immediately
+//      d. On success: reset failure counter, return response
+//   3. If all providers fail: increment consecutive-failure counter
+//      and show actionable message ("check quota / billing")
+//
+// GUARANTEES:
+//   - Each provider tried AT MOST ONCE per generate() call
+//   - AbortController signal threaded — Stop button always works
+//   - No infinite loops (guarded by toTry.length + MAX_SWITCHES)
+//   - No retry storm (2s gap between attempts)
+// ════════════════════════════════════════════════════════════════════════════
+
+async function _callProviderWithFallback(requestBody, signal) {
   const toTry = ProviderManager.getOrderedProviders();
 
   if (!toTry.length) {
     const wait = ProviderManager.getMinCooldownSecs();
+    _consecutiveAllFailures++;
+    const hint = _consecutiveAllFailures >= CONSECUTIVE_FAIL_THRESHOLD
+      ? ' Check your API quota or billing settings for ' +
+        Object.keys(ProviderManager._state.cooldown).join(', ') + '.'
+      : '';
     throw new Error(
       wait > 5
-        ? 'AI providers temporarily unavailable. Try again in ~' + wait + ' seconds.'
-        : 'Unable to generate test cases. Please try again shortly.'
+        ? 'All AI providers are on cooldown. Try again in ~' + wait + ' seconds.' + hint
+        : 'No AI providers available.' + hint
     );
   }
 
-  console.log('[Fallback] Try list (max ' + toTry.length + '):', toTry.join(' → '));
+  console.log('[Fallback] Provider order:', toTry.join(' → '), '| Max attempts:', toTry.length);
 
-  let lastErr = null;
+  let lastErr    = null;
+  let lastStatus = null;
 
   for (let i = 0; i < toTry.length; i++) {
     const provider = toTry[i];
 
-    // Defensive: skip if already tried (should never happen with correct toTry)
+    // ── Defensive: skip if somehow already tried ────────────────────────
     if (ProviderManager._state.triedProviders.has(provider)) {
-      console.log('[Fallback] Skipping already-tried:', provider);
+      console.log('[Fallback] Skip already-tried:', provider);
       continue;
     }
     ProviderManager._state.triedProviders.add(provider);
 
-    try {
-      console.log('[Fallback] Attempt ' + (i+1) + '/' + toTry.length + ':', provider);
+    console.log('[Fallback] Attempt ' + (i + 1) + '/' + toTry.length + ' — Provider:', provider);
 
+    // ── 2s gap between attempts (not before the first) ──────────────────
+    if (i > 0) {
+      console.log('[Fallback] Waiting 2s before next provider...');
+      await _delay(2000);
+    }
+
+    // ── Abort check after delay ─────────────────────────────────────────
+    if (signal && signal.aborted) {
+      const e = new Error('AbortError'); e.name = 'AbortError'; throw e;
+    }
+
+    try {
       const response = await fetch('/api/claude', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.assign({}, requestBody, { provider }))
+        signal,
+        body: JSON.stringify(Object.assign({}, requestBody, { provider })),
       });
 
+      // ── SUCCESS ─────────────────────────────────────────────────────────
       if (response.ok) {
-        // SUCCESS — update active provider ONCE, then return
-        if (provider !== initialActive) {
+        if (provider !== ProviderManager.getActive()) {
           ProviderManager.setActive(provider, true);
           console.log('[Fallback] Active provider updated to:', provider);
         }
+        _consecutiveAllFailures = 0; // reset on success
         return response;
       }
 
-      // Failed — parse error
-      const err = await response.json().catch(() => ({}));
+      // ── FAILED — parse error from proxy ─────────────────────────────────
+      const err     = await response.json().catch(() => ({}));
       const status  = response.status;
-      const errText = err.error || err.detail || '';
-      const isLimit = status === 429
-        || (status === 400 && (errText.includes('usage limits') || errText.includes('regain access') || err.switchProvider))
+      const errText = (err.error || err.detail || '').toString();
+      const waitS   = err.waitSecs || 60;
+
+      console.error('[Fallback] Provider:', provider, '| Status:', status, '| Error:', errText.substring(0, 120));
+
+      // ── Classify: retryable (rate limit / quota) vs hard error ──────────
+      const isRateLimit = status === 429
+        || (status === 400 && (errText.includes('usage limits') || errText.includes('regain access')))
         || (status === 403 && errText.includes('API_NOT_ENABLED'))
         || err.switchProvider === true;
 
-      if (isLimit) {
-        // Mark failed but DO NOT call setActive — that would log noise
+      if (isRateLimit) {
+        // Mark cooldown in ProviderManager
         ProviderManager._state.failed.add(provider);
-        const cooldownMs = { groq:65000, gemini:62000, claude:120000 }[provider] || 65000;
+        ProviderManager._state.switchCount++;
+        const cooldownMs = { groq: 65000, gemini: 62000, claude: 120000 }[provider] || 65000;
         ProviderManager._state.cooldown[provider] = Date.now() + cooldownMs;
-        console.warn('[Fallback] FAILED', provider + ':', status, '— trying next');
-        lastErr = new Error(provider + ' rate limited');
+
+        // Determine next provider for the toast message
+        const remaining = toTry.slice(i + 1);
+        const nextProv  = remaining.find(p => !ProviderManager._state.triedProviders.has(p) && !ProviderManager.isCoolingDown(p));
+        const nextName  = nextProv ? ProviderManager.getConfig(nextProv).name : null;
+
+        // Classify the specific reason for user messaging
+        const isQuota    = errText.includes('quota') || errText.includes('RESOURCE_EXHAUSTED') || errText.includes('free-tier');
+        const isOverload = status === 529 || errText.includes('overloaded');
+        const provName   = ProviderManager.getConfig(provider).name;
+
+        let toastMsg;
+        if (isQuota)    toastMsg = provName + ' free-tier limit reached.';
+        else if (isOverload) toastMsg = provName + ' is overloaded.';
+        else            toastMsg = 'Rate limit on ' + provName + ' (~' + waitS + 's cooldown).';
+        if (nextName)   toastMsg += ' Switching to ' + nextName + '…';
+        else            toastMsg += ' No more providers available.';
+
+        console.log('[Fallback] Retrying / Switching provider. Reason:', toastMsg);
+        showAdoBanner(toastMsg, 'warning', nextName ? 5000 : 8000);
+
+        lastErr    = new Error(toastMsg);
+        lastStatus = status;
         continue;
       }
 
-      // Non-retryable error — surface clean message
-      const cleanErr = {
-        400: 'Request format error. Check input and try again.',
-        401: ProviderManager.getConfig(provider).envKey + ' API key invalid.',
-        403: 'API key permission denied.',
-        404: 'Provider model not found.',
-        500: 'Provider server error. Try again in a moment.',
+      // ── Hard error — surface immediately, do not try other providers ─────
+      const hardMsg = {
+        400: 'Request format error. Check your input and try again.',
+        401: (ProviderManager.getConfig(provider).envKey || provider.toUpperCase() + '_API_KEY') + ' is invalid. Check Settings → AI Provider.',
+        403: provider + ' API key permission denied.',
+        404: provider + ' model not found. Contact support.',
+        500: provider + ' server error. Try again in a moment.',
+        529: provider + ' is overloaded. Wait 30 seconds and retry.',
       }[status] || (errText || 'API error ' + status);
-      throw new Error(cleanErr);
+      console.error('[Fallback] Hard error on', provider + ':', hardMsg);
+      throw new Error(hardMsg);
 
-    } catch(e) {
-      if (e.message && e.message.includes('rate limited')) {
-        lastErr = e;
-        continue;
+    } catch (e) {
+      // Re-throw AbortError and hard errors immediately
+      if (e.name === 'AbortError') throw e;
+      if (!e.message.includes('rate limit') && !e.message.includes('limit reached') &&
+          !e.message.includes('Switching to') && !e.message.includes('overloaded')) {
+        throw e;
       }
-      throw e;
+      lastErr = e;
+      continue;
     }
   }
 
-  // All providers exhausted
-  const wait = ProviderManager.getMinCooldownSecs();
-  console.warn('[Fallback] All providers failed. Tried:', [...ProviderManager._state.triedProviders]);
-  throw new Error(
-    wait > 5
-      ? 'AI providers temporarily unavailable. Try again in ~' + wait + ' seconds.'
-      : 'Unable to generate test cases. All providers tried. Please try again shortly.'
-  );
+  // ── All providers exhausted ──────────────────────────────────────────────
+  _consecutiveAllFailures++;
+  const wait    = ProviderManager.getMinCooldownSecs();
+  const tried   = [...ProviderManager._state.triedProviders];
+  const billing = _consecutiveAllFailures >= CONSECUTIVE_FAIL_THRESHOLD;
+
+  console.warn('[Fallback] All providers failed. Tried:', tried, '| Consecutive failures:', _consecutiveAllFailures);
+
+  let finalMsg = '';
+  if (wait > 5) {
+    finalMsg = 'All AI providers hit their rate limit. Try again in ~' + wait + ' seconds.';
+  } else {
+    finalMsg = 'All AI providers are temporarily unavailable (' + tried.join(', ') + ' tried).';
+  }
+  if (billing) {
+    finalMsg += ' Tip: Check API quota or billing settings — you may have hit free-tier daily limits.';
+  }
+  throw new Error(finalMsg);
 }
 
 
@@ -7852,47 +8046,30 @@ Make the output production-ready and specific to ${platform}. Use real field nam
 
   try {
     activeAbortController = new AbortController();
-    // Route through /api/claude proxy — key is resolved server-side
-    // If CLAUDE_API_KEY env var is set, apiKey here will be '' and proxy uses env var.
-    // If not set (local dev), apiKey is passed in body as fallback.
-    const response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: activeAbortController.signal,
-      body: JSON.stringify({
-        ...(apiKey ? { apiKey } : {}),
-        provider: getActiveProvider(),     // tell proxy which AI to use
-        model: 'claude-sonnet-4-6',        // proxy maps to correct model
-        max_tokens: 8192,
-        stream: true,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
+
+    // ── Build request body once (reused for every provider attempt) ─────────
+    const requestBody = {
+      ...(apiKey ? { apiKey } : {}),
+      model:    'claude-sonnet-4-6',   // proxy maps to correct model per provider
+      max_tokens: 8192,
+      stream:   true,
+      system:   systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+    };
+
+    // ── Route through fallback chain — handles 429 / quota / provider switch ─
+    // _callProviderWithFallback:
+    //   • tries providers in order (active first, then others)
+    //   • shows user-visible toast on each switch
+    //   • waits 2s between attempts (no burst)
+    //   • each provider tried ONCE MAX per generate() call
+    //   • threads AbortController.signal — Stop button always works
+    const response = await _callProviderWithFallback(requestBody, activeAbortController.signal);
 
     if (!response.ok) {
+      // Should not reach here (fallback throws) — safety net
       const err = await response.json().catch(() => ({}));
-      const status = response.status;
-      // Show full error detail from proxy — not just error code
-      const errDetail = err.error || err.message || err.detail || '';
-      let msg = typeof errDetail === 'string' ? errDetail : JSON.stringify(errDetail);
-      if (!msg || msg === '{}') msg = 'API error ' + status;
-      if (status === 529) msg = 'Claude is currently overloaded. Please wait 30 seconds and try again.';
-
-      // Treat 400 usage cap same as 429 — auto-switch provider
-      const isUsageCap = status === 400 && (
-        (err.error||'').includes('usage limits') ||
-        (err.error||'').includes('regain access') ||
-        err.switchProvider === true
-      );
-
-      if (status === 429 || isUsageCap) {
-        const curProvider = getActiveProvider();
-        let switched = null;
-        // provider fallback handled by _callProviderWithFallback()
-      }
-      if (status === 401) msg = 'Invalid API key — check Settings → AI Provider.';
-      throw new Error(msg);
+      throw new Error(err.error || 'API error ' + response.status);
     }
 
     const reader = response.body.getReader();
@@ -7948,12 +8125,32 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       // Stopped intentionally — stopGeneration() already handled UI cleanup
       return;
     }
-    // Show clean error — never expose provider names or internal details
-    const cleanMsg = err.message.startsWith('Unable to generate') || err.message.startsWith('All AI')
-      ? err.message
-      : 'Unable to generate test cases right now. Please try again in a moment.';
+
+    // ── Build a specific, actionable error message ──────────────────────────
+    const raw = err.message || '';
+    let cleanMsg;
+
+    if (raw.includes('rate limit') || raw.includes('Rate limit') || raw.includes('Too Many')) {
+      cleanMsg = raw; // already user-friendly from fallback
+    } else if (raw.includes('free-tier') || raw.includes('quota') || raw.includes('RESOURCE_EXHAUSTED')) {
+      cleanMsg = raw.includes('Try again') ? raw : raw + ' Free-tier daily limit reached. Try again later or check billing settings.';
+    } else if (raw.includes('API key') || raw.includes('invalid') || raw.includes('401')) {
+      cleanMsg = raw; // specific key error
+    } else if (raw.includes('All AI providers') || raw.includes('all providers') || raw.includes('on cooldown')) {
+      cleanMsg = raw; // already specific from fallback chain
+    } else if (raw.includes('overloaded') || raw.includes('529')) {
+      cleanMsg = raw;
+    } else if (raw.startsWith('Unable to generate') || raw.startsWith('No AI providers')) {
+      cleanMsg = raw;
+    } else {
+      // Only fall back to generic for truly unknown errors
+      cleanMsg = 'Unable to generate test cases. ' + (raw || 'Please try again in a moment.');
+    }
+
+    console.error('[Generate] Error:', raw);
     showError(cleanMsg);
-    _isGenerating = false; // release guard on error (DEF-002 fix)
+    hideAdoBanner();
+    _isGenerating = false;
     document.getElementById('placeholder').style.display = 'flex';
     document.getElementById('outputContent').className = 'output-content';
     document.getElementById('statusDot').className = 'status-dot';
@@ -7962,6 +8159,9 @@ Make the output production-ready and specific to ${platform}. Use real field nam
     btn.classList.remove('loading');
     btn.disabled = false;
     document.getElementById('stopBtn').style.display = 'none';
+    ProviderManager.endGenerate();
+    // Dismiss any lingering "switching provider" banner on completion or error
+    if (typeof hideAdoBanner === 'function') hideAdoBanner();
   }
 }
 
@@ -9372,6 +9572,8 @@ function closeADOModal() {
   adoPushCancelled = true;
   document.getElementById('adoModal').classList.remove('open');
   document.getElementById('adoOverlay').classList.remove('open');
+  // Hide the push banner when modal closes (cleanup)
+  if (typeof hideAdoBanner === 'function') hideAdoBanner();
 }
 
 function onPlanSelectChange() {
@@ -9605,6 +9807,7 @@ async function onOrgSelectChange() {
     }
 
     showToast(`${projects.length} project${projects.length!==1?'s':''} found in ${org}`, '🔷');
+    showAdoBanner(`${projects.length} project${projects.length!==1?'s':''} found in ${org}`, 'info');
 
     // Auto-select when only 1 project
     if (projects.length === 1) {
@@ -9689,6 +9892,7 @@ async function loadADOTestPlans() {
 
     updateADOTreePreview();
     showToast(`${adoLoadedPlans.length} test plan(s) in ${project}`, '\u2705');
+    showAdoBanner(`${adoLoadedPlans.length} test plan(s) loaded for ${project}`, 'success');
     adoGoToStep(2);
 
   } catch(e) {
@@ -9767,11 +9971,11 @@ async function pushToADOFull() {
   const areaPath  = document.getElementById('adoArea').value.trim();
   const iterPath  = document.getElementById('adoIteration').value.trim();
 
-  if (!planSel)                          { showToast('Select a Test Plan (or Create New)', '⚠️'); return; }
-  if (planSel === '__new__' && !newPlan) { showToast('Enter a name for the new Test Plan', '⚠️'); return; }
+  if (!planSel)                          { showToast('Select a Test Plan (or Create New)', '⚠️'); showAdoBanner('Select a Test Plan (or Create New)', 'warning'); return; }
+  if (planSel === '__new__' && !newPlan) { showToast('Enter a name for the new Test Plan', '⚠️'); showAdoBanner('Enter a name for the new Test Plan', 'warning'); return; }
 
   const testCases = parseTestCasesFromMarkdown();
-  if (!testCases.length) { showToast('No test cases found in output', '⚠️'); return; }
+  if (!testCases.length) { showToast('No test cases found in output', '⚠️'); showAdoBanner('No test cases found in output', 'error'); return; }
 
   // Switch to results panel
   adoGoToStep(3);
@@ -9933,6 +10137,7 @@ async function pushToADOFull() {
 
     document.getElementById('adoDoneNav').style.display = 'flex';
     showToast(`${successCount} test cases pushed to ADO Test Plan!`);
+    showAdoBanner(`${successCount} test cases pushed to ADO Test Plan!`, 'success');
 
   } catch(e) {
     addResult('❌', `Fatal error: ${e.message}`);
@@ -11196,7 +11401,7 @@ function saveADODefaults(){
 let _activeProvider=(()=>{try{return localStorage.getItem('shuddhi-ai-provider')||'claude';}catch(e){return 'claude';}})();
 const PROVIDER_META={
   claude:{name:'Claude',icon:'🤖',model:'claude-sonnet-4-6',envKey:'CLAUDE_API_KEY',url:'https://console.anthropic.com',urlLabel:'console.anthropic.com',color:'var(--indigo)'},
-  gemini:{name:'Gemini',icon:'✦',model:'gemini-2.0-flash',envKey:'GEMINI_API_KEY',url:'https://aistudio.google.com',urlLabel:'aistudio.google.com',color:'#0369A1'},
+  gemini:{name:'Gemini 2.5 Flash',icon:'✦',model:'gemini-2.5-flash',envKey:'GEMINI_API_KEY',url:'https://aistudio.google.com',urlLabel:'aistudio.google.com',color:'#0369A1'},
   groq:{name:'Groq',icon:'\u26A1',model:'llama-3.3-70b-versatile',envKey:'GROQ_API_KEY',url:'https://console.groq.com',urlLabel:'console.groq.com',color:'#7C3AED'},
 };
 function getActiveProvider(){
@@ -11838,6 +12043,191 @@ function checkAndTrimFlow(flow) {
   });
 
   console.log('[EventInit] All event bindings complete');
+})();
+</script>
+<!-- ── PWA: Install Banner ────────────────────────────────────────────────── -->
+<div id="pwaInstallBanner" style="display:none;position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%);z-index:10200;
+  background:linear-gradient(135deg,#132040,#0D2B5E);
+  border:1px solid rgba(8,145,178,.45);border-radius:14px;
+  padding:14px 18px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 8px 40px rgba(0,0,0,.55);
+  max-width:460px;width:calc(100vw - 48px);
+  animation:pwaBannerIn .4s cubic-bezier(.34,1.56,.64,1) both">
+  <style>
+    @keyframes pwaBannerIn {
+      from { opacity:0; transform:translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    }
+  </style>
+  <!-- Icon -->
+  <div style="width:44px;height:44px;border-radius:11px;flex-shrink:0;
+    background:linear-gradient(135deg,#0284C7,#0891B2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;box-shadow:0 4px 16px rgba(8,145,178,.35)">⚡</div>
+  <!-- Text -->
+  <div style="flex:1;min-width:0">
+    <div style="font-size:13px;font-weight:700;color:#F0F8FF;margin-bottom:3px">
+      Install Shuddhi QA
+    </div>
+    <div style="font-size:11.5px;color:#94A3B8;line-height:1.4">
+      Add to desktop · Opens instantly · Works offline
+    </div>
+  </div>
+  <!-- Buttons -->
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button id="pwaInstallBtn"
+      style="background:linear-gradient(135deg,#0284C7,#0891B2);
+        color:#fff;border:none;padding:8px 16px;border-radius:8px;
+        font-size:12px;font-weight:700;cursor:pointer;
+        box-shadow:0 3px 12px rgba(8,145,178,.4);transition:opacity .15s"
+      onmouseover="this.style.opacity='.85'"
+      onmouseout="this.style.opacity='1'">
+      Install
+    </button>
+    <button id="pwaDismissBtn"
+      style="background:transparent;color:#64748B;
+        border:1px solid rgba(255,255,255,.1);
+        padding:8px 11px;border-radius:8px;font-size:13px;cursor:pointer;
+        transition:color .15s"
+      onmouseover="this.style.color='#CBD5E1'"
+      onmouseout="this.style.color='#64748B'"
+      aria-label="Dismiss install prompt">✕</button>
+  </div>
+</div>
+
+<!-- ── PWA: Service Worker + Install Logic ───────────────────────────────── -->
+<script>
+(function() {
+  'use strict';
+
+  const DISMISSED_KEY = 'shuddhi-pwa-dismissed-app';
+  const INSTALL_KEY   = 'shuddhi-pwa-installed';
+  let   _prompt       = null;
+
+  // ── 1. Register service worker ──────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => {
+          console.log('[SW] Registered — scope:', reg.scope);
+          // Notify on new version available
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[SW] Update available — refresh to get new version');
+              }
+            });
+          });
+        })
+        .catch(err => console.warn('[SW] Registration failed:', err));
+    });
+  }
+
+  // ── 2. Capture install prompt ───────────────────────────────────────────
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _prompt = e;
+    // Show banner 4s after page load — not immediately, respects UX
+    if (!localStorage.getItem(DISMISSED_KEY) && !localStorage.getItem(INSTALL_KEY)) {
+      setTimeout(showBanner, 4000);
+    }
+  });
+
+  // ── 3. Show / hide banner ───────────────────────────────────────────────
+  function showBanner() {
+    const b = document.getElementById('pwaInstallBanner');
+    if (b) b.style.display = 'flex';
+  }
+  function hideBanner() {
+    const b = document.getElementById('pwaInstallBanner');
+    if (b) b.style.display = 'none';
+  }
+
+  // ── 4. Install button ───────────────────────────────────────────────────
+  document.getElementById('pwaInstallBtn').addEventListener('click', () => {
+    if (!_prompt) return;
+    _prompt.prompt();
+    _prompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        console.log('[PWA] Installed ✅');
+        localStorage.setItem(INSTALL_KEY, '1');
+      }
+      _prompt = null;
+      hideBanner();
+    });
+  });
+
+  // ── 5. Dismiss button ───────────────────────────────────────────────────
+  document.getElementById('pwaDismissBtn').addEventListener('click', () => {
+    hideBanner();
+    localStorage.setItem(DISMISSED_KEY, '1');
+  });
+
+  // ── 6. Auto-hide if already installed ──────────────────────────────────
+  window.addEventListener('appinstalled', () => {
+    hideBanner();
+    localStorage.setItem(INSTALL_KEY, '1');
+    console.log('[PWA] App installed via app.html');
+  });
+
+  // ── 7. Detect standalone mode (already installed) ──────────────────────
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) {
+    localStorage.setItem(INSTALL_KEY, '1');
+    console.log('[PWA] Running as installed app');
+  }
+
+})();
+</script>
+
+<!-- ── Theme Toggle — full implementation ────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  var THEME_KEY  = 'shuddhi-theme';
+  var DARK_ICON  = '🌙';   // shown when theme is LIGHT  — click to go dark
+  var LIGHT_ICON = '☀️';   // shown when theme is DARK   — click to go light
+  var BTN_ID     = 'themeToggleBtn';
+
+  // ── Apply theme to <html> and persist ──────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+    syncIcon(theme);
+  }
+
+  // ── Update button icon + accessible label ──────────────────────────────
+  function syncIcon(theme) {
+    var btn = document.getElementById(BTN_ID);
+    if (!btn) return;
+    btn.textContent  = theme === 'dark' ? LIGHT_ICON : DARK_ICON;
+    btn.title        = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
+  // ── Public: called by onclick="toggleTheme()" ──────────────────────────
+  window.toggleTheme = function () {
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  };
+
+  // ── On load: sync icon to whatever theme was applied by the early script ─
+  document.addEventListener('DOMContentLoaded', function () {
+    var current = localStorage.getItem(THEME_KEY) || 'light';
+    syncIcon(current);
+  });
+
+  // ── Keyboard shortcut: Ctrl / Cmd + Shift + T ─────────────────────────
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
+      e.preventDefault();
+      window.toggleTheme();
+    }
+  });
+
 })();
 </script>
 
