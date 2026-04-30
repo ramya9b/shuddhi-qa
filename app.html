@@ -8612,6 +8612,20 @@ Make the output production-ready and specific to ${platform}. Use real field nam
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+    // ── Response length sanity check (catches token-limit truncation) ──────────
+    // If rawMarkdown is suspiciously short for a test case generation request,
+    // surface a clear warning so the user knows the output may be incomplete.
+    const rawLen = (rawMarkdown || '').length;
+    const hasTable = rawMarkdown.includes('| TC') || rawMarkdown.includes('|TC');
+    if (rawLen > 50 && rawLen < 800 && !hasTable) {
+      console.warn('[Generate] Response appears truncated — length:', rawLen, '— no TC table found');
+      showAdoBanner(
+        '⚠️ Response appears truncated (likely hit an output token limit). Click Generate again to retry.',
+        'warning', 10000
+      );
+    }
+
     finalizeOutput(elapsed, platform, module);
 
   } catch (err) {
@@ -9030,6 +9044,23 @@ function finalizeOutput(elapsed, platform, module) {
       }
     });
   }, 100);
+
+  // Output validation — warn if response appears truncated or incomplete
+  // Runs after renderTestGenView() populates tgAllTCs (200ms delay)
+  setTimeout(() => {
+    // Count only rows that have a real TC ID pattern (not step rows)
+    const realTCs = tgAllTCs.filter(tc => /^TC\d{3}/i.test(tc.id));
+    const rawLen  = (rawMarkdown || '').length;
+    if (rawLen > 200 && realTCs.length < 3) {
+      const provName = ProviderManager.getConfig().name || 'AI provider';
+      showAdoBanner(
+        '⚠️ Incomplete response detected (' + realTCs.length + ' test case' + (realTCs.length !== 1 ? 's' : '') +
+        ' generated). ' + provName + ' may have hit an output limit. Try clicking Generate again.',
+        'warning', 10000
+      );
+      console.warn('[Output Validation] Only', realTCs.length, 'TC IDs found in tgAllTCs. rawMarkdown length:', rawLen);
+    }
+  }, 600);
 
   showToast('Test scenarios generated successfully!');
   // Reset provider failure tracking after successful generation

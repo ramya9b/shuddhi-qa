@@ -84,9 +84,19 @@ function buildUpstreamRequest(provider, key, body) {
     (messages || []).forEach(m => {
       contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
     });
+    // ── REGRESSION FIX (2025-04): gemini-2.5-flash has thinking enabled by default.
+    // Thinking tokens count toward maxOutputTokens, exhausting the 8192 budget before
+    // any real test case output is generated → empty or 1-TC responses.
+    // Fix: (a) disable thinking via thinkingBudget:0, (b) raise ceiling to 32768.
     const geminiBody = {
       contents,
-      generationConfig: { maxOutputTokens: Math.min(max_tokens, 8192), temperature: 0.3 },
+      generationConfig: {
+        maxOutputTokens: Math.min(max_tokens, 32768), // raised from 8192; 2.5-flash supports 65K
+        temperature: 0.3,
+        // Disable thinking for 2.5 models — thinking tokens eat the output budget.
+        // Non-thinking models (2.0-flash-lite) ignore this field safely.
+        ...(geminiModel.includes('2.5') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      },
     };
     // Add system instruction separately (supported in Gemini 1.5+)
     if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
@@ -114,7 +124,9 @@ function buildUpstreamRequest(provider, key, body) {
       body: JSON.stringify({
         model: MODELS.groq,
         messages: groqMessages,
-        max_tokens: Math.min(max_tokens, 4096), // Groq llama cap
+        // REGRESSION FIX: was 4096 — too low, produced only 1-2 test cases on fallback.
+        // llama-3.3-70b-versatile supports 32K output tokens on Groq; 8192 is safe & generous.
+        max_tokens: Math.min(max_tokens, 8192), // raised from 4096
         temperature: 0.3,
         stream,
       }),
@@ -122,10 +134,22 @@ function buildUpstreamRequest(provider, key, body) {
   }
 }
 
+// ── Extract output text from Gemini response (defensive: skip thought parts) ──
+// gemini-2.5-flash with thinking enabled returns parts like:
+//   [{thought:true, text:"..."}, {text:"actual output"}]
+// parts[0].text would return the thought, not the test cases.
+// This helper always returns the first non-thought part's text.
+function getGeminiText(json) {
+  const parts = json.candidates?.[0]?.content?.parts || [];
+  if (!parts.length) return '';
+  const outputPart = parts.find(p => !p.thought) || parts[0];
+  return outputPart?.text || '';
+}
+
 // ── Normalise from parsed JSON (for model chain fallback) ────────
 function normalizeFromJson(provider, json, model) {
   if (provider === 'gemini') {
-    const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = getGeminiText(json); // REGRESSION FIX: use helper to skip thought parts
     return { content:[{ type:'text', text }], stop_reason:'end_turn', model: model || MODELS.gemini };
   }
   return json;
@@ -136,7 +160,7 @@ async function normalizeResponse(provider, response) {
   const data = await response.json();
 
   if (provider === 'gemini') {
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = getGeminiText(data); // REGRESSION FIX: use helper to skip thought parts
     return { content: [{ type: 'text', text }], stop_reason: 'end_turn', model: MODELS.gemini };
   }
   if (provider === 'groq') {
@@ -169,7 +193,11 @@ function normalizeStream(provider, upstreamBody) {
           let text = '';
 
           if (provider === 'gemini') {
-            text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            // REGRESSION FIX: skip thought parts (thought:true) — only emit actual output text.
+            // gemini-2.5-flash with thinking may produce thought chunks before output chunks.
+            const parts = json.candidates?.[0]?.content?.parts || [];
+            const outputPart = parts.find(p => !p.thought) || parts[0];
+            text = outputPart?.text || '';
           } else if (provider === 'groq') {
             // Handle both delta.content and direct content
             text = json.choices?.[0]?.delta?.content
