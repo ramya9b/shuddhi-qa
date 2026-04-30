@@ -31,6 +31,19 @@
 <meta name="msapplication-TileImage" content="/icons/icon-144x144.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script>
+// Configure marked.js immediately after load — must run before any marked.parse() call.
+// marked v9: GFM (tables, strikethrough) is enabled by default, but we set options
+// explicitly to prevent silent fallback to non-GFM mode in edge environments.
+if (typeof marked !== 'undefined') {
+  marked.use({
+    gfm: true,        // GitHub Flavored Markdown — required for pipe tables
+    breaks: false,    // Do not convert single \n to <br> — would break table rows
+    mangle: false,    // Suppress deprecation warning (marked v9)
+    headerIds: false, // Suppress deprecation warning (marked v9)
+  });
+}
+</script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
 
 
@@ -8505,7 +8518,7 @@ Use 3-digit zero-padded TC IDs (TC001, TC002...). Use 5-column format throughout
 Apply the OUTPUT VALIDATION GATE before finalising — no empty expected results, no positive results in negative trigger/verify steps.`;
 
   const formatInstructions = {
-    full:        "Generate all 9 sections (Pre-Generation Extraction, Gap Analysis, Test Summary, End-to-End, Field Validation, Integration, Negative, Test Data Requirements, Test Case Metadata). CRITICAL: (1) Start with ## 0a Pre-Generation Extraction. (2) Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. (3) ONE step per row — never combine. Minimum 5 steps per TC. (4) Negative TCs: OUTPUT VALIDATION GATE — trigger/verify steps MUST show failure/error. (5) Integration TCs: use D365 Cross-Check Step Templates.",
+    full:        "Generate all 9 sections (Pre-Generation Extraction, Gap Analysis, Test Summary, End-to-End, Field Validation, Integration, Negative, Test Data Requirements, Test Case Metadata). TOKEN BUDGET: Keep sections 0a and 0b CONCISE (max 5 bullet points each, no extended prose) — the majority of output tokens must go to actual test case rows. CRITICAL: (1) Start with ## 0a Pre-Generation Extraction. (2) Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. (3) ONE step per row — never combine. Minimum 5 steps per TC. (4) Negative TCs: OUTPUT VALIDATION GATE — trigger/verify steps MUST show failure/error. (5) Integration TCs: use D365 Cross-Check Step Templates.",
     e2e:         "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 2 (End-to-End Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Minimum 5 step rows per TC. Include D365 navigation paths and specific field names. Then add Section 7 (Test Case Metadata).",
     field:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 3 (Field Validation Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Include boundary values, specific D365 field names, exact error messages. Then add Section 7 (Test Case Metadata).",
     integration: "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 4 (Integration Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Use D365 Cross-Check Step Templates: navigate → filter → read/sum → compare. Minimum 6 step rows per TC. Then add Section 7 (Test Case Metadata).",
@@ -8541,11 +8554,30 @@ Make the output production-ready and specific to ${platform}. Use real field nam
   try {
     activeAbortController = new AbortController();
 
+    // ── Format-aware token budget ──────────────────────────────────────────────
+    // 'full' generates 7 sections (gap analysis + 5 TC categories + metadata) — needs 20K+.
+    // Single-section formats need far less. Cap per-provider applied in proxy:
+    //   Claude=32768, Groq=16384, Gemini=32768.
+    // Previous bug: flat 8192 (and earlier 16000) truncated output mid-table.
+    const _formatTokenBudget = {
+      full:        32768,  // all 7 sections — needs the most room
+      e2e:         16384,  // E2E only + gap analysis
+      field:       16384,  // Field Validation only + gap analysis
+      integration: 16384,  // Integration only + gap analysis
+      negative:    16384,  // Negative only + gap analysis
+      smoke:       12288,  // Smoke/sanity — fewer TCs
+      testdata:     8192,  // Test data table only
+      metadata:     8192,  // Metadata table only
+      scenarios:   16384,
+      fields:      16384,
+    };
+    const _maxTokens = _formatTokenBudget[outputFormat] || 16384;
+
     // ── Build request body once (reused for every provider attempt) ─────────
     const requestBody = {
       ...(apiKey ? { apiKey } : {}),
       model:    'claude-sonnet-4-6',   // proxy maps to correct model per provider
-      max_tokens: 8192,
+      max_tokens: _maxTokens,
       stream:   true,
       system:   systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
@@ -8596,6 +8628,7 @@ Make the output production-ready and specific to ${platform}. Use real field nam
       const lines = buffer.split('\n');
       buffer = lines.pop();
 
+      let gotDelta = false;
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const data = line.slice(6).trim();
@@ -8604,24 +8637,35 @@ Make the output production-ready and specific to ${platform}. Use real field nam
             const parsed = JSON.parse(data);
             if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
               rawMarkdown += parsed.delta.text;
-              renderOutput();
+              gotDelta = true;
             }
           } catch {}
         }
       }
+      // Throttle re-renders: only call renderOutput when we got new delta text.
+      // This prevents 100s of identical DOM updates per second during fast streaming.
+      if (gotDelta) renderOutput();
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    // ── Response length sanity check (catches token-limit truncation) ──────────
-    // If rawMarkdown is suspiciously short for a test case generation request,
-    // surface a clear warning so the user knows the output may be incomplete.
-    const rawLen = (rawMarkdown || '').length;
-    const hasTable = rawMarkdown.includes('| TC') || rawMarkdown.includes('|TC');
-    if (rawLen > 50 && rawLen < 800 && !hasTable) {
-      console.warn('[Generate] Response appears truncated — length:', rawLen, '— no TC table found');
+    // ── Response completeness check (catches token-limit truncation) ──────────
+    // Detects the specific failure mode: analysis + test summary generated,
+    // but actual TC table rows are missing (stream was cut by token limit).
+    const rawLen   = (rawMarkdown || '').length;
+    const hasSummary = rawMarkdown.includes('Test Summary') || rawMarkdown.includes('## 1.');
+    const hasTCRow   = rawMarkdown.includes('| TC') || rawMarkdown.includes('|TC') || rawMarkdown.includes('TC001') || rawMarkdown.includes('TC-001');
+    if (rawLen > 500 && hasSummary && !hasTCRow) {
+      console.warn('[Generate] Truncation detected — Test Summary present but no TC rows. rawLen:', rawLen);
       showAdoBanner(
-        '⚠️ Response appears truncated (likely hit an output token limit). Click Generate again to retry.',
+        '⚠️ Incomplete response: analysis generated but test case tables are empty. ' +
+        'Provider hit output token limit. Click Generate to retry — Gemini (free 1M tokens) is recommended.',
+        'warning', 12000
+      );
+    } else if (rawLen > 50 && rawLen < 600 && !hasTCRow) {
+      console.warn('[Generate] Response appears truncated — length:', rawLen, '— no TC rows found');
+      showAdoBanner(
+        '⚠️ Response appears truncated (output token limit reached). Click Generate again to retry.',
         'warning', 10000
       );
     }

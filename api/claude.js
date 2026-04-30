@@ -74,7 +74,11 @@ function buildUpstreamRequest(provider, key, body) {
         'x-api-key':         key,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({ model: MODELS.claude, max_tokens, stream, system, messages }),
+      // REGRESSION FIX: was Math.min(max_tokens, 8192) — this cap was never raised in earlier
+      // sessions even though Groq and Gemini were. claude-sonnet-4-6 supports 64K output tokens.
+      // 8192 tokens is only enough for the gap analysis + test summary + first table header row,
+      // causing the "18 TCs in summary but empty E2E section" truncation shown in screenshot.
+      body: JSON.stringify({ model: MODELS.claude, max_tokens: Math.min(max_tokens, 32768), stream, system, messages }),
     };
   }
 
@@ -130,9 +134,10 @@ function buildUpstreamRequest(provider, key, body) {
       body: JSON.stringify({
         model: MODELS.groq,
         messages: groqMessages,
-        // REGRESSION FIX: was 4096 — too low, produced only 1-2 test cases on fallback.
-        // llama-3.3-70b-versatile supports 32K output tokens on Groq; 8192 is safe & generous.
-        max_tokens: Math.min(max_tokens, 8192), // raised from 4096
+        // TOKEN CAP: llama-3.3-70b-versatile supports 32K output on Groq.
+        // Frontend now sends up to 32768 for 'full' format runs.
+        // Raise cap to 32768 so a full 18-TC / 7-section run is never truncated.
+        max_tokens: Math.min(max_tokens, 32768), // raised from 16384
         temperature: 0.3,
         stream,
       }),
