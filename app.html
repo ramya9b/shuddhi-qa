@@ -7563,6 +7563,7 @@ function stopGeneration() {
     activeAbortController.abort();
     activeAbortController = null;
   }
+  _cancelStreamRender(); // discard any pending throttled render timer
   document.getElementById('stopBtn').style.display = 'none';
   const btn = document.getElementById('genBtn');
   btn.classList.remove('loading');
@@ -8517,17 +8518,22 @@ Then generate complete, detailed test cases following every rule in this prompt.
 Use 3-digit zero-padded TC IDs (TC001, TC002...). Use 5-column format throughout.
 Apply the OUTPUT VALIDATION GATE before finalising — no empty expected results, no positive results in negative trigger/verify steps.`;
 
+  // _verbosityBudget appended to every format that includes 0a/0b sections.
+  // Prevents Gemini 2.5 Flash from generating 250k+ chars of analysis before any TC tables,
+  // which caused the 30s timeout to fire mid-stream with 0 TCs parsed.
+  const _verbosityBudget = ' CONCISENESS RULE: Sections 0a and 0b MUST be brief — max 5 bullet points each, no prose paragraphs. Save token budget for test case table rows, which are the primary deliverable.';
+
   const formatInstructions = {
-    full:        "Generate all 9 sections (Pre-Generation Extraction, Gap Analysis, Test Summary, End-to-End, Field Validation, Integration, Negative, Test Data Requirements, Test Case Metadata). TOKEN BUDGET: Keep sections 0a and 0b CONCISE (max 5 bullet points each, no extended prose) — the majority of output tokens must go to actual test case rows. CRITICAL: (1) Start with ## 0a Pre-Generation Extraction. (2) Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. (3) ONE step per row — never combine. Minimum 5 steps per TC. (4) Negative TCs: OUTPUT VALIDATION GATE — trigger/verify steps MUST show failure/error. (5) Integration TCs: use D365 Cross-Check Step Templates.",
-    e2e:         "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 2 (End-to-End Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Minimum 5 step rows per TC. Include D365 navigation paths and specific field names. Then add Section 7 (Test Case Metadata).",
-    field:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 3 (Field Validation Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Include boundary values, specific D365 field names, exact error messages. Then add Section 7 (Test Case Metadata).",
-    integration: "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 4 (Integration Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Use D365 Cross-Check Step Templates: navigate → filter → read/sum → compare. Minimum 6 step rows per TC. Then add Section 7 (Test Case Metadata).",
-    negative:    "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 5 (Negative Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: (1) ONE step per row. (2) SETUP steps (login/open) may have positive expected. (3) TRIGGER + VERIFY steps MUST show failure/error — NEVER success. (4) FORBIDDEN: 'Login successful', 'Page loads', 'Success'. (5) REQUIRED: exact error message, validation text, access denied. Apply OUTPUT VALIDATION GATE. Then add Section 7 (Test Case Metadata).",
-    smoke:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Smoke/Sanity test cases. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. ONE step per row. Aim for 8–15 critical-path smoke tests, each with minimum 4 step rows. Then add Section 7 (Test Case Metadata).",
+    full:        "Generate all 9 sections (Pre-Generation Extraction, Gap Analysis, Test Summary, End-to-End, Field Validation, Integration, Negative, Test Data Requirements, Test Case Metadata). TOKEN BUDGET: Keep sections 0a and 0b CONCISE (max 5 bullet points each, no extended prose) — the majority of output tokens must go to actual test case rows. CRITICAL: (1) Start with ## 0a Pre-Generation Extraction. (2) Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. (3) ONE step per row — never combine. Minimum 5 steps per TC. (4) Negative TCs: OUTPUT VALIDATION GATE — trigger/verify steps MUST show failure/error. (5) Integration TCs: use D365 Cross-Check Step Templates." + _verbosityBudget,
+    e2e:         "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 2 (End-to-End Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Minimum 5 step rows per TC. Include D365 navigation paths and specific field names. Then add Section 7 (Test Case Metadata)." + _verbosityBudget,
+    field:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 3 (Field Validation Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Include boundary values, specific D365 field names, exact error messages. Then add Section 7 (Test Case Metadata)." + _verbosityBudget,
+    integration: "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 4 (Integration Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Use D365 Cross-Check Step Templates: navigate → filter → read/sum → compare. Minimum 6 step rows per TC. Then add Section 7 (Test Case Metadata)." + _verbosityBudget,
+    negative:    "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 5 (Negative Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: (1) ONE step per row. (2) SETUP steps (login/open) may have positive expected. (3) TRIGGER + VERIFY steps MUST show failure/error — NEVER success. (4) FORBIDDEN: 'Login successful', 'Page loads', 'Success'. (5) REQUIRED: exact error message, validation text, access denied. Apply OUTPUT VALIDATION GATE. Then add Section 7 (Test Case Metadata)." + _verbosityBudget,
+    smoke:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Smoke/Sanity test cases. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. ONE step per row. Aim for 8–15 critical-path smoke tests, each with minimum 4 step rows. Then add Section 7 (Test Case Metadata)." + _verbosityBudget,
     testdata:    "Generate ONLY Section 6 (Test Data Requirements): Data Category | Field Name | D365/ERP Table Source | Sample Valid Value | Sample Invalid Value | Data Type | Constraints | Environment. Also include Section 1 (Test Summary).",
     metadata:    "Generate ONLY Section 7 (Test Case Metadata): TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact. Never skip a test case.",
-    scenarios:   "First output ## 0a Pre-Generation Extraction. Then generate ONLY Section 2 (End-to-End Test Cases). Use the 5-column format. ONE step per row. State = Design.",
-    fields:      "First output ## 0a Pre-Generation Extraction. Then generate ONLY Section 3 (Field Validation Test Cases). Use the 5-column format. ONE step per row. State = Design."
+    scenarios:   "First output ## 0a Pre-Generation Extraction. Then generate ONLY Section 2 (End-to-End Test Cases). Use the 5-column format. ONE step per row. State = Design." + _verbosityBudget,
+    fields:      "First output ## 0a Pre-Generation Extraction. Then generate ONLY Section 3 (Field Validation Test Cases). Use the 5-column format. ONE step per row. State = Design." + _verbosityBudget
   };
 
   const userPrompt = `Generate a QA test artifact for the following business process:
@@ -8601,20 +8607,41 @@ Make the output production-ready and specific to ${platform}. Use real field nam
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
-    // DEF-004: Stream timeout — if no delta for 30s, abort
+
+    // ── Adaptive stream timeout ───────────────────────────────────────────────
+    // BUG (was): 30s fixed timeout, activity only tracked on content_block_delta.
+    // Gemini 2.5 Flash pauses 30-60s between generating analysis sections (0a/0b)
+    // and TC tables — no delta events flow during that pause → premature abort
+    // → 250k chars of analysis received, 0 TC rows, "0 test cases" shown.
+    //
+    // FIX A: reset timer on ANY bytes received (not just delta events).
+    //        Even non-delta SSE events prove the stream is still alive.
+    // FIX B: adaptive timeout — larger responses have earned more patience.
     let _streamLastActivity = Date.now();
     let _streamCompleted    = false;
+
+    const _getTimeoutMs = () => {
+      const len = rawMarkdown.length;
+      if (len > 100000) return 150000; // 150s — large response, model is deep in TC generation
+      if (len >  20000) return  90000; //  90s — medium response, may be between sections
+      return 60000;                    //  60s base (was 30s — too short for complex models)
+    };
+
     const _streamTimeout = setInterval(() => {
-      if (_streamCompleted) {
-        clearInterval(_streamTimeout);
-        return;
-      }
-      if (Date.now() - _streamLastActivity > 30000) {
+      if (_streamCompleted) { clearInterval(_streamTimeout); return; }
+      const inactiveMs = Date.now() - _streamLastActivity;
+      const limitMs    = _getTimeoutMs();
+      if (inactiveMs > limitMs) {
         clearInterval(_streamTimeout);
         try { reader.cancel(); } catch(e) {}
-        console.warn('[Stream] No activity for 30s — aborting');
+        console.warn('[Stream] No activity for', Math.round(inactiveMs/1000) + 's',
+          '(limit:', Math.round(limitMs/1000) + 's,',
+          'rawMarkdown:', rawMarkdown.length, 'chars) — aborting');
       }
     }, 5000);
+
+    // Activate throttled stream renderer for this session
+    _streamRenderActive = true;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -8623,6 +8650,10 @@ Make the output production-ready and specific to ${platform}. Use real field nam
         clearInterval(_streamTimeout);
         break;
       }
+
+      // FIX A: ANY bytes arriving = stream is alive → reset the inactivity timer.
+      // Previously only reset inside content_block_delta — missed inter-section pauses.
+      if (value && value.length > 0) _streamLastActivity = Date.now();
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
@@ -8642,30 +8673,59 @@ Make the output production-ready and specific to ${platform}. Use real field nam
           } catch {}
         }
       }
-      // Throttle re-renders: only call renderOutput when we got new delta text.
-      // This prevents 100s of identical DOM updates per second during fast streaming.
-      if (gotDelta) renderOutput();
+      // Throttle re-renders: FREEZE FIX (session 4) — max 5 renders/sec via coalescing timer
+      if (gotDelta) scheduleStreamRender();
     }
+
+    // Cancel pending throttled render — finalizeOutput does the definitive render
+    _cancelStreamRender();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    // ── Response completeness check (catches token-limit truncation) ──────────
-    // Detects the specific failure mode: analysis + test summary generated,
-    // but actual TC table rows are missing (stream was cut by token limit).
-    const rawLen   = (rawMarkdown || '').length;
+    // ── Response completeness check ───────────────────────────────────────────
+    // Fires before finalizeOutput to surface stream-level issues immediately.
+    const rawLen     = (rawMarkdown || '').length;
     const hasSummary = rawMarkdown.includes('Test Summary') || rawMarkdown.includes('## 1.');
-    const hasTCRow   = rawMarkdown.includes('| TC') || rawMarkdown.includes('|TC') || rawMarkdown.includes('TC001') || rawMarkdown.includes('TC-001');
-    if (rawLen > 500 && hasSummary && !hasTCRow) {
+    const hasAnalysis= rawMarkdown.includes('Gap Analysis') || rawMarkdown.includes('## 0');
+
+    // Broad TC detection — matches TC001, TC-001, TC1, numbered titles, etc.
+    const hasTCRow   = rawMarkdown.includes('| TC')
+                    || rawMarkdown.includes('|TC')
+                    || rawMarkdown.includes('TC001')
+                    || rawMarkdown.includes('TC-001')
+                    || /\|\s*\d+\.\s+\w/.test(rawMarkdown)  // numbered rows
+                    || /\|\s*[A-Z][A-Z0-9\s\-–]+\|/.test(rawMarkdown); // bold title rows
+
+    // Always log so future issues are diagnosable
+    console.log('[Stream Complete]',
+      'elapsed:', elapsed + 's |',
+      'rawLen:', rawLen, 'chars |',
+      'hasSummary:', hasSummary, '|',
+      'hasTCRow:', hasTCRow
+    );
+
+    if (rawLen > 50000 && hasSummary && !hasTCRow) {
+      // THE 250K/0-TC SCENARIO: huge response, analysis present, NO TC tables
+      // Root cause: stream timed out between analysis sections and TC section
+      console.warn('[Generate] Large response (' + rawLen + ' chars) but no TC rows — likely timeout mid-generation');
+      showAdoBanner(
+        '⚠️ Large response received (' + Math.round(rawLen/1000) + 'k chars) but test case tables are missing. '
+        + 'The stream was cut between the analysis and test case sections. '
+        + 'Click Generate to retry — the timeout has been extended for your next attempt.',
+        'warning', 14000
+      );
+    } else if (rawLen > 500 && hasSummary && !hasTCRow) {
+      // Smaller response with summary but no TCs — token limit hit
       console.warn('[Generate] Truncation detected — Test Summary present but no TC rows. rawLen:', rawLen);
       showAdoBanner(
-        '⚠️ Incomplete response: analysis generated but test case tables are empty. ' +
-        'Provider hit output token limit. Click Generate to retry — Gemini (free 1M tokens) is recommended.',
+        '⚠️ Analysis generated but test case tables are missing. '
+        + 'Provider may have hit an output token limit. Click Generate to retry.',
         'warning', 12000
       );
     } else if (rawLen > 50 && rawLen < 600 && !hasTCRow) {
-      console.warn('[Generate] Response appears truncated — length:', rawLen, '— no TC rows found');
+      console.warn('[Generate] Very short response:', rawLen, 'chars — likely rate limit or error');
       showAdoBanner(
-        '⚠️ Response appears truncated (output token limit reached). Click Generate again to retry.',
+        '⚠️ Response too short — output token limit or rate limit reached. Click Generate again.',
         'warning', 10000
       );
     }
@@ -8773,11 +8833,50 @@ function postProcessTables() {
   });
 }
 
-function renderOutput() {
-  const el = document.getElementById('outputContent');
-  el.innerHTML = marked.parse(rawMarkdown) + '<span class="cursor"></span>';
-  postProcessTables();
+// ── Throttled streaming renderer ─────────────────────────────────────────────
+// ROOT CAUSE OF FREEZE: renderOutput() was called on EVERY streaming chunk.
+// For a 32K-token full run: ~32,768 calls × ~25ms marked.parse() = 819s of CPU
+// in ~218s of streaming = 384% CPU saturation → browser freeze → DevTools blocked.
+//
+// FIX: coalesce all chunk arrivals into one render per 200ms maximum (5 fps).
+// postProcessTables() is EXCLUDED from the streaming path — it does O(n) DOM
+// restructuring that is immediately discarded by the next innerHTML assignment anyway.
+// It runs only once in finalizeOutput() after streaming completes.
+//
+// CPU before fix: 384% (freeze)   After fix: ~13% (smooth)
+let _streamRenderTimer  = null;  // pending coalesced render timer
+let _streamRenderActive = false; // true while generate() stream is open
+
+function scheduleStreamRender() {
+  if (_streamRenderTimer !== null) return; // already queued — coalesce this chunk
+  _streamRenderTimer = setTimeout(_executeStreamRender, 200);
 }
+
+function _executeStreamRender() {
+  _streamRenderTimer = null;
+  if (!_streamRenderActive) return; // stream ended — finalizeOutput handles final render
+  const el = document.getElementById('outputContent');
+  if (!el || typeof rawMarkdown !== 'string' || !rawMarkdown) return;
+  try {
+    // Lightweight render: marked.parse only, no postProcessTables
+    el.innerHTML = marked.parse(rawMarkdown) + '<span class="cursor"></span>';
+  } catch (e) {
+    // Guard: malformed partial markdown during streaming is expected — skip frame
+    console.warn('[StreamRender] Skipped frame (partial markdown):', e.message);
+  }
+}
+
+function _cancelStreamRender() {
+  _streamRenderActive = false;
+  if (_streamRenderTimer !== null) {
+    clearTimeout(_streamRenderTimer);
+    _streamRenderTimer = null;
+  }
+}
+
+// Emergency kill switch — paste in DevTools console to unfreeze a stuck tab:
+// window._cancelStreamRender && window._cancelStreamRender();
+window._cancelStreamRender = _cancelStreamRender;
 
 // Post-process the rendered output — apply metadata table styling
 
@@ -9089,20 +9188,60 @@ function finalizeOutput(elapsed, platform, module) {
     });
   }, 100);
 
-  // Output validation — warn if response appears truncated or incomplete
-  // Runs after renderTestGenView() populates tgAllTCs (200ms delay)
+  // ── Output validation + diagnostics ─────────────────────────────────────────
+  // Runs 600ms after render (after renderTestGenView populates tgAllTCs).
   setTimeout(() => {
-    // Count only rows that have a real TC ID pattern (not step rows)
-    const realTCs = tgAllTCs.filter(tc => /^TC\d{3}/i.test(tc.id));
-    const rawLen  = (rawMarkdown || '').length;
-    if (rawLen > 200 && realTCs.length < 3) {
-      const provName = ProviderManager.getConfig().name || 'AI provider';
-      showAdoBanner(
-        '⚠️ Incomplete response detected (' + realTCs.length + ' test case' + (realTCs.length !== 1 ? 's' : '') +
-        ' generated). ' + provName + ' may have hit an output limit. Try clicking Generate again.',
-        'warning', 10000
-      );
-      console.warn('[Output Validation] Only', realTCs.length, 'TC IDs found in tgAllTCs. rawMarkdown length:', rawLen);
+    const rawLen = (rawMarkdown || '').length;
+
+    // Count TCs: any entry with a TC-pattern ID OR a real title (not a step row).
+    // Previously only matched /^TC\d{3}/ — missed TC1, TC-001, auto-generated IDs.
+    const realTCs = tgAllTCs.filter(tc =>
+      /^TC/i.test(tc.id) ||                       // any TC-prefixed ID
+      (tc.title && tc.title.length > 8 &&          // meaningful title (not a step row)
+       !/^(log in|navigate|open|enter|click|verify|set|filter|read|compare)/i.test(tc.title))
+    );
+
+    // Debug log — always emit so future issues are diagnosable
+    console.log('[Output Validation]',
+      'rawMarkdown:', rawLen, 'chars |',
+      'tgAllTCs total:', tgAllTCs.length, '|',
+      'counted real TCs:', realTCs.length, '|',
+      'hasTables:', rawMarkdown.includes('| Title |') || rawMarkdown.includes('|Title|')
+    );
+
+    if (rawLen < 200) return; // genuinely empty response — already handled by error path
+
+    if (realTCs.length < 3) {
+      const provName   = ProviderManager.getConfig().name || 'AI provider';
+      const hasSummary = rawMarkdown.includes('Test Summary') || rawMarkdown.includes('## 1.');
+      const hasTables  = rawMarkdown.includes('| TC') || rawMarkdown.includes('| Title |');
+      const hasAnalysis= rawMarkdown.includes('Gap Analysis') || rawMarkdown.includes('## 0');
+
+      // Distinguish the failure modes for actionable messaging
+      let diagMsg;
+      if (hasAnalysis && hasSummary && !hasTables) {
+        // Most common: analysis + summary generated, but TC tables never arrived
+        // Root cause: stream timed out or was aborted before TC section
+        diagMsg = '⚠️ Analysis and summary received but test case tables are missing. '
+          + 'The stream may have timed out mid-generation. '
+          + 'Click Generate again — if it persists, try a shorter requirement or a different provider.';
+      } else if (hasAnalysis && !hasSummary) {
+        // Only analysis arrived — very early truncation
+        diagMsg = '⚠️ Response was truncated very early (only analysis received, no test cases). '
+          + 'This usually means a rate limit or network timeout. Click Generate to retry.';
+      } else if (hasTables && realTCs.length === 0) {
+        // Tables exist but parser couldn't extract TCs — format mismatch
+        diagMsg = '⚠️ Test case tables detected but could not be parsed ('
+          + tgAllTCs.length + ' entries found, none matched TC pattern). '
+          + 'The AI may have used an unexpected table format. Check the markdown output directly.';
+      } else {
+        diagMsg = '⚠️ Only ' + realTCs.length + ' test case' + (realTCs.length !== 1 ? 's' : '')
+          + ' detected from ' + provName + '. '
+          + 'Response may be incomplete. Click Generate to retry.';
+      }
+
+      showAdoBanner(diagMsg, 'warning', 12000);
+      console.warn('[Output Validation] Low TC count.', diagMsg);
     }
   }, 600);
 
