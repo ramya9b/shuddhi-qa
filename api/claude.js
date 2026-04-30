@@ -84,6 +84,15 @@ function buildUpstreamRequest(provider, key, body) {
     (messages || []).forEach(m => {
       contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
     });
+
+    // ── TDZ FIX: declare geminiModel FIRST — it must be available inside geminiBody below.
+    // (Session 1 fix accidentally left geminiModel declared after geminiBody, causing
+    //  ReferenceError: Cannot access 'geminiModel' before initialization → HTTP 500)
+    const geminiModel = body.geminiModel || MODELS.gemini;
+    const apiVersion  = GEMINI_API_VERSION[geminiModel] || 'v1beta';
+    const endpoint    = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
+    const separator   = stream ? '&' : '?';
+
     // ── REGRESSION FIX (2025-04): gemini-2.5-flash has thinking enabled by default.
     // Thinking tokens count toward maxOutputTokens, exhausting the 8192 budget before
     // any real test case output is generated → empty or 1-TC responses.
@@ -94,16 +103,13 @@ function buildUpstreamRequest(provider, key, body) {
         maxOutputTokens: Math.min(max_tokens, 32768), // raised from 8192; 2.5-flash supports 65K
         temperature: 0.3,
         // Disable thinking for 2.5 models — thinking tokens eat the output budget.
-        // Non-thinking models (2.0-flash-lite) ignore this field safely.
+        // thinkingBudget:0 is valid for gemini-2.5-*; non-thinking models ignore it safely.
         ...(geminiModel.includes('2.5') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
     };
     // Add system instruction separately (supported in Gemini 1.5+)
     if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
-    const geminiModel = body.geminiModel || MODELS.gemini;
-    const apiVersion  = GEMINI_API_VERSION[geminiModel] || 'v1beta';
-    const endpoint    = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
-    const separator   = stream ? '&' : '?';
+
     return {
       url: `https://generativelanguage.googleapis.com/${apiVersion}/models/${geminiModel}:${endpoint}${separator}key=${key}`,
       headers: { 'Content-Type': 'application/json' },
@@ -333,7 +339,7 @@ export default async function handler(req) {
               if (forwardBody.stream !== true) {
                 let altJson = {};
                 try { altJson = JSON.parse(altText); } catch(e) {}
-                const text = altJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const text = getGeminiText(altJson); // FIX: use helper to skip thought parts (was parts[0].text)
                 return new Response(JSON.stringify({
                   content: [{ type: 'text', text }],
                   stop_reason: 'end_turn',

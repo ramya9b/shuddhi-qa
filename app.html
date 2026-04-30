@@ -11184,8 +11184,26 @@ async function testClaudeConnection() {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      // Build a meaningful message instead of the generic raw status code
+      const errText  = data.error || data.detail || '';
+      const isSwitch = data.switchProvider === true;
+      let displayMsg;
+      if (res.status === 500) {
+        // 500 = proxy internal error (e.g. TDZ, malformed request, unhandled exception)
+        displayMsg = errText
+          ? 'Provider error: ' + errText.substring(0, 120)
+          : 'Internal proxy error (500). Check Vercel function logs for details.';
+      } else if (res.status === 429 || isSwitch) {
+        displayMsg = errText || 'Rate limit or quota exceeded. Try again later.';
+      } else if (res.status === 401) {
+        displayMsg = (meta.envKey || 'API key') + ' is invalid or expired. Re-check Settings.';
+      } else if (res.status === 403) {
+        displayMsg = 'Permission denied (403). Ensure the Gemini API is enabled in Google Cloud console.';
+      } else {
+        displayMsg = errText || ('Error ' + res.status);
+      }
       resultEl.className   = 'settings-test-result err';
-      resultEl.textContent = '❌ ' + (data.error || 'Error ' + res.status);
+      resultEl.textContent = '❌ ' + displayMsg;
     } else {
       const text = data.content?.[0]?.text || data.choices?.[0]?.message?.content || '';
       resultEl.className   = 'settings-test-result ok';
