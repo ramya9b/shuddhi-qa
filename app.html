@@ -793,15 +793,14 @@
     table-layout: auto; /* default — overridden per-table by JS for 5-col tables */
   }
 
-  /* Applied by JS to 10-column ADO test case tables */
-  /* Visible columns: ID(1)hidden, WIT(2)hidden, Title(3), TestStep(4)hidden, StepAction(5), StepExpected(6), AreaPath(7)hidden, AssignedTo(8)hidden, State(9)hidden, CreatedBy(10)hidden */
+  /* Applied by JS to 5-column test case tables */
   .output-content table.tc-table { table-layout: fixed; }
+  .output-content table.tc-table th:nth-child(1),
+  .output-content table.tc-table td:nth-child(1) { width: 20%; word-break: break-word; }
+  .output-content table.tc-table th:nth-child(2),
+  .output-content table.tc-table td:nth-child(2) { width: 38%; word-break: break-word; }
   .output-content table.tc-table th:nth-child(3),
-  .output-content table.tc-table td:nth-child(3) { width: 20%; word-break: break-word; }
-  .output-content table.tc-table th:nth-child(5),
-  .output-content table.tc-table td:nth-child(5) { width: 38%; word-break: break-word; }
-  .output-content table.tc-table th:nth-child(6),
-  .output-content table.tc-table td:nth-child(6) { width: 42%; word-break: break-word; }
+  .output-content table.tc-table td:nth-child(3) { width: 42%; word-break: break-word; }
 
   /* Scroll wrapper — applied to ALL tables for safety */
   .table-scroll-wrap {
@@ -2571,35 +2570,25 @@ header::after { display: none !important; }
   .sticky-gen-bar.visible { display: block; }
 
 
-  /* 10-col ADO format: hide ID(1), Work Item Type(2), Test Step(4), Area Path(7), Assigned To(8), State(9), Created By(10) in rendered view */
-  /* rawMarkdown is preserved — all exports still include all 10 columns */
-  .output-content table.tc-table th:nth-child(1),
-  .output-content table.tc-table td:nth-child(1),
-  .output-content table.tc-table th:nth-child(2),
-  .output-content table.tc-table td:nth-child(2),
+  /* Hide Assigned To (col 4) and State (col 5) in rendered view */
+  /* rawMarkdown preserved — exports include all 5 columns */
   .output-content table.tc-table th:nth-child(4),
   .output-content table.tc-table td:nth-child(4),
-  .output-content table.tc-table th:nth-child(7),
-  .output-content table.tc-table td:nth-child(7),
-  .output-content table.tc-table th:nth-child(8),
-  .output-content table.tc-table td:nth-child(8),
-  .output-content table.tc-table th:nth-child(9),
-  .output-content table.tc-table td:nth-child(9),
-  .output-content table.tc-table th:nth-child(10),
-  .output-content table.tc-table td:nth-child(10) {
+  .output-content table.tc-table th:nth-child(5),
+  .output-content table.tc-table td:nth-child(5) {
     display: none !important;
   }
-  /* Visible columns: Title(3) 20%, Step Action(5) 38%, Step Expected(6) 42% */
+  /* Widen Title + Step Action + Expected Result to fill the space */
+  .output-content table.tc-table th:nth-child(1),
+  .output-content table.tc-table td:nth-child(1) { width: 20% !important; }
+  .output-content table.tc-table th:nth-child(2),
+  .output-content table.tc-table td:nth-child(2) { width: 38% !important; }
   .output-content table.tc-table th:nth-child(3),
-  .output-content table.tc-table td:nth-child(3) { width: 20% !important; }
-  .output-content table.tc-table th:nth-child(5),
-  .output-content table.tc-table td:nth-child(5) { width: 38% !important; }
-  .output-content table.tc-table th:nth-child(6),
-  .output-content table.tc-table td:nth-child(6) { width: 42% !important; }
+  .output-content table.tc-table td:nth-child(3) { width: 42% !important; }
 
   /* ── Cell truncation — max 4 lines with expand ───────────────── */
-  .output-content table.tc-table td:nth-child(5) .cell-text,
-  .output-content table.tc-table td:nth-child(6) .cell-text {
+  .output-content table.tc-table td:nth-child(2) .cell-text,
+  .output-content table.tc-table td:nth-child(3) .cell-text {
     display: -webkit-box;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
@@ -2608,8 +2597,8 @@ header::after { display: none !important; }
     max-height: calc(1.55em * 4);
     transition: max-height .2s ease;
   }
-  .output-content table.tc-table td:nth-child(5) .cell-text.expanded,
-  .output-content table.tc-table td:nth-child(6) .cell-text.expanded {
+  .output-content table.tc-table td:nth-child(2) .cell-text.expanded,
+  .output-content table.tc-table td:nth-child(3) .cell-text.expanded {
     -webkit-line-clamp: unset;
     max-height: 1000px;
     overflow: visible;
@@ -7697,9 +7686,18 @@ async function _callProviderWithFallback(requestBody, signal) {
 
       console.error('[Fallback] Provider:', provider, '| Status:', status, '| Error:', errText.substring(0, 120));
 
-      // ── Classify: retryable (rate limit / quota) vs hard error ──────────
+      // ── Classify: retryable (rate limit / quota / too large) vs hard error ──
+      const isTooLarge = status === 413
+        || errText.includes('too large')
+        || errText.includes('Request too large')
+        || errText.includes('reduce your message size')
+        || errText.includes('token limit exceeded')
+        || errText.includes('context_length_exceeded');
+
       const isRateLimit = status === 429
-        || (status === 400 && (errText.includes('usage limits') || errText.includes('regain access')))
+        || status === 413
+        || isTooLarge
+        || (status === 400 && (errText.includes('usage limits') || errText.includes('regain access') || errText.includes('too large') || errText.includes('Request too large')))
         || (status === 403 && errText.includes('API_NOT_ENABLED'))
         || err.switchProvider === true;
 
@@ -7715,19 +7713,33 @@ async function _callProviderWithFallback(requestBody, signal) {
         const nextProv  = remaining.find(p => !ProviderManager._state.triedProviders.has(p) && !ProviderManager.isCoolingDown(p));
         const nextName  = nextProv ? ProviderManager.getConfig(nextProv).name : null;
 
-        // Classify the specific reason for user messaging
         const isQuota    = errText.includes('quota') || errText.includes('RESOURCE_EXHAUSTED') || errText.includes('free-tier');
         const isOverload = status === 529 || errText.includes('overloaded');
         const provName   = ProviderManager.getConfig(provider).name;
 
         let toastMsg;
-        if (isQuota)    toastMsg = provName + ' free-tier limit reached.';
-        else if (isOverload) toastMsg = provName + ' is overloaded.';
-        else            toastMsg = 'Rate limit on ' + provName + ' (~' + waitS + 's cooldown).';
-        if (nextName)   toastMsg += ' Switching to ' + nextName + '…';
-        else            toastMsg += ' No more providers available.';
+        if (isTooLarge) {
+          toastMsg = provName + ': document too large for token limit.';
+          if (nextName) {
+            toastMsg += ' Switching to ' + nextName + '…';
+          } else {
+            toastMsg = provName + ' token limit exceeded. Please shorten your requirement, or add a Gemini API key in Settings (free, 1M token limit).';
+          }
+        } else if (isQuota) {
+          toastMsg = provName + ' free-tier limit reached.';
+          if (nextName) toastMsg += ' Switching to ' + nextName + '…';
+          else toastMsg += ' No more providers available.';
+        } else if (isOverload) {
+          toastMsg = provName + ' is overloaded.';
+          if (nextName) toastMsg += ' Switching to ' + nextName + '…';
+          else toastMsg += ' Try again in a moment.';
+        } else {
+          toastMsg = 'Rate limit on ' + provName + ' (~' + waitS + 's cooldown).';
+          if (nextName) toastMsg += ' Switching to ' + nextName + '…';
+          else toastMsg += ' No more providers available.';
+        }
 
-        console.log('[Fallback] Retrying / Switching provider. Reason:', toastMsg);
+        console.log('[Fallback] Switching provider. Reason:', toastMsg);
         showAdoBanner(toastMsg, 'warning', nextName ? 5000 : 8000);
 
         lastErr    = new Error(toastMsg);
@@ -7748,14 +7760,27 @@ async function _callProviderWithFallback(requestBody, signal) {
       throw new Error(hardMsg);
 
     } catch (e) {
-      // Re-throw AbortError and hard errors immediately
+      // Re-throw AbortError immediately — Stop button must always work
       if (e.name === 'AbortError') throw e;
-      if (!e.message.includes('rate limit') && !e.message.includes('limit reached') &&
-          !e.message.includes('Switching to') && !e.message.includes('overloaded')) {
-        throw e;
-      }
+
+      // Re-throw genuine hard errors (not switchable conditions)
+      const msg = e.message || '';
+      const isSwitchable =
+        msg.includes('rate limit')         ||
+        msg.includes('Rate limit')         ||
+        msg.includes('limit reached')      ||
+        msg.includes('Switching to')       ||
+        msg.includes('overloaded')         ||
+        msg.includes('too large')          ||     // ← 413 / document size
+        msg.includes('token limit')        ||     // ← token limit exceeded
+        msg.includes('document too large') ||
+        msg.includes('free-tier')          ||
+        msg.includes('quota');
+
+      if (!isSwitchable) throw e;   // genuine hard error — surface to user
+
       lastErr = e;
-      continue;
+      continue;  // soft error — try next provider
     }
   }
 
@@ -7765,15 +7790,24 @@ async function _callProviderWithFallback(requestBody, signal) {
   const tried   = [...ProviderManager._state.triedProviders];
   const billing = _consecutiveAllFailures >= CONSECUTIVE_FAIL_THRESHOLD;
 
-  console.warn('[Fallback] All providers failed. Tried:', tried, '| Consecutive failures:', _consecutiveAllFailures);
+  console.warn('[Fallback] All providers failed. Tried:', tried, '| lastStatus:', lastStatus, '| Consecutive failures:', _consecutiveAllFailures);
+
+  // Special actionable message for token-limit errors
+  const wasTooLarge = lastStatus === 413
+    || (lastErr && (lastErr.message.includes('too large') || lastErr.message.includes('token limit')));
 
   let finalMsg = '';
-  if (wait > 5) {
+  if (wasTooLarge) {
+    finalMsg = 'Document too large for available AI providers. '
+      + 'Try one of: (1) Shorten your requirement text, '
+      + '(2) Add a Gemini API key in Settings (free, handles large documents), '
+      + 'or (3) Use a smaller section of your FRD.';
+  } else if (wait > 5) {
     finalMsg = 'All AI providers hit their rate limit. Try again in ~' + wait + ' seconds.';
   } else {
     finalMsg = 'All AI providers are temporarily unavailable (' + tried.join(', ') + ' tried).';
   }
-  if (billing) {
+  if (billing && !wasTooLarge) {
     finalMsg += ' Tip: Check API quota or billing settings — you may have hit free-tier daily limits.';
   }
   throw new Error(finalMsg);
@@ -7894,27 +7928,23 @@ RULE 7 — MINIMUM STEPS:
   Negative test case: minimum 5 steps (setup + trigger + verify failure)
 
 ═══════════════════════════════════════
-OUTPUT FORMAT — 10-COLUMN ADO FORMAT
+OUTPUT FORMAT — 5-COLUMN FORMAT
 ═══════════════════════════════════════
 
-ALL test cases MUST use this EXACT 10-column ADO export table:
-| ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By |
+ALL test cases MUST use this EXACT 5-column table format:
+| Title | Step Action | Step Expected Result | Assigned To | State |
 
 COLUMN RULES:
-- ID             → Sequential from 10001 (10001, 10002...)
-- Work Item Type → Always "Test Case"
-- Title          → TC[nnn] – [description] using 3-digit zero-padded ID: TC001, TC002... TC010, TC011 — NEVER TC1, TC2
-- Test Step      → Step number (1, 2, 3...) — BLANK on header row
-- Step Action    → ONE action per row. Starts with verb. BLANK on header row.
-- Step Expected  → Specific verifiable result. BLANK on header row.
-- Area Path      → Double-backslash format: e.g. "Web App\\Authentication" or "Mobile\\Checkout"
-- Assigned To    → Role (e.g. "QA Engineer", "Dev", "Test Lead")
-- State          → Always "Design"
-- Created By     → Leave blank
+- Title               → TC[nnn] – [description]. 3-digit zero-padded: TC001, TC002... NEVER TC1, TC2.
+                        Header row: fill Title, Assigned To, State. Leave Step Action and Step Expected BLANK.
+- Step Action         → ONE action per row. Starts with verb. BLANK on header row.
+- Step Expected Result→ Specific verifiable result. BLANK on header row. NEVER empty.
+- Assigned To         → Role (e.g. "QA Engineer", "Dev", "Test Lead") — header row only
+- State               → Always "Design" — header row only
 
 ROW STRUCTURE:
-  Row 1 (Header): ID, Work Item Type, Title, Area Path, Assigned To, State, Created By — leave Test Step, Step Action, Step Expected BLANK.
-  Row 2–N (Steps): Test Step, Step Action, Step Expected ONLY — leave all other columns BLANK.
+  Row 1 (Header): TC[nnn] – [title] | (blank) | (blank) | QA Engineer | Design
+  Row 2–N (Steps): (blank) | Step action | Expected result | (blank) | (blank)
 
 FORMATTING RULES:
 - NEVER use backtick code spans inside table cells
@@ -7939,19 +7969,19 @@ Table: Platform | Module | Priority | Total Test Cases | Created Date
 
 ## 2. End-to-End Test Cases
 Happy path + alternate flows + role-based access. Minimum 6–10 test cases, each with minimum 5 step rows.
-Use 10-column ADO format. ONE step per row.
+Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. ONE step per row.
 
 ## 3. Field Validation Test Cases
 Form inputs: mandatory fields, email format, min/max length, special characters, SQL injection, XSS.
-Use 10-column ADO format. Include specific field names and exact expected error messages.
+Use the 5-column format. ONE step per row. Include specific field names and exact expected error messages.
 
 ## 4. Integration Test Cases
 API contracts (include HTTP method, endpoint URL, expected status codes), third-party service calls, webhook events, error handling, timeout/retry behaviour.
-Use 10-column ADO format. Minimum 6 steps per TC.
+Use the 5-column format. ONE step per row. Minimum 6 steps per TC.
 
 ## 5. Negative Test Cases
 Invalid inputs, unauthorised access, expired sessions, broken flows, network failures.
-Use 10-column ADO format. Apply OUTPUT VALIDATION GATE:
+Use the 5-column format. ONE step per row. Apply OUTPUT VALIDATION GATE:
   Setup steps may have positive expected. Trigger + verify steps MUST show failure/error.
   FORBIDDEN in final steps: "Success", "Page loads", "Login successful".
   REQUIRED: exact error message, HTTP error code, field highlighted, access denied.
@@ -7979,7 +8009,7 @@ NOW GENERATE TEST CASES
 
 Read the requirement carefully. Extract every user flow, API endpoint, field validation rule, permission level, and error scenario.
 Then generate complete, detailed test cases following every rule in this prompt.
-Use 3-digit zero-padded TC IDs (TC001, TC002...). Use 10-column ADO format throughout.
+Use 3-digit zero-padded TC IDs (TC001, TC002...). Use 5-column format throughout.
 Apply OUTPUT VALIDATION GATE before finalising — no empty expected results, no positive results in negative trigger/verify steps.`
     : `You are a senior QA Test Case Engineer specialising in Microsoft Dynamics 365 (F&O, CRM, Business Central), Salesforce (Sales, Service, CPQ), Workday, Oracle ERP Cloud, SAP (S/4HANA), Guidewire, ServiceNow, and Power BI report testing. You have 15+ years of enterprise platform QA experience and specialise in creating DETAILED, GRANULAR, production-ready test cases.
 
@@ -7995,50 +8025,50 @@ PLATFORM-SPECIFIC EXPERTISE:
 CRITICAL LANGUAGE RULE: Generate ALL test case output in ${outputLang}.
 
 ═══════════════════════════════════════
-STEP WRITING RULES — STRICTLY ENFORCED
+STEP WRITING RULES — MODELLED ON REAL PRODUCTION TEST CASES
 ═══════════════════════════════════════
 
-RULE 1 — ONE ACTION PER STEP. NEVER combine multiple actions in one step.
-WRONG: "Open report, set To Date = 2025-03-31, locate Item 01017318 and read SKU."
-RIGHT:
-  Step 1: Open the report.
-  Step 2: Set To Date = 2025-03-31.
-  Step 3: Locate Item 01017318 in the SKU column.
-  Step 4: Read the SKU value displayed.
+RULE 1 — ONE ACTION PER STEP. Each step does exactly ONE thing.
 
-RULE 2 — SEQUENTIAL ORDER. Steps must flow logically:
-  Login → Open application/report → Set filters → Perform action → Navigate to source system (D365/ERP) → Compare and verify.
+RULE 2 — STEP ACTION starts with a verb from this exact list:
+  Log in, Set, In D365 navigate, Locate, Compare, Read, Filter, Export, Identify,
+  Inspect, Open, Change, Sum, Search, Select, Manually calculate, Scroll, Check,
+  Expand, Verify, Note, Navigate, List, Confirm, Attempt
 
-RULE 3 — STEP ACTION must start with an action verb:
-  Log in / Open / Navigate / Set / Locate / Read / Filter / Sum / Compare / Export / Inspect / Confirm / Expand / Search / Enter / Click / Select / Verify
+RULE 3 — STEP EXPECTED must be SPECIFIC. Include actual column names, D365 field names,
+  table names, exact values, and cross-contamination guards. NEVER vague.
 
-RULE 4 — STEP EXPECTED must be SPECIFIC and VERIFIABLE — never vague:
-  WRONG: "Correct value is shown."
-  WRONG: "Values match."
-  RIGHT: "SKU in Power BI = '01017318', matching SalesLine.ItemId in D365 exactly including leading zeros."
-  RIGHT: "Invoice status changes to 'Posted'. GL entry created in BSEG with Dr Expense / Cr Vendor."
+RULE 4 — MINIMUM STEPS:
+  Simple field validation: 6–7 steps
+  Cross-system D365 validation: 7–8 steps
+  Calculated field validation: 7–8 steps
+  Filter boundary validation: 6 steps
+  Security validation: 9 steps
+  Blank column validation: 7–8 steps
+  Data refresh validation: 6 steps
 
-RULE 5 — INCLUDE D365/ERP NAVIGATION PATHS for cross-system verification steps:
-  "In D365, navigate to Sales and Marketing → Inquiries → Sales → Backorder lines."
-  "In D365, navigate to Inventory Management → Inquiries → On-hand inventory."
+RULE 5 — USE EXACT TEMPLATES BELOW for every step type.
+  Do not invent new step patterns — use only the templates provided.
 
-RULE 6 — INCLUDE SPECIFIC TEST DATA in steps — actual field names, table names, filter values:
-  Field names: SalesLine.ItemId, PurchLine.PurchQty, InventOnhandItem.AvailPhysical
-  Table names: SalesLine, PurchTable, PurchLine, InventOnhandItem, EcoResProductTranslation
-  Filter values: InventLocationId = 9900, SalesStatus = Open, Approval Status = Confirmed
+RULE 6 — INCLUDE REAL D365 FIELD NAMES AND NAVIGATION PATHS:
+  SalesLine.ItemId, SalesLine.SalesQty, SalesLine.SalesStatus, SalesLine.ShippingDateRequested
+  PurchTable.PurchStatus, PurchTable.DeliveryDate, PurchTable.ApprovalStatus, PurchTable.PurchId
+  PurchLine.PurchQty, InventOnhandItem.AvailPhysical, InventOnhandItem.InventLocationId
+  PriceDiscTable.Amount, EcoResProductTranslation.Name, InventTable.ProductLifecycleStateId
 
-RULE 7 — BOUNDARY AND EDGE CASES for every calculated field or filter:
-  Boundary: "Set To Date equal to a known Requested Ship Date and confirm the row does NOT appear."
-  Zero value: "Locate an item with Total Units = 0. Verify Total Price = $0.00."
-  Blank/null: "Locate an item with no qualifying PO. Verify Days Until Next Open PO is blank — not zero."
+RULE 7 — BOUNDARY CASES: For filters use Change step pattern. For null use "blank/null — no error" pattern.
+  Boundary date: "Change To Date = [exact date of boundary]. Table updates." → "Row does NOT appear. Filter is strictly < not ≤."
+  Null PO: "Locate an item with no Confirmed Open PO." → "Days Until Next Open PO is blank/null — no error."
+  Zero calc: "Locate an item with Retail Price = 0 or Total Units = 0." → "Total Price = $0.00."
 
 RULE 8 — MINIMUM STEPS PER TEST CASE:
-  Simple field validation (single column check): minimum 5 steps
-  Cross-system validation (Power BI vs D365): minimum 6 steps
-  Calculated field validation: minimum 6 steps
-  Filter/global filter validation: minimum 6 steps
-  Security/access validation: minimum 7 steps
-  Negative test case: minimum 5 steps (setup + trigger invalid action + verify failure)
+  Simple field validation: minimum 6 steps
+  Cross-system D365 validation: minimum 7 steps
+  Calculated field: minimum 7 steps
+  Filter boundary: minimum 6 steps
+  Security/access: minimum 9 steps
+  Blank column: minimum 7 steps
+  Negative: minimum 5 steps (setup + trigger + verify failure)
 
 RULE 9 — STRICT NEGATIVE SCENARIO ENFORCEMENT — MOST CRITICAL:
 Negative test cases have COMPLETELY DIFFERENT rules from positive test cases.
@@ -8216,78 +8246,175 @@ OUTPUT FORMAT — STRICT RULES
 
 When given a business process description, generate a complete structured QA test artifact in clean Markdown.
 
-CRITICAL FORMAT RULE: ALL test cases MUST use this EXACT 10-column ADO export table format:
-| ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By |
+CRITICAL FORMAT RULE: ALL test cases MUST use this EXACT 5-column table format:
+| Title | Step Action | Step Expected Result | Assigned To | State |
 
 COLUMN RULES:
-- ID             → Sequential numeric ID starting from 10001 (10001, 10002, 10003...)
-- Work Item Type → Always "Test Case" — every header row
-- Title          → Format: TC[nnn] – [Short descriptive title] using 3-digit zero-padded number (e.g. "TC001 – Verify Invoice Creation", "TC012 – Validate Inventory WH 9900"). ALWAYS use 3-digit padding: TC001, TC002... TC010, TC011 — NEVER TC1, TC2, TC10.
-- Test Step      → Step number (1, 2, 3...) — BLANK on the TC header row
-- Step Action    → ONE single action per row. Start with a verb. NEVER combine actions. — BLANK on TC header row
-- Step Expected  → Specific, verifiable expected result. — BLANK on TC header row
-- Area Path      → MUST use double-backslash format matching an existing ADO Area Path (e.g. "D365 F&O\\Back Order Report" or "Salesforce\\Sales Cloud\\Opportunities"). Wrong format causes silent ADO import failure. Use the project/module name from the requirement.
-- Assigned To    → Role responsible (e.g. "QA Engineer", "AP Clerk", "Finance Manager")
-- State          → Always "Design"
-- Created By     → Leave blank unless value provided
+- Title       → Format: TC[nnn] – [Short descriptive title]. 3-digit zero-padded: TC001, TC002... TC010, TC011 — NEVER TC1, TC2, TC10.
+                Header row: fill Title, Assigned To, State. Leave Step Action and Step Expected Result BLANK.
+- Step Action → ONE single action per row. Starts with a verb. NEVER combine actions with semicolons.
+                Step rows: fill Step Action and Step Expected Result ONLY. Leave Title, Assigned To, State BLANK.
+- Step Expected Result → Specific and verifiable. Include actual D365 field names, table names, values, paths.
+                         NEVER empty. NEVER vague ("correct value shown", "success").
+- Assigned To → Role responsible (e.g. "QA Engineer", "AP Clerk", "Finance Manager") — on header row only
+- State       → Always "Design" — on header row only
 
-ROW STRUCTURE — STRICTLY FOLLOW FOR EVERY TEST CASE:
-  Row 1 (Header row): Fill ID, Work Item Type, Title, Area Path, Assigned To, State, Created By.
-                      Leave Test Step, Step Action, Step Expected BLANK.
-  Row 2–N (Step rows): Fill Test Step, Step Action, Step Expected ONLY.
-                       Leave ID, Work Item Type, Title, Area Path, Assigned To, State, Created By BLANK.
+ROW STRUCTURE — STRICTLY FOLLOW:
+  Row 1 (Header row): TC[nnn] – [title] | (blank) | (blank) | QA Engineer | Design
+  Row 2–N (Step rows): (blank) | Step action text | Step expected result | (blank) | (blank)
 
 FORMATTING RULES:
 - NEVER use backtick code spans inside table cells
-- NEVER combine steps with semicolons — each step is ONE row, ONE action
-- NEVER write "Correct value shown" or vague expected results
-- ALWAYS include the specific field name, value, or D365 path in the expected result
+- NEVER combine steps with semicolons — each step is ONE row
+- NEVER write vague expected results
+- ALWAYS include specific field names, values, and D365 navigation paths
 
 ═══════════════════════════════════════
-D365 CROSS-CHECK STEP TEMPLATES — REUSE IN EVERY INTEGRATION/VALIDATION TC
+EXACT STEP TEMPLATES — FROM REAL PRODUCTION DOCUMENT (34 TEST CASES, 239 STEPS)
 ═══════════════════════════════════════
 
-Use these as building blocks whenever a test case requires cross-system D365 verification:
+TEMPLATE 1 — LOGIN (short form preferred when report opened in same step):
+  Action:   Log in to [application] and open the [Report Name].
+  Expected: Report loads successfully. Table visual is visible.
+  OR separate:
+  Action:   Log in to [application] using [role/user] credentials.
+  Expected: Login is successful. [Application] home page is displayed.
 
-D365 NAVIGATION STEP:
-  Test Step N | In D365, navigate to [Module] → [Sub-module] → [Page]. | [Page name] opens in D365 without errors.
+TEMPLATE 2 — SET FILTER:
+  Action:   Set the '[Filter Name]' slicer to [value].
+  Expected: Slicer accepts the date. Table visual updates.
+  Short:    Set [Filter Name] = [value].
+  Expected: Table updates with data rows.  OR  Table updates with filtered data.
 
-D365 FILTER STEP:
-  Test Step N+1 | Filter by [D365 field] = [value] (e.g. InventLocationId = 9900, SalesStatus = Open). | Filtered results are displayed. Only matching records shown.
+TEMPLATE 3 — LOCATE AN ITEM:
+  Known item:   Locate Item [ItemId] in the [Column Name] column using the table search or scroll.
+  Expected:     The row for Item [ItemId] is visible in the report.
+  Test item:    Locate a test item [with specific known property].
+  Expected:     Test item is visible in the report.
+  Complex item: Locate a test item that has [specific test data — include actual values].
+  Expected:     Test item is visible in the report.
 
-D365 READ/SUM STEP:
-  Test Step N+2 | Read / Sum the [D365 field] value from [D365 table] for the test item. | [D365 field] value from [table] is confirmed as [expected value].
+TEMPLATE 4 — READ A COLUMN VALUE:
+  Action:   Read the '[Column Name]' column value for this item.
+  Expected (numeric):    [Column Name] shows a numeric quantity.
+  Expected (with value): [Column Name] = [value] — [reason e.g. "the Amount from the record with the latest From Date"].
 
-COMPARISON FINAL STEP (always end validation TCs with this):
-  Test Step N+3 | Compare [Report column] in [Report] against [D365 field] from [D365 table]. | [Report column] = [D365 field] exactly. [Any specific conditions — e.g. "No cross-warehouse contamination", "Leading zeros preserved", "No WH 101 or WH 205 data included"].
+TEMPLATE 5 — D365 NAVIGATION (exact paths with → separator):
+  Action:   In D365, navigate to [Module] → [Sub-module] → [Page].
+  Expected: [Page name] opens in D365.
+  EXACT PATHS FROM REAL DOCUMENT:
+    Sales and Marketing → Inquiries and reports → Sales → Backorder lines
+    Product Information Management → Products → Released Products
+    Product Information Management → Setup → Category and attributes → Retail Product Hierarchy
+    Released Products → select the item → Trade Agreements → View Trade Agreements
+    Inventory Management → Inquiries and reports → On-hand inventory
+    Procurement and Sourcing → Purchase Orders → All Purchase Orders
 
-D365 TABLES AND FIELD REFERENCE:
-  SalesLine        → SalesLine.ItemId, SalesLine.SalesQty, SalesLine.SalesStatus, SalesLine.ShippingDateRequested
-  PurchTable       → PurchTable.PurchStatus, PurchTable.DeliveryDate, PurchTable.ApprovalStatus
-  PurchLine        → PurchLine.PurchQty, PurchLine.RemainPurchPhysical
-  InventOnhandItem → InventOnhandItem.AvailPhysical, InventOnhandItem.InventLocationId
-  PriceDiscTable   → PriceDiscTable.Amount (latest From Date within filter range)
-  EcoResProduct    → EcoResProductTranslation.Name (item description)
-  InventTable      → InventTable.NameAlias
+TEMPLATE 6 — D365 FILTER (include ALL filter conditions in one step):
+  Action:   Filter by [field1] = [value1], [field2] = [value2], and [field3] [op] [value3].
+  Expected: [Specific description of what filtered results show].
+  Examples:
+    "Filter by ItemId = 01017318, SalesStatus = Open, and ShippingDateRequested < 2025-12-31."
+    → "Filtered results show all qualifying open lines for Item 01017318."
+    "Filter by the item's ItemId and InventLocationId = 9900."
+    → "On-hand record for WH 9900 is displayed."
+    "Filter PurchLine by the item's ItemId, PO Status = Open Order, and Approval Status = Confirmed."
+    → "Qualifying Confirmed Open PO lines are displayed for the item."
+
+TEMPLATE 7 — D365 READ / SUM:
+  Read:   Read the [D365 field] value from [D365 table].
+          → D365 [field] for [condition] is confirmed.
+  Sum:    Sum all [table].[field] values across the filtered lines.
+          → D365 [field] total is calculated and noted.
+  Examples:
+    "Read the AvailPhysical value from InventOnhandItem."
+    → "D365 AvailPhysical for InventLocationId = 9900 is confirmed."
+    "Sum all SalesLine.SalesQty values across the filtered lines."
+    → "D365 SalesQty total is calculated and noted."
+
+TEMPLATE 8 — COMPARISON FINAL STEP (always last verification step):
+  Action:   Compare [Report column] in [Report] against [D365 field] from D365 for [condition].
+  Expected: [Report column] in [Report] exactly matches [D365 field] [for condition].
+            [Cross-contamination guard.] [Additional conditions.]
+  Examples:
+    "Compare Avail DD in Power BI against AvailPhysical from D365 for InventLocationId = 9900."
+    → "Avail DD in Power BI exactly matches D365 AvailPhysical for WH 9900. No stock from WH 101 or WH 205 is included."
+    "Compare the ItemId value from D365 SalesLine with the SKU value shown in the Power BI report."
+    → "SKU in Power BI exactly matches SalesLine.ItemId in D365, including leading zeros (e.g. '01017318'). No truncation or format mismatch."
+    "Compare the D365 SalesQty sum to the Total Units value in Power BI for Item 01017318."
+    → "Total Units in Power BI exactly matches the sum of SalesLine.SalesQty in D365. Multi-order lines for the same SKU are correctly aggregated into one row."
+
+TEMPLATE 9 — CALCULATED FIELD (manual verification):
+  Action:   Read the [Column Name] value for this item.
+  Expected: [Column Name] = [value], matching [formula] ([e.g. $10.00 × 50 = $500.00]).
+  Action:   Manually calculate [formula] for [N] additional items.
+  Expected: Manual calculation results are noted.
+  Action:   Compare each manual result to the [Column Name] column in [Report].
+  Expected: All [N] manual calculations match [Column Name] exactly. No rounding errors.
+
+TEMPLATE 10 — CHANGE FILTER (boundary / date-range tests):
+  Action:   Change To Date = [new value] in the [Report].
+  Expected: Slicer accepts the new date. Table updates.
+  Action:   Read the [Column Name] for the same item again.
+  Expected: [Column Name] updates to [new value] — [reason].
+
+TEMPLATE 11 — EXPORT TO EXCEL:
+  Action:   Export the table to Excel via More options → Export data → Summarised data.
+  Expected: Excel file downloads with all columns and rows.
+
+TEMPLATE 12 — BLANK COLUMN VALIDATION:
+  Action:   Scroll to the [Column Name] column and inspect all cells across 10 rows.
+  Expected: All cells in the [Column Name] column are blank. No D365 data appears.
+  Action:   In Excel, apply =COUNTA(column_range) on each of the [N] manual columns.
+  Expected: COUNTA returns 0 for all [N] manual columns. No D365 data is accidentally populated.
+
+TEMPLATE 13 — SECURITY / ACCESS TEST:
+  Action:   Log in to [application] with the [Role Name] test user account.
+  Expected: Login is successful.
+  Action:   Navigate to [workspace] and open the [Report Name].
+  Expected: Report opens without 'Access Denied' error. Report canvas loads with data.
+  Action:   Log in with a test account NOT assigned to any authorised role. Attempt to open the report.
+  Expected: Access denied. User sees 'You do not have permission to view this report' message.
+  Action:   Attempt to access the [Report Name] via its direct URL.
+  Expected: Direct URL access also returns an access-denied response. No report data is exposed.
+
+TEMPLATE 14 — DATA REFRESH VALIDATION:
+  Action:   Navigate to the [Workspace] workspace → Datasets + dataflows tab.
+  Expected: Datasets page opens.
+  Action:   Open the Refresh history for the [Dataset Name] dataset.
+  Expected: Refresh history panel is displayed.
+  Action:   Check the timestamp and status of the latest refresh entry.
+  Expected: Latest refresh shows today's date with status = 'Completed'. No 'Failed' or 'Cancelled' status.
 
 ═══════════════════════════════════════
-WORKED EXAMPLE — 10-COLUMN ADO FORMAT
+WORKED EXAMPLES — EXACT FORMAT FROM REAL PRODUCTION DOCUMENT
 ═══════════════════════════════════════
 
-Requirement: "Avail DD column = AvailPhysical from InventOnhandItem where InventLocationId = 9900"
+EXAMPLE 1 — Cross-system field validation (modelled on TC12):
 
-| ID    | Work Item Type | Title                                           | Test Step | Step Action                                                                 | Step Expected                                                                                     | Area Path                  | Assigned To  | State  | Created By |
-|-------|---------------|------------------------------------------------|-----------|----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|----------------------------|--------------|--------|------------|
-| 10012 | Test Case     | TC012 – Validate Avail DD vs InventOnhandItem WH 9900 |           |                                                                            |                                                                                                  | D365 F&O\\Back Order Report | QA Engineer  | Design |            |
-|       |               |                                                | 1         | Log in to Power BI service using QA Engineer credentials.                  | Login is successful. Power BI home page is displayed.                                             |                            |              |        |            |
-|       |               |                                                | 2         | Open the Back Order Report.                                                | Report loads without errors. All columns and filters are visible.                                 |                            |              |        |            |
-|       |               |                                                | 3         | Set To Date = 2025-12-31.                                                  | Table updates. Data rows appear for the selected date range.                                      |                            |              |        |            |
-|       |               |                                                | 4         | Locate a test item with known stock at Warehouse 9900 (e.g. ItemId 01017318). | Test item 01017318 is visible in the report.                                                  |                            |              |        |            |
-|       |               |                                                | 5         | Read the Avail DD column value for ItemId 01017318.                        | Avail DD shows a specific numeric quantity (e.g. 150).                                           |                            |              |        |            |
-|       |               |                                                | 6         | In D365, navigate to Inventory Management → Inquiries → On-hand inventory. | On-hand inventory inquiry page opens in D365 F&O.                                                |                            |              |        |            |
-|       |               |                                                | 7         | Filter by ItemId = 01017318 and InventLocationId = 9900.                   | On-hand record for ItemId 01017318 at InventLocationId = 9900 is displayed.                      |                            |              |        |            |
-|       |               |                                                | 8         | Read the AvailPhysical value from InventOnhandItem for InventLocationId = 9900. | D365 AvailPhysical = 150 for InventLocationId = 9900 is confirmed.                          |                            |              |        |            |
-|       |               |                                                | 9         | Compare Avail DD in Power BI against AvailPhysical from InventOnhandItem for InventLocationId = 9900. | Avail DD in Power BI exactly matches D365 AvailPhysical = 150. No stock from WH 101 or WH 205 is included. |  |              |        |            |
+| Title                                                | Step Action                                                                      | Step Expected Result                                                                                              | Assigned To | State  |
+|------------------------------------------------------|----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------|--------|
+| TC012 – Validate Inventory at Warehouse 9900         |                                                                                  |                                                                                                                   | QA Engineer | Design |
+|                                                      | Log in to Power BI service and open the Back Order Report.                       | Report loads successfully.                                                                                        |             |        |
+|                                                      | Set To Date = 2025-12-31.                                                        | Table updates with data rows.                                                                                     |             |        |
+|                                                      | Locate a test item with known on-hand stock at warehouse 9900.                   | Test item is visible in the report.                                                                               |             |        |
+|                                                      | Read the 'Avail DD' column value for this item.                                  | Avail DD shows a numeric quantity.                                                                                |             |        |
+|                                                      | In D365, navigate to Inventory Management → Inquiries and reports → On-hand inventory. | On-hand inventory page opens in D365.                                                                       |             |        |
+|                                                      | Filter by the item's ItemId and InventLocationId = 9900.                         | On-hand record for WH 9900 is displayed.                                                                          |             |        |
+|                                                      | Read the AvailPhysical value from InventOnhandItem.                              | D365 AvailPhysical for InventLocationId = 9900 is confirmed.                                                      |             |        |
+|                                                      | Compare Avail DD in Power BI against AvailPhysical from D365 for InventLocationId = 9900. | Avail DD in Power BI exactly matches D365 AvailPhysical for WH 9900. No stock from WH 101 or WH 205 is included. |  |        |
+
+EXAMPLE 2 — Filter boundary test (modelled on TC24):
+
+| Title                                                | Step Action                                                                      | Step Expected Result                                                                                              | Assigned To | State  |
+|------------------------------------------------------|----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------|--------|
+| TC024 – Validate Requested Ship Date Filter Boundary |                                                                                  |                                                                                                                   | QA Engineer | Design |
+|                                                      | Log in to Power BI service and open the Back Order Report.                       | Report loads successfully.                                                                                        |             |        |
+|                                                      | Set To Date = 2025-03-31.                                                        | Table updates. Note the row count in the table footer.                                                            |             |        |
+|                                                      | Scroll through all visible rows and inspect the Requested Ship Date column values.| All visible rows have Requested Ship Date strictly before 2025-03-31.                                             |             |        |
+|                                                      | Change To Date = 2025-01-01 and note the new row count.                          | Row count decreases. All remaining rows have Requested Ship Date before 2025-01-01.                               |             |        |
+|                                                      | In D365, identify a sales order line where Requested Ship Date = 2025-03-31 exactly. | The exact-date line is identified in D365.                                                                   |             |        |
+|                                                      | Set To Date = 2025-03-31 in Power BI and search for this line's Item ID.         | The line with Requested Ship Date = 2025-03-31 does NOT appear. The filter is strictly less than (<), not less than or equal to. | | |
 
 Before generating test cases, perform BOTH analysis sections below and output them visibly.
 
@@ -8333,88 +8460,61 @@ Generate the following sections:
 Brief overview table: Platform | Module | Priority | Total Test Cases | Created Date
 
 ## 2. End-to-End Test Cases
-Detailed test cases using the 10-column ADO format with ONE step per row.
-Cover happy path flows, alternate flows, and role-based scenarios. Minimum 6–10 test cases.
-Each test case must have minimum 5–8 individual step rows.
-Use D365 Cross-Check Step Templates for any cross-system verification.
+Use the 5-column format. ONE step per row. Minimum 6–10 test cases, each with minimum 5–8 step rows.
+Use D365 Cross-Check Step Templates for cross-system verification.
 
 ## 3. Field Validation Test Cases
-Detailed field validation test cases using the 10-column ADO format with ONE step per row.
-Focus on mandatory fields, data formats, boundary values, invalid inputs.
-Include specific D365 field names, table names, and exact expected values.
+Use the 5-column format. ONE step per row.
+Include specific D365 field names, table names, boundary values, and exact expected error messages.
 
 ## 4. Integration Test Cases
-Detailed integration test cases using the 10-column ADO format with ONE step per row.
-Cover D365 cross-system verification, data sync, API calls, cross-module flows.
-MUST include D365 navigation steps and table/field-level comparison using the D365 Cross-Check Step Templates.
-Minimum 6 steps per integration test case.
+Use the 5-column format. ONE step per row. Minimum 6 steps per TC.
+MUST include D365 navigation steps and table/field-level comparison using D365 Cross-Check Step Templates.
 
 ## 5. Negative Test Cases
-Detailed negative test cases using the 10-column ADO format with ONE step per row. Apply OUTPUT VALIDATION GATE before writing.
-STRUCTURE: Step 1-2 = SETUP (login/open — positive expected is OK here). Step 3+ = TRIGGER invalid action + VERIFY failure.
-FORBIDDEN in final/key steps: "Login successful", "Page loads", "Report loads", "Success", "Record created".
-REQUIRED in final/key steps: exact error message text, validation message, system rejection, field highlighted, access denied.
+Use the 5-column format. ONE step per row. Apply OUTPUT VALIDATION GATE before writing.
+STRUCTURE: Step 1-2 = SETUP (login/open — positive expected OK). Then TRIGGER invalid action + VERIFY FAILURE.
+FORBIDDEN in trigger/verify steps: "Login successful", "Page loads", "Report loads", "Success", "Record created".
+REQUIRED: exact error message text, validation message, system rejection, field highlighted, access denied.
 If expected result is unclear: generate logical default (e.g. "System displays: 'Invalid date format. Enter MM/DD/YYYY.'").
-Cover: invalid inputs, boundary values, unauthorised access, missing mandatory fields, duplicate records, expired credentials, exceeding limits.
 
 ## 6. Test Data Requirements
-A comprehensive table with these 8 columns: Data Category | Field Name | D365/ERP Table Source | Sample Valid Value | Sample Invalid Value | Data Type | Constraints | Environment
-- Data Category: type of data (e.g. Date Filter, Item ID, Warehouse, User Role, Currency)
-- Field Name: exact field name as it appears in the report or D365 (e.g. SalesLine.ItemId, To Date filter)
-- D365/ERP Table Source: the D365 table or ERP object this data comes from
-- Sample Valid Value: a realistic valid test value (e.g. 01017318, 2025-12-31, InventLocationId = 9900)
-- Sample Invalid Value: a realistic invalid test value that should trigger an error (e.g. 99/99/9999, INVALID-ITEM, empty string)
-- Data Type: String | Date | Integer | Decimal | Boolean | Enum
-- Constraints: format rules, allowed ranges, mandatory flag (e.g. MM/DD/YYYY, > 0, Required)
-- Environment: which environment this test data exists in (e.g. UAT, DEV, both)
-
-Include one row per field identified in the Pre-Generation Extraction (section 0a).
+Table: Data Category | Field Name | D365/ERP Table Source | Sample Valid Value | Sample Invalid Value | Data Type | Constraints | Environment
 
 ## 7. Test Case Metadata
-For EVERY test case generated in sections 2–5, produce ONE row in this table:
 | TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact |
 
-Column definitions:
 - TC ID: Match exactly to Title column (e.g. "TC001")
-- Preconditions: Environment, master data, user role, prerequisite transactions. Always list: environment + master data + user role/permissions + any prerequisite transactions.
+- Preconditions: Environment + master data + user role + prerequisite transactions
 - Execution Type: Smoke | Regression | E2E | Integration | UAT | Negative
 - Risk Score: P0 (release blocker) | P1 (core business) | P2 (regression) | P3 (edge case)
 - Automation Feasibility: YES or NO + 1-line reason
-- Tool & Layer: Best automation tool (e.g. "Playwright/TypeScript / UI" or "D365 RSAT / UI" or "N/A – Manual only")
+- Tool & Layer: e.g. "Playwright/TypeScript / UI" or "D365 RSAT / UI" or "N/A – Manual only"
 - Failure Impact: Business consequence if this test fails
 
-Generate one row per test case. NEVER skip a test case. NEVER use backticks inside table cells.
+Generate one row per test case. NEVER skip. NEVER use backticks inside table cells.
 
 ═══════════════════════════════════════
 NOW GENERATE TEST CASES
 ═══════════════════════════════════════
 
-Read the requirement provided carefully from start to finish.
-Before writing a single test case, extract ALL of the following from the requirement:
-  ✦ Every data field and its D365/ERP source table and field name
-  ✦ Every filter condition with exact D365 field syntax
-  ✦ Every calculated field and its formula
-  ✦ Every PO / Inventory / related table filter condition
-  ✦ Every blank or manual column
-  ✦ Security roles — who has access and who does not
-  ✦ Data refresh rules and cutoff times
-
-Then generate complete, detailed test cases following EVERY rule in this prompt.
-Use 3-digit zero-padded TC IDs (TC001, TC002...). Use 10-column ADO format throughout.
-Apply the OUTPUT VALIDATION GATE before finalising — no empty expected results, no positive results in negative test steps.`;
+Read the requirement carefully from start to finish.
+Extract all data fields, filters, calculated columns, source tables, security roles, and data refresh rules.
+Then generate complete, detailed test cases following every rule in this prompt.
+Use 3-digit zero-padded TC IDs (TC001, TC002...). Use 5-column format throughout.
+Apply the OUTPUT VALIDATION GATE before finalising — no empty expected results, no positive results in negative trigger/verify steps.`;
 
   const formatInstructions = {
-    full:        "Generate all 9 sections of the complete test artifact (Pre-Generation Extraction, Gap Analysis, Test Summary, End-to-End, Field Validation, Integration, Negative, Test Data Requirements, Test Case Metadata). CRITICAL: (1) Start with ## 0a Pre-Generation Extraction — output all 7 items (DATA SOURCES, FILTER LOGIC, CALCULATED FIELDS, FILTER CONDITIONS, BLANK COLUMNS, SECURITY, DATA REFRESH). (2) Use the 10-column ADO format: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By. IDs start from 10001. (3) Each step is ONE row — Test Step number in its own column. Minimum 5 steps per test case. (4) For Section 5 Negative Test Cases: apply OUTPUT VALIDATION GATE. (5) For Section 4 Integration Test Cases: use the D365 Cross-Check Step Templates.",
-    e2e:         "First output ## 0a Pre-Generation Extraction (DATA SOURCES, FILTER LOGIC, CALCULATED FIELDS, FILTER CONDITIONS, BLANK COLUMNS, SECURITY, DATA REFRESH) and ## 0b Gap Analysis. Then generate ONLY Section 2 (End-to-End Test Cases) with a brief test summary. Use the 10-column ADO format: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By. IDs start from 10001. State = Design. CRITICAL: ONE step per row with Test Step number in its own column. Each test case must have minimum 5 individual step rows. Then add Section 7 (Test Case Metadata): TC ID | Preconditions | Execution Type | Automation Feasibility | Tool & Layer | Failure Impact.",
-    field:       "First output ## 0a Pre-Generation Extraction (DATA SOURCES, FILTER LOGIC, CALCULATED FIELDS, FILTER CONDITIONS, BLANK COLUMNS, SECURITY, DATA REFRESH) and ## 0b Gap Analysis. Then generate ONLY Section 3 (Field Validation Test Cases) with a brief summary. Use the 10-column ADO format: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By. IDs start from 10001. State = Design. CRITICAL: ONE step per row with Test Step number in its own column. Include boundary values, specific D365 field names, and table references. Then add Section 7 (Test Case Metadata).",
-    integration: "First output ## 0a Pre-Generation Extraction (DATA SOURCES, FILTER LOGIC, CALCULATED FIELDS, FILTER CONDITIONS, BLANK COLUMNS, SECURITY, DATA REFRESH) and ## 0b Gap Analysis. Then generate ONLY Section 4 (Integration Test Cases) with a brief summary. Use the 10-column ADO format: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By. IDs start from 10001. State = Design. CRITICAL: ONE step per row. MUST use the D365 Cross-Check Step Templates: navigate to D365 module → filter by field → read/sum value → compare against report column. Minimum 6 steps per test case. Then add Section 7 (Test Case Metadata).",
-    negative:    "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 5 (Negative Test Cases) with a brief summary. Use the 10-column ADO format: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By. IDs start from 10001. State = Design. CRITICAL RULES: (1) ONE step per row with Test Step number in its own column. (2) Structure: SETUP steps (positive expected OK) → TRIGGER invalid action → VERIFY FAILURE (error/rejection REQUIRED). (3) FORBIDDEN final steps: 'Login successful', 'Page loads', 'Success'. (4) REQUIRED: specific error message, validation text, access denied. (5) If unclear: generate logical default failure message. Apply OUTPUT VALIDATION GATE. Then add Section 7 (Test Case Metadata).",
-    smoke:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Smoke / Sanity test cases — the minimum critical-path tests that verify core functionality works after a build. Use the 10-column ADO format: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By. IDs start from 10001. State = Design. CRITICAL: ONE step per row. Then add Section 7 (Test Case Metadata). Aim for 8–15 high-priority smoke tests, each with minimum 4 step rows.",
-    testdata:    "Generate ONLY Section 6 (Test Data Requirements) — a comprehensive table: data category, field name, D365 table source, sample valid value, sample invalid value, data type, constraints, and environment. Include test data for all D365 tables referenced in the requirement. Also include Section 1 (Test Summary).",
-    metadata:    "Generate ONLY Section 7 (Test Case Metadata) — the full metadata table: TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact. Cover all scenarios from all sections. Never skip a test case.",
-    // Legacy aliases (backward compatibility)
-    scenarios: "Generate ONLY Section 2 (End-to-End Test Cases) with a brief test summary. Use the 10-column ADO format. CRITICAL: ONE step per row with Test Step number in its own column. IDs start from 10001. State = Design.",
-    fields:    "Generate ONLY Section 3 (Field Validation Test Cases) with a brief summary. Use the 10-column ADO format. CRITICAL: ONE step per row with Test Step number in its own column. IDs start from 10001. State = Design."
+    full:        "Generate all 9 sections (Pre-Generation Extraction, Gap Analysis, Test Summary, End-to-End, Field Validation, Integration, Negative, Test Data Requirements, Test Case Metadata). CRITICAL: (1) Start with ## 0a Pre-Generation Extraction. (2) Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. (3) ONE step per row — never combine. Minimum 5 steps per TC. (4) Negative TCs: OUTPUT VALIDATION GATE — trigger/verify steps MUST show failure/error. (5) Integration TCs: use D365 Cross-Check Step Templates.",
+    e2e:         "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 2 (End-to-End Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Minimum 5 step rows per TC. Include D365 navigation paths and specific field names. Then add Section 7 (Test Case Metadata).",
+    field:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 3 (Field Validation Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Include boundary values, specific D365 field names, exact error messages. Then add Section 7 (Test Case Metadata).",
+    integration: "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 4 (Integration Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: ONE step per row. Use D365 Cross-Check Step Templates: navigate → filter → read/sum → compare. Minimum 6 step rows per TC. Then add Section 7 (Test Case Metadata).",
+    negative:    "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Section 5 (Negative Test Cases). Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. CRITICAL: (1) ONE step per row. (2) SETUP steps (login/open) may have positive expected. (3) TRIGGER + VERIFY steps MUST show failure/error — NEVER success. (4) FORBIDDEN: 'Login successful', 'Page loads', 'Success'. (5) REQUIRED: exact error message, validation text, access denied. Apply OUTPUT VALIDATION GATE. Then add Section 7 (Test Case Metadata).",
+    smoke:       "First output ## 0a Pre-Generation Extraction and ## 0b Gap Analysis. Then generate ONLY Smoke/Sanity test cases. Use the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State. State = Design. ONE step per row. Aim for 8–15 critical-path smoke tests, each with minimum 4 step rows. Then add Section 7 (Test Case Metadata).",
+    testdata:    "Generate ONLY Section 6 (Test Data Requirements): Data Category | Field Name | D365/ERP Table Source | Sample Valid Value | Sample Invalid Value | Data Type | Constraints | Environment. Also include Section 1 (Test Summary).",
+    metadata:    "Generate ONLY Section 7 (Test Case Metadata): TC ID | Preconditions | Execution Type | Risk Score | Automation Feasibility | Tool & Layer | Failure Impact. Never skip a test case.",
+    scenarios:   "First output ## 0a Pre-Generation Extraction. Then generate ONLY Section 2 (End-to-End Test Cases). Use the 5-column format. ONE step per row. State = Design.",
+    fields:      "First output ## 0a Pre-Generation Extraction. Then generate ONLY Section 3 (Field Validation Test Cases). Use the 5-column format. ONE step per row. State = Design."
   };
 
   const userPrompt = `Generate a QA test artifact for the following business process:
@@ -8430,7 +8530,7 @@ ${extractedDocText
   ? `**Source:** Requirement Document (auto-parsed, language: ${detectedLanguage})
 
 **Full Requirement Document Content:**
-${extractedDocText.substring(0, 12000)}${extractedDocText.length > 12000 ? '\n\n[Document truncated to first 12,000 characters — upload a shorter section for complete coverage]' : ''}`
+${extractedDocText.substring(0, 6000)}${extractedDocText.length > 6000 ? '\n\n[Document truncated — first 6,000 characters shown. For full coverage upload a shorter section.]' : ''}`
   : `**Business Flow:**\n${flow}`
 }
 
@@ -8524,20 +8624,21 @@ Make the output production-ready and specific to ${platform}. Use real field nam
     const raw = err.message || '';
     let cleanMsg;
 
-    if (raw.includes('rate limit') || raw.includes('Rate limit') || raw.includes('Too Many')) {
-      cleanMsg = raw; // already user-friendly from fallback
+    if (raw.includes('too large') || raw.includes('token limit') || raw.includes('Document too large') || raw.includes('context_length')) {
+      cleanMsg = raw; // already actionable from fallback chain
+    } else if (raw.includes('rate limit') || raw.includes('Rate limit') || raw.includes('Too Many')) {
+      cleanMsg = raw;
     } else if (raw.includes('free-tier') || raw.includes('quota') || raw.includes('RESOURCE_EXHAUSTED')) {
       cleanMsg = raw.includes('Try again') ? raw : raw + ' Free-tier daily limit reached. Try again later or check billing settings.';
     } else if (raw.includes('API key') || raw.includes('invalid') || raw.includes('401')) {
-      cleanMsg = raw; // specific key error
+      cleanMsg = raw;
     } else if (raw.includes('All AI providers') || raw.includes('all providers') || raw.includes('on cooldown')) {
-      cleanMsg = raw; // already specific from fallback chain
+      cleanMsg = raw;
     } else if (raw.includes('overloaded') || raw.includes('529')) {
       cleanMsg = raw;
     } else if (raw.startsWith('Unable to generate') || raw.startsWith('No AI providers')) {
       cleanMsg = raw;
     } else {
-      // Only fall back to generic for truly unknown errors
       cleanMsg = 'Unable to generate test cases. ' + (raw || 'Please try again in a moment.');
     }
 
@@ -8563,27 +8664,19 @@ function postProcessTables() {
   const el = document.getElementById('outputContent');
   if (!el) return;
 
-  // Recognise BOTH old 5-column format AND new 10-column ADO format
-  const TC_HEADERS_5COL  = ['Title','Step Action','Step Expected Result','Assigned To','State'];
-  const TC_HEADERS_10COL = ['Work Item Type','Title','Test Step','Step Action','Step Expected','Area Path','Assigned To','State'];
+  const TC_HEADERS = ['Title','Step Action','Step Expected Result','Assigned To','State'];
 
   el.querySelectorAll('table').forEach(table => {
     if (table.parentElement.classList.contains('table-scroll-wrap')) return;
 
     const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
-    const isTCTable = TC_HEADERS_5COL.every(h => headers.includes(h))
-                   || TC_HEADERS_10COL.filter(h => ['Step Action','Step Expected','Title','State'].includes(h)).every(h => headers.includes(h));
+    const isTCTable = TC_HEADERS.every(h => headers.includes(h));
     if (isTCTable) {
       table.classList.add('tc-table');
 
-      // Apply truncation to Step Action and Step Expected columns
-      // Find column indices dynamically based on header name
-      const stepActionIdx  = headers.findIndex(h => h === 'Step Action');
-      const stepExpIdx     = headers.findIndex(h => h === 'Step Expected Result' || h === 'Step Expected');
-      const colsToTruncate = [stepActionIdx, stepExpIdx].filter(i => i >= 0);
-
+      // Truncate Step Action (col 2) and Step Expected Result (col 3)
       table.querySelectorAll('tbody tr').forEach(row => {
-        colsToTruncate.forEach(colIdx => {
+        [1, 2].forEach(colIdx => {
           const cell = row.cells[colIdx];
           if (!cell || cell.querySelector('.cell-text')) return;
           const rawText = cell.textContent.trim();
@@ -8999,11 +9092,11 @@ async function copyForExcel() {
       );
       if (isHeader) {
         // Normalise to consistent 10-col ADO header for TSV export
-        sectionRows.push('ID\tWork Item Type\tTitle\tTest Step\tStep Action\tStep Expected\tArea Path\tAssigned To\tState\tCreated By');
+        sectionRows.push('Title\tStep Action\tStep Expected Result\tAssigned To\tState');
       } else {
         const padded = [...cells];
-        while (padded.length < 10) padded.push('');
-        const row = padded.slice(0, 10).map(c => c.replace(/\n/g, ' | '));
+        while (padded.length < 5) padded.push('');
+        const row = padded.slice(0, 5).map(c => c.replace(/\n/g, ' | '));
         sectionRows.push(row.join('\t'));
       }
     } else if (line.match(/^\|[-\s|]+\|$/)) {
@@ -9037,18 +9130,13 @@ function exportPDF() {
   const margin  = 12;
   const usableW = pageW - margin * 2;
 
-  // ── Column widths (landscape A4 = 273mm usable) — 10-col ADO format ──
+  // ── Column widths (landscape A4 = 273mm usable) — 5-column format ──
   const cols = [
-    { header: 'ID',             w: 12 },
-    { header: 'Work Item Type', w: 22 },
-    { header: 'Title',          w: 50 },
-    { header: 'Test Step',      w: 14 },
-    { header: 'Step Action',    w: 65 },
-    { header: 'Step Expected',  w: 60 },
-    { header: 'Area Path',      w: 30 },
-    { header: 'Assigned To',    w: 22 },
-    { header: 'State',          w: 16 },
-    { header: 'Created By',     w: 22 }
+    { header: 'Title',                w: 62 },
+    { header: 'Step Action',          w: 80 },
+    { header: 'Step Expected Result', w: 72 },
+    { header: 'Assigned To',          w: 32 },
+    { header: 'State',                w: 27 }
   ];
   const rowH    = 7;
   const headerH = 9;
@@ -9221,8 +9309,8 @@ function exportPDF() {
       const dataRows = section.rows.filter(r => !isTestCaseHeader(r));
       dataRows.forEach((row, idx) => {
         const padded = [...row];
-        while (padded.length < 10) padded.push('');
-        drawTableRow(padded.slice(0, 10), idx % 2 === 0);
+        while (padded.length < 5) padded.push('');
+        drawTableRow(padded.slice(0, 5), idx % 2 === 0);
       });
       y += 6; // gap between sections
     });
@@ -9281,13 +9369,8 @@ function exportExcel() {
   let currentSheet = null;
   let currentTitle = '';
 
-  // Recognise both old 5-col and new 10-col ADO headers
-  const ADO_HEADERS_10 = ['ID','Work Item Type','Title','Test Step','Step Action','Step Expected','Area Path','Assigned To','State','Created By'];
-  const OLD_HEADERS_5  = ['Title','Step Action','Step Expected Result','Assigned To','State'];
-
-  const isHeaderRow = (cells) =>
-    cells.some(c => ADO_HEADERS_10.includes(c)) ||
-    cells.some(c => OLD_HEADERS_5.includes(c));
+  const HEADERS_5 = ['Title','Step Action','Step Expected Result','Assigned To','State'];
+  const isHeaderRow = (cells) => cells.some(c => HEADERS_5.includes(c));
 
   for (const line of lines) {
     if (line.startsWith('## ')) {
@@ -9301,15 +9384,11 @@ function exportExcel() {
         sheets.push(currentSheet);
       }
       if (isHeaderRow(cells)) {
-        // Detect format from header and normalise to 10-col ADO
-        const is10col = cells.some(c => ADO_HEADERS_10.includes(c) && !OLD_HEADERS_5.includes(c));
-        currentSheet.is10col = is10col;
-        currentSheet.rows.push(ADO_HEADERS_10);
+        currentSheet.rows.push(HEADERS_5);
       } else {
         const row = [...cells];
-        const colCount = currentSheet.is10col ? 10 : 10; // always write 10 cols
-        while (row.length < colCount) row.push('');
-        currentSheet.rows.push(row.slice(0, colCount));
+        while (row.length < 5) row.push('');
+        currentSheet.rows.push(row.slice(0, 5));
       }
     } else if (line.match(/^\|[-|\s]+\|$/)) {
       continue;
@@ -9323,26 +9402,21 @@ function exportExcel() {
   if (testSheets.length === 0) {
     // Fallback: dump raw content with 10-col header
     const ws = XLSX.utils.aoa_to_sheet([
-      ADO_HEADERS_10,
-      [rawMarkdown, '', '', '', '', '', '', '', '', '']
+      HEADERS_5,
+      [rawMarkdown, '', '', '', '']
     ]);
     XLSX.utils.book_append_sheet(wb, ws, 'Test Cases');
   } else {
     testSheets.forEach((s, i) => {
       const ws = XLSX.utils.aoa_to_sheet(s.rows);
 
-      // 10-column ADO widths: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By
+      // 5-column widths: Title | Step Action | Step Expected Result | Assigned To | State
       ws['!cols'] = [
-        { wch: 8  }, // ID
-        { wch: 14 }, // Work Item Type
         { wch: 45 }, // Title
-        { wch: 10 }, // Test Step
         { wch: 60 }, // Step Action
-        { wch: 60 }, // Step Expected
-        { wch: 30 }, // Area Path
-        { wch: 20 }, // Assigned To
-        { wch: 10 }, // State
-        { wch: 18 }  // Created By
+        { wch: 55 }, // Step Expected Result
+        { wch: 28 }, // Assigned To
+        { wch: 12 }  // State
       ];
 
       // Set minimum row heights
@@ -9851,26 +9925,21 @@ async function runBulkGenerate() {
           provider: getActiveProvider(),
           model: 'claude-sonnet-4-6',
           max_tokens: 4000,
-          system: `You are a senior QA Engineer for ${platform}. Generate test cases in the 10-column ADO export format.
+          system: `You are a senior QA Engineer for ${platform}. Generate test cases in the 5-column format: Title | Step Action | Step Expected Result | Assigned To | State.
 
-OUTPUT FORMAT — EXACTLY these 10 columns:
-| ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By |
+OUTPUT FORMAT — 5-column format:
+| Title | Step Action | Step Expected Result | Assigned To | State |
 
 COLUMN RULES:
-- ID: Sequential from 10001
-- Work Item Type: Always "Test Case"
-- Title: TC[nnn] – [description] (3-digit zero-padded: TC001, TC002...)
-- Test Step: Step number — BLANK on header row
+- Title: TC[nnn] – [description] (3-digit zero-padded: TC001, TC002...). Header row only.
 - Step Action: ONE action per row, starts with verb — BLANK on header row
-- Step Expected: Specific verifiable result — BLANK on header row
-- Area Path: ${platform}\\General
-- Assigned To: QA Engineer
-- State: Design
-- Created By: (blank)
+- Step Expected Result: Specific verifiable result — BLANK on header row
+- Assigned To: QA Engineer — header row only
+- State: Design — header row only
 
 ROW STRUCTURE:
-  Header row: fill ID, Work Item Type, Title, Area Path, Assigned To, State. Leave Test Step, Step Action, Step Expected BLANK.
-  Step rows: fill Test Step, Step Action, Step Expected ONLY. Leave all other columns BLANK.
+  Header row: TC[nnn] – [title] | (blank) | (blank) | QA Engineer | Design
+  Step rows: (blank) | step action | expected result | (blank) | (blank)
 
 RULES:
 - ONE action per step row — NEVER combine with semicolons
@@ -9889,27 +9958,18 @@ RULES:
       const data = await response.json();
       const md   = data.content.map(c => c.text || '').join('');
 
-      // Parse into rows for Excel — 10-column ADO format
+      // Parse into rows for Excel — 5-column format
       const lines = md.split('\n');
-      const ADO_HEADERS = ['ID','Work Item Type','Title','Test Step','Step Action','Step Expected','Area Path','Assigned To','State','Created By'];
-      const sheetRows = [ADO_HEADERS];
-      let currentId = 10001;
+      const FIVE_HEADERS = ['Title','Step Action','Step Expected Result','Assigned To','State'];
+      const sheetRows = [FIVE_HEADERS];
       lines.forEach(line => {
         if (line.startsWith('|') && !line.match(/^\|[-\s|]+\|$/)) {
           const cells = line.split('|').map(c => cleanCell(c)).filter(c => c !== '');
-          // Skip header rows
-          if (cells.some(c => ADO_HEADERS.includes(c))) return;
+          if (cells.some(c => FIVE_HEADERS.includes(c))) return;
           if (cells.length >= 2) {
             const row = [...cells];
-            while (row.length < 10) row.push('');
-            // If this looks like a TC header row (has TC in first non-ID cell), assign ID
-            const titleCell = row[2] || row[0] || '';
-            if (titleCell.match(/^TC\d+/i) && !row[0]) {
-              row[0] = String(currentId++);
-              row[1] = 'Test Case';
-              if (!row[8]) row[8] = 'Design';
-            }
-            sheetRows.push(row.slice(0, 10));
+            while (row.length < 5) row.push('');
+            sheetRows.push(row.slice(0, 5));
           }
         }
       });
@@ -9917,7 +9977,7 @@ RULES:
       if (sheetRows.length > 1) {
         const ws = XLSX.utils.aoa_to_sheet(sheetRows);
         // 10-column ADO widths: ID | Work Item Type | Title | Test Step | Step Action | Step Expected | Area Path | Assigned To | State | Created By
-        ws['!cols'] = [{wch:8},{wch:14},{wch:45},{wch:10},{wch:60},{wch:60},{wch:30},{wch:20},{wch:10},{wch:18}];
+        ws['!cols'] = [{wch:45},{wch:60},{wch:55},{wch:28},{wch:12}];
         const sheetName = bf.name.replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9 ]/g,'').substring(0,31) || `Doc${i+1}`;
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
         successCount++;
@@ -11160,7 +11220,7 @@ const TYPE_REGISTRY = [
     sectionKeys:['metadata','test case metadata','7.'],
     titleKeys:['tc id','precondition','automation feasibility','risk score'] },
   { type:'Functional',   cls:'tg-type-positive',
-    sectionKeys:['functional','positive','scenario','1.','summary'],
+    sectionKeys:['functional','positive','scenario','1.','summary','0a.','0b.','pre-generation','gap analysis','requirement gap'],
     titleKeys:['verify','validate','confirm','ensure','create','read','update','delete',
                'view','display','submit','save','search','filter','sort','generate',
                'export','import','upload','download','assign','approve','navigate','open'] }
@@ -11633,20 +11693,26 @@ function renderTestGenView() {
     if (trimmed.match(/^\|[\s\-:|]+\|$/)) continue;
     const cells=trimmed.split('|').map(c=>cleanCell(c)).filter(c=>c!=='');
     if (cells.length<2) continue;
-    if (['Title','Step Action','Steps','Test Case Title'].some(h=>cells[0]&&cells[0].toLowerCase().includes(h.toLowerCase()))) {
-      inTCTable=true; continue;
-    }
+
+    // ── Detect header row — 5-column format (Title | Step Action | Step Expected Result | Assigned To | State)
+    // Also supports 10-col if old saved sessions exist
+    const isHeader = ['Title','Step Action','Steps','Test Case Title','Work Item Type','ID'].some(
+      h => cells.some(c => c && c.toLowerCase().includes(h.toLowerCase()))
+    );
+    if (isHeader) { inTCTable = true; continue; }
     if (!inTCTable) continue;
-    const rawTitle=cells[0]||'';
-    if (!rawTitle||rawTitle.length<2) continue;
-    const idPart=rawTitle.match(/^(TC[-\s]?\d+(?:\.\d+)?)/i);
-    const tcId=idPart?idPart[1].replace(/[\s]/g,''):('TC'+String(tgAllTCs.length+1).padStart(3,'0'));
-    const tcTitle=rawTitle.replace(/^TC[-\s]?\d+(?:\.\d+)?\s*[-–—:.\s]+/i,'').trim()||rawTitle;
-    const priInfo=inferPriority(tcTitle||rawTitle);
-    const refined=classifyTCByTitle(tcTitle||rawTitle, currentType.type, currentType.cls);
-    tgAllTCs.push({id:tcId,title:tcTitle,stepsRaw:cells[1]||'',expected:cells[2]||'',
-      section:currentSection,type:refined.type,typeCls:refined.cls,
-      priority:priInfo.pri,priCls:priInfo.cls});
+
+    // ── 5-column: cells[0]=Title, cells[1]=Step Action, cells[2]=Step Expected Result
+    const rawTitle = cells[0] || '';
+    if (!rawTitle || rawTitle.length < 2) continue;
+    const idPart  = rawTitle.match(/^(TC[-\s]?\d+(?:\.\d+)?)/i);
+    const tcId    = idPart ? idPart[1].replace(/[\s]/g,'') : ('TC'+String(tgAllTCs.length+1).padStart(3,'0'));
+    const tcTitle = rawTitle.replace(/^TC[-\s]?\d+(?:\.\d+)?\s*[-–—:.\s]+/i,'').trim() || rawTitle;
+    const priInfo = inferPriority(tcTitle||rawTitle);
+    const refined = classifyTCByTitle(tcTitle||rawTitle, currentType.type, currentType.cls);
+    tgAllTCs.push({id:tcId, title:tcTitle, stepsRaw:cells[1]||'', expected:cells[2]||'',
+      section:currentSection, type:refined.type, typeCls:refined.cls,
+      priority:priInfo.pri, priCls:priInfo.cls});
   }
 
   if (tgAllTCs.length===0) return;

@@ -16,7 +16,7 @@
 export const config = { runtime: 'edge' };
 
 // ── Model mapping per provider ──────────────────────────────────
-// ── Gemini 3.x preview models (current GA-equivalent for new keys) ──
+// ── Gemini 2.5 Flash model chain (current stable GA model) ──
 // Older 1.x and 2.x models are deprecated for new accounts.
 // Preview models still use v1beta API endpoint.
 const MODELS = {
@@ -359,13 +359,20 @@ export default async function handler(req) {
       if (response.status === 429) {
         const retryAfter = response.headers.get('retry-after') || response.headers.get('x-ratelimit-reset-requests');
         const waitSecs   = retryAfter ? parseInt(retryAfter) : 60;
-        // Return switchProvider:true so frontend fallback chain can try next
-        // The frontend ProviderManager.MAX_SWITCHES prevents infinite loops
         return new Response(JSON.stringify({
           error: provider + ' rate limited (resets in ~' + waitSecs + 's)',
           waitSecs,
           switchProvider: true
         }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (response.status === 413) {
+        // Request too large — Groq 12k TPM limit hit. Switch to Gemini or Claude.
+        console.warn('[' + provider + '] 413 Request too large — switching to next provider');
+        return new Response(JSON.stringify({
+          error: provider + ' token limit exceeded (document too large). Switching to next provider.',
+          switchProvider: true,
+          provider
+        }), { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (response.status === 401) msg = `${provider} API key invalid or expired — check ${provider.toUpperCase()}_API_KEY in Vercel.`;
       if (response.status === 404) {
